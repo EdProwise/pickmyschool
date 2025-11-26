@@ -7,7 +7,7 @@ import {
   Filter, Search, Edit, MoreVertical, Plus, Building2,
   LayoutDashboard, MessageSquare, Info, Contact2, Building,
   Image, DollarSign, Trophy, GraduationCap, Newspaper,
-  Star, BarChart3, Bell, User
+  Star, BarChart3, Bell, User as UserIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -252,7 +252,7 @@ export default function SchoolDashboard() {
             
             {/* User Profile */}
             <button className="p-2 hover:bg-gray-100 rounded-full">
-              <User size={24} className="text-cyan-500" />
+              <UserIcon size={24} className="text-cyan-500" />
             </button>
           </div>
         </header>
