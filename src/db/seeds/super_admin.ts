@@ -1,27 +1,21 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { superAdmin } from '@/db/schema';
 import bcrypt from 'bcrypt';
 
 async function main() {
     const hashedPassword = await bcrypt.hash('SuperAdmin@123', 10);
     
-    const superAdmin = {
-        role: 'super_admin',
+    const superAdminData = {
         email: 'edprowise@pickmyschool.com',
-        password: hashedPassword,
         name: 'EdProwise Admin',
-        phone: null,
-        city: null,
-        class: null,
-        schoolId: null,
-        savedSchools: null,
+        password: hashedPassword,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
 
-    await db.insert(users).values(superAdmin);
+    await db.insert(superAdmin).values(superAdminData);
     
-    console.log('✅ Super admin seeder completed successfully');
+    console.log('✅ Super Admin seeder completed successfully');
 }
 
 main().catch((error) => {
