@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, GraduationCap, Users, Award, TrendingUp, ChevronRight, MapPin, BookOpen, Shield } from 'lucide-react';
+import { Search, GraduationCap, Users, Award, TrendingUp, ChevronRight, MapPin, BookOpen, Shield, Star, Sparkles } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
@@ -16,6 +16,7 @@ import { getFeaturedSchools, type School } from '@/lib/api';
 export default function HomePage() {
   const router = useRouter();
   const [featuredSchools, setFeaturedSchools] = useState<School[]>([]);
+  const [spotlightSchool, setSpotlightSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Search state
@@ -36,7 +37,21 @@ export default function HomePage() {
         setLoading(false);
       }
     };
+
+    const loadSpotlightSchool = async () => {
+      try {
+        const response = await fetch('/api/schools/spotlight');
+        if (response.ok) {
+          const data = await response.json();
+          setSpotlightSchool(data.school);
+        }
+      } catch (error) {
+        console.error('Failed to load spotlight school:', error);
+      }
+    };
+
     loadFeaturedSchools();
+    loadSpotlightSchool();
   }, []);
 
   const handleSearch = () => {
@@ -252,10 +267,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Schools Section */}
-      <section className="py-16 px-4 bg-gray-50">
+      {/* Featured Schools Section - 75% / 25% Split */}
+      <section className="py-12 px-4 bg-gray-50">
         <div className="container mx-auto">
-          <div className="flex justify-between items-center mb-12">
+          <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                 Featured Schools
@@ -275,7 +290,7 @@ export default function HomePage() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
                 <Card key={i} className="animate-pulse">
                   <div className="h-48 bg-gray-200" />
@@ -288,10 +303,92 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredSchools.slice(0, 4).map((school) => (
-                <SchoolCard key={school.id} school={school} />
-              ))}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* 75% Section - 3 Featured Schools */}
+              <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {featuredSchools.slice(0, 3).map((school) => (
+                  <SchoolCard key={school.id} school={school} />
+                ))}
+              </div>
+
+              {/* 25% Section - Spotlight School */}
+              {spotlightSchool && (
+                <div className="lg:col-span-1">
+                  <Card className="h-full bg-gradient-to-br from-purple-50 via-white to-cyan-50 border-2 border-purple-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-bl-full" />
+                    
+                    {/* Spotlight Badge */}
+                    <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                      <Sparkles className="w-3 h-3" />
+                      SPOTLIGHT
+                    </div>
+
+                    <CardContent className="p-0 h-full flex flex-col">
+                      {/* Image */}
+                      <div className="relative h-48 overflow-hidden bg-gray-100">
+                        {spotlightSchool.bannerImage || spotlightSchool.logo ? (
+                          <img
+                            src={spotlightSchool.bannerImage || spotlightSchool.logo || ''}
+                            alt={spotlightSchool.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            <GraduationCap className="w-16 h-16 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col">
+                        <h3 className="text-xl font-bold text-foreground mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                          {spotlightSchool.name}
+                        </h3>
+
+                        <div className="space-y-2 mb-4 flex-1">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <MapPin className="w-4 h-4 mr-2 text-purple-500 flex-shrink-0" />
+                            <span className="line-clamp-1">{spotlightSchool.city}</span>
+                          </div>
+                          
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <GraduationCap className="w-4 h-4 mr-2 text-cyan-500 flex-shrink-0" />
+                            <span>{spotlightSchool.board}</span>
+                          </div>
+
+                          <div className="flex items-center text-sm">
+                            <div className="flex items-center bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2 py-1 rounded">
+                              <Star className="w-3 h-3 mr-1 fill-white" />
+                              <span className="font-semibold">{spotlightSchool.rating}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({spotlightSchool.reviewCount} reviews)
+                            </span>
+                          </div>
+
+                          {spotlightSchool.feesMin && spotlightSchool.feesMax && (
+                            <div className="pt-2 border-t">
+                              <p className="text-xs text-muted-foreground mb-1">Annual Fees</p>
+                              <p className="text-sm font-bold" style={{ color: '#04d3d3' }}>
+                                ₹{spotlightSchool.feesMin.toLocaleString()} - ₹{spotlightSchool.feesMax.toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <Button
+                          onClick={() => router.push(`/schools/${spotlightSchool.id}`)}
+                          className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold shadow-lg"
+                        >
+                          View Details
+                          <ChevronRight className="ml-2 w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
 
