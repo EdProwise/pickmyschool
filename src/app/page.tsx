@@ -391,6 +391,43 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Top Cities Section */}
+      <section className="py-16 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Explore Schools by City
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Find the best schools in top cities across India
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {topCities.map((city) => (
+              <Card
+                key={city.name}
+                className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => router.push(`/schools?city=${city.name}`)}
+              >
+                <div className="relative h-32">
+                  <img
+                    src={city.image}
+                    alt={city.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
+                    <MapPin size={24} className="mb-2" />
+                    <h3 className="font-bold text-lg">{city.name}</h3>
+                    <p className="text-sm">{city.count}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* How It Works Section */}
       <section className="py-20 px-4 bg-white">
         <div className="container mx-auto">
@@ -498,43 +535,6 @@ export default function HomePage() {
               View All Schools
               <ChevronRight className="ml-2" size={16} />
             </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Top Cities Section */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Explore Schools by City
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Find the best schools in top cities across India
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {topCities.map((city) => (
-              <Card
-                key={city.name}
-                className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => router.push(`/schools?city=${city.name}`)}
-              >
-                <div className="relative h-32">
-                  <img
-                    src={city.image}
-                    alt={city.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
-                    <MapPin size={24} className="mb-2" />
-                    <h3 className="font-bold text-lg">{city.name}</h3>
-                    <p className="text-sm">{city.count}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
           </div>
         </div>
       </section>
