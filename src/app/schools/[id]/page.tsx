@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { getSchoolById, submitEnquiry, type School } from '@/lib/api';
 import { toast } from 'sonner';
+import { AIChat } from '@/components/AIChat';
 
 export default function SchoolDetailPage() {
   const params = useParams();
@@ -620,6 +621,8 @@ export default function SchoolDetailPage() {
       </div>
 
       <Footer />
+      
+      <AIChat />
     </div>
   );
 }
