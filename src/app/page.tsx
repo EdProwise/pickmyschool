@@ -97,8 +97,8 @@ export default function HomePage() {
         
         <div className="container mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-            {/* Left Side - Main Content (65%) */}
-            <div className="flex-1 lg:max-w-3xl">
+            {/* Left Side - Main Content */}
+            <div className="flex-1">
               <div className="space-y-6">
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
                   Making Schools,
@@ -115,9 +115,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Side - Featured School Card (35%) */}
-            <div className="w-full lg:w-auto lg:flex-shrink-0">
-              <Card className="max-w-md mx-auto lg:w-96 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
+            {/* Right Side - Featured School Card */}
+            <div className="w-full lg:w-96 flex-shrink-0">
+              <Card className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
                 <CardContent className="p-0">
                   {/* Featured Badge */}
                   <div className="p-6 pb-4">
