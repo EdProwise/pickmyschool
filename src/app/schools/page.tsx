@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { getSchools, type School } from '@/lib/api';
+import { AIChat } from '@/components/AIChat';
 
 export default function SchoolsPage() {
   const searchParams = useSearchParams();
@@ -320,6 +321,8 @@ export default function SchoolsPage() {
       </div>
 
       <Footer />
+      
+      <AIChat />
     </div>
   );
 }
