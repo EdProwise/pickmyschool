@@ -785,8 +785,16 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
               <div className="grid grid-cols-3 gap-2">
                 {facilityImages.map((img, idx) => (
                   <div key={idx} className="relative group">
-                    <div className="aspect-square rounded overflow-hidden border border-gray-300">
-                      <img src={img} alt={`${facilityLabel} ${idx + 1}`} className="w-full h-full object-cover" />
+                    <div className="aspect-square rounded overflow-hidden border border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-3">
+                      <Image className="text-gray-400 mb-2" size={32} />
+                      <a
+                        href={img}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 hover:underline"
+                      >
+                        View Image
+                      </a>
                     </div>
                     <Button
                       type="button"
