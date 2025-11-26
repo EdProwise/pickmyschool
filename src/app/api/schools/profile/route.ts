@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { schools } from '@/db/schema';
+import { schools, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JWTPayload {
   userId: number;
@@ -28,8 +28,6 @@ function authenticateRequest(request: NextRequest): { user: JWTPayload } | { err
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-    
-    console.log('Decoded JWT:', decoded);
     
     if (decoded.role !== 'school') {
       return {
@@ -60,15 +58,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { user } = auth;
-    
-    console.log('GET: Looking for profile with userId:', user.userId);
 
     const profile = await db.select()
       .from(schools)
       .where(eq(schools.userId, user.userId))
       .limit(1);
-      
-    console.log('GET: Profile query result:', profile);
 
     if (profile.length === 0) {
       return NextResponse.json(
@@ -123,7 +117,7 @@ export async function PUT(request: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    // Basic Info - new comprehensive fields
+    // Basic Info - comprehensive fields
     if (body.name !== undefined) updateData.name = String(body.name).trim();
     if (body.establishmentYear !== undefined) updateData.establishmentYear = parseInt(body.establishmentYear);
     if (body.schoolType !== undefined) updateData.schoolType = String(body.schoolType).trim();
@@ -137,7 +131,7 @@ export async function PUT(request: NextRequest) {
     if (body.totalTeachers !== undefined) updateData.totalTeachers = parseInt(body.totalTeachers);
     if (body.logoUrl !== undefined) updateData.logoUrl = String(body.logoUrl).trim();
     
-    // Contact Info - comprehensive fields
+    // Contact Info
     if (body.address !== undefined) updateData.address = String(body.address).trim();
     if (body.city !== undefined) updateData.city = String(body.city).trim();
     if (body.state !== undefined) updateData.state = String(body.state).trim();
@@ -229,7 +223,7 @@ export async function PUT(request: NextRequest) {
     if (body.latitude !== undefined) updateData.latitude = parseFloat(body.latitude);
     if (body.longitude !== undefined) updateData.longitude = parseFloat(body.longitude);
     
-    // JSON fields - validate structure
+    // JSON fields
     if (body.galleryImages !== undefined) {
       if (!Array.isArray(body.galleryImages)) {
         return NextResponse.json(
