@@ -24,7 +24,7 @@ export const schools = sqliteTable('schools', {
   // Basic Info
   name: text('name').notNull(),
   establishmentYear: integer('establishment_year'),
-  schoolType: text('school_type'), // 'Private', 'Govt'
+  schoolType: text('school_type'), // 'Private', 'Govt', 'Day School', 'Boarding', 'Both'
   k12Level: text('k12_level'), // 'Foundational', 'Preparatory', 'Middle', 'Secondary'
   board: text('board').notNull(), // 'CBSE', 'ICSE', 'State Board', 'Others', 'Unregistered'
   gender: text('gender'), // 'Co-Ed', 'Boys', 'Girls'
@@ -118,7 +118,6 @@ export const schools = sqliteTable('schools', {
   medium: text('medium'),
   classesOffered: text('classes_offered'),
   studentTeacherRatio: text('student_teacher_ratio'),
-  schoolType: text('school_type'),
   feesMin: integer('fees_min'),
   feesMax: integer('fees_max'),
   facilities: text('facilities', { mode: 'json' }),
