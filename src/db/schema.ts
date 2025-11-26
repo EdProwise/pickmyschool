@@ -76,3 +76,21 @@ export const chats = sqliteTable('chats', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+// Add super_admin table
+export const superAdmin = sqliteTable('super_admin', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  password: text('password').notNull(),
+  name: text('name').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// Add site_settings table
+export const siteSettings = sqliteTable('site_settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  spotlightSchoolId: integer('spotlight_school_id').references(() => schools.id),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
