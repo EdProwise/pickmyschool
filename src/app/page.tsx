@@ -89,18 +89,108 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Navbar />
 
-      {/* Hero Section - Separated and cleaner */}
+      {/* Hero Section - Split Layout with Featured School Card */}
       <section className="relative bg-gradient-to-br from-gray-50 via-white to-cyan-50/30 pt-32 pb-20 px-4">
         <div className="container mx-auto">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-              Find the Perfect School for<br />
-              Your Child's{' '}
-              <span style={{ color: '#04d3d3' }}>Bright Future</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-0 max-w-3xl mx-auto">
-              Discover, compare, and connect with the best schools in your city. Making informed decisions easier.
-            </p>
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+            {/* Left Side - Main Content (60-65%) */}
+            <div className="flex-1 lg:max-w-2xl">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+                Making Schools,{' '}
+                <span style={{ color: '#6366f1' }}>Search</span>
+                <br />
+                <span className="text-foreground">Simple</span>
+              </h1>
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl">
+                Explore, Compare, and Choose from Over 20,000 Schools to Shape Your Child's Bright Future
+              </p>
+            </div>
+
+            {/* Right Side - Featured School Card (35-40%) */}
+            <div className="w-full lg:w-auto lg:flex-shrink-0">
+              <Card className="max-w-md mx-auto lg:w-80 xl:w-96 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 shadow-2xl">
+                <CardContent className="p-6">
+                  {/* Featured Badge */}
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4" style={{ backgroundColor: '#04d3d3' }}>
+                    <Star className="w-4 h-4 text-white fill-white" />
+                    <span className="text-white font-semibold text-sm">Featured School</span>
+                  </div>
+
+                  {/* School Image/Logo */}
+                  <div className="relative h-32 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <GraduationCap size={64} className="text-cyan-600/30" />
+                    </div>
+                    {/* Placeholder for school logo */}
+                    <div className="relative z-10 w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center">
+                      <GraduationCap size={32} style={{ color: '#04d3d3' }} />
+                    </div>
+                  </div>
+
+                  {/* School Details */}
+                  <h3 className="text-xl font-bold text-foreground mb-1">
+                    St. Mary Convent School
+                  </h3>
+                  <p className="text-muted-foreground mb-3 flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    Bangalore
+                  </p>
+
+                  {/* Star Rating */}
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(4)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="px-3 py-1 bg-white rounded-full text-sm font-medium text-foreground border border-gray-200">
+                      KG School
+                    </span>
+                    <span className="px-3 py-1 bg-white rounded-full text-sm font-medium text-foreground border border-gray-200">
+                      CBSE
+                    </span>
+                    <span className="px-3 py-1 bg-white rounded-full text-sm font-medium text-foreground border border-gray-200">
+                      International School
+                    </span>
+                    <span className="px-3 py-1 bg-white rounded-full text-sm font-medium text-foreground border border-gray-200">
+                      Co-Ed
+                    </span>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className="flex items-center gap-2 mb-4 p-3 bg-white rounded-lg">
+                    <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="font-semibold text-foreground">+91-9643349619</span>
+                  </div>
+
+                  {/* Explore Button */}
+                  <Button
+                    className="w-full h-12 text-white font-semibold"
+                    style={{ backgroundColor: '#8b5cf6' }}
+                    onClick={() => router.push('/schools/1')}
+                  >
+                    Explore
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
