@@ -5,7 +5,7 @@ import { eq, like, and, desc, or } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
 interface JWTPayload {
-  userId: number;
+  adminId: number;
   role: string;
   email: string;
 }
@@ -20,7 +20,7 @@ function verifyToken(request: NextRequest): JWTPayload | null {
   const token = authHeader.substring(7);
   
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as JWTPayload;
     return decoded;
   } catch (error) {
     return null;
