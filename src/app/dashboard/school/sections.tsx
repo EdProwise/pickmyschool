@@ -158,7 +158,24 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Only send basic info fields
+    const basicInfoData: Partial<SchoolProfile> = {
+      name: formData.name,
+      establishmentYear: formData.establishmentYear,
+      schoolType: formData.schoolType,
+      k12Level: formData.k12Level,
+      board: formData.board,
+      gender: formData.gender,
+      isInternational: formData.isInternational,
+      streamsAvailable: formData.streamsAvailable,
+      languages: formData.languages,
+      totalStudents: formData.totalStudents,
+      totalTeachers: formData.totalTeachers,
+      logoUrl: formData.logoUrl,
+    };
+    
+    onSave(basicInfoData);
   };
 
   if (profileLoading) {
@@ -435,7 +452,25 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Only send contact info fields
+    const contactInfoData: Partial<SchoolProfile> = {
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      country: formData.country,
+      website: formData.website,
+      contactNumber: formData.contactNumber,
+      whatsappNumber: formData.whatsappNumber,
+      email: formData.email,
+      facebookUrl: formData.facebookUrl,
+      instagramUrl: formData.instagramUrl,
+      linkedinUrl: formData.linkedinUrl,
+      youtubeUrl: formData.youtubeUrl,
+      googleMapUrl: formData.googleMapUrl,
+    };
+    
+    onSave(contactInfoData);
   };
 
   if (profileLoading) {
@@ -679,7 +714,53 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       return;
     }
     
-    onSave(formData);
+    // Only send facilities fields
+    const facilitiesData: Partial<SchoolProfile> = {
+      classroomType: formData.classroomType,
+      hasLibrary: formData.hasLibrary,
+      hasComputerLab: formData.hasComputerLab,
+      computerCount: formData.computerCount,
+      hasPhysicsLab: formData.hasPhysicsLab,
+      hasChemistryLab: formData.hasChemistryLab,
+      hasBiologyLab: formData.hasBiologyLab,
+      hasMathsLab: formData.hasMathsLab,
+      hasLanguageLab: formData.hasLanguageLab,
+      hasRoboticsLab: formData.hasRoboticsLab,
+      hasStemLab: formData.hasStemLab,
+      hasAuditorium: formData.hasAuditorium,
+      hasPlayground: formData.hasPlayground,
+      sportsFacilities: formData.sportsFacilities,
+      hasSwimmingPool: formData.hasSwimmingPool,
+      hasFitnessCentre: formData.hasFitnessCentre,
+      hasYoga: formData.hasYoga,
+      hasMartialArts: formData.hasMartialArts,
+      hasMusicDance: formData.hasMusicDance,
+      hasHorseRiding: formData.hasHorseRiding,
+      hasSmartBoard: formData.hasSmartBoard,
+      hasWifi: formData.hasWifi,
+      hasCctv: formData.hasCctv,
+      hasElearning: formData.hasElearning,
+      hasAcClassrooms: formData.hasAcClassrooms,
+      hasAiTools: formData.hasAiTools,
+      hasTransport: formData.hasTransport,
+      hasGpsBuses: formData.hasGpsBuses,
+      hasCctvBuses: formData.hasCctvBuses,
+      hasBusCaretaker: formData.hasBusCaretaker,
+      hasMedicalRoom: formData.hasMedicalRoom,
+      hasDoctorNurse: formData.hasDoctorNurse,
+      hasFireSafety: formData.hasFireSafety,
+      hasCleanWater: formData.hasCleanWater,
+      hasSecurityGuards: formData.hasSecurityGuards,
+      hasAirPurifier: formData.hasAirPurifier,
+      hasHostel: formData.hasHostel,
+      hasMess: formData.hasMess,
+      hasHostelStudyRoom: formData.hasHostelStudyRoom,
+      hasAcHostel: formData.hasAcHostel,
+      hasCafeteria: formData.hasCafeteria,
+      facilityImages: formData.facilityImages,
+    };
+    
+    onSave(facilitiesData);
   };
 
   // Handle facility image upload
@@ -971,7 +1052,16 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       return;
     }
     
-    onSave(formData);
+    // Only send gallery fields
+    const galleryData: Partial<SchoolProfile> = {
+      galleryImages: formData.galleryImages,
+      virtualTourUrl: formData.virtualTourUrl,
+      prospectusUrl: formData.prospectusUrl,
+      awards: formData.awards,
+      newsletterUrl: formData.newsletterUrl,
+    };
+    
+    onSave(galleryData);
   };
 
   const handleGalleryImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1330,7 +1420,12 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
       if (fees.class12.science) feesStructure.class12.science = parseFloat(fees.class12.science);
     }
     
-    onSave({ ...formData, feesStructure });
+    // Only send fees structure field
+    const feesData: Partial<SchoolProfile> = {
+      feesStructure
+    };
+    
+    onSave(feesData);
   };
 
   const handleFeeChange = (classKey: string, value: string, stream?: string) => {
