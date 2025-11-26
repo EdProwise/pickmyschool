@@ -16,27 +16,114 @@ export const users = sqliteTable('users', {
   updatedAt: text('updated_at').notNull(),
 });
 
-// Schools table
+// Schools table - COMPREHENSIVE PROFILE
 export const schools = sqliteTable('schools', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').references(() => users.id),
+  
+  // Basic Info
   name: text('name').notNull(),
-  logo: text('logo'),
-  bannerImage: text('banner_image'),
+  establishmentYear: integer('establishment_year'),
+  schoolType: text('school_type'), // 'Private', 'Govt'
+  k12Level: text('k12_level'), // 'Foundational', 'Preparatory', 'Middle', 'Secondary'
+  board: text('board').notNull(), // 'CBSE', 'ICSE', 'State Board', 'Others', 'Unregistered'
+  gender: text('gender'), // 'Co-Ed', 'Boys', 'Girls'
+  isInternational: integer('is_international', { mode: 'boolean' }).default(false),
+  streamsAvailable: text('streams_available'), // Comma separated
+  languages: text('languages'), // Comma separated
+  totalStudents: text('total_students'), // Range text
+  totalTeachers: integer('total_teachers'),
+  logoUrl: text('logo_url'),
+  
+  // Contact Info
   address: text('address'),
   city: text('city').notNull(),
   state: text('state'),
+  country: text('country'),
+  website: text('website'),
+  contactNumber: text('contact_number'),
+  whatsappNumber: text('whatsapp_number'),
+  email: text('email'),
+  facebookUrl: text('facebook_url'),
+  instagramUrl: text('instagram_url'),
+  linkedinUrl: text('linkedin_url'),
+  youtubeUrl: text('youtube_url'),
+  googleMapUrl: text('google_map_url'),
+  
+  // Academic Facilities
+  classroomType: text('classroom_type'), // 'Smart Class', 'Digital Class', 'Traditional'
+  hasLibrary: integer('has_library', { mode: 'boolean' }).default(false),
+  hasComputerLab: integer('has_computer_lab', { mode: 'boolean' }).default(false),
+  computerCount: integer('computer_count'),
+  hasPhysicsLab: integer('has_physics_lab', { mode: 'boolean' }).default(false),
+  hasChemistryLab: integer('has_chemistry_lab', { mode: 'boolean' }).default(false),
+  hasBiologyLab: integer('has_biology_lab', { mode: 'boolean' }).default(false),
+  hasMathsLab: integer('has_maths_lab', { mode: 'boolean' }).default(false),
+  hasLanguageLab: integer('has_language_lab', { mode: 'boolean' }).default(false),
+  hasRoboticsLab: integer('has_robotics_lab', { mode: 'boolean' }).default(false),
+  hasStemLab: integer('has_stem_lab', { mode: 'boolean' }).default(false),
+  hasAuditorium: integer('has_auditorium', { mode: 'boolean' }).default(false),
+  
+  // Sports & Fitness
+  hasPlayground: integer('has_playground', { mode: 'boolean' }).default(false),
+  sportsFacilities: text('sports_facilities'), // Comma separated
+  hasSwimmingPool: integer('has_swimming_pool', { mode: 'boolean' }).default(false),
+  hasFitnessCentre: integer('has_fitness_centre', { mode: 'boolean' }).default(false),
+  hasYoga: integer('has_yoga', { mode: 'boolean' }).default(false),
+  hasMartialArts: integer('has_martial_arts', { mode: 'boolean' }).default(false),
+  hasMusicDance: integer('has_music_dance', { mode: 'boolean' }).default(false),
+  hasHorseRiding: integer('has_horse_riding', { mode: 'boolean' }).default(false),
+  
+  // Technology & Digital
+  hasSmartBoard: integer('has_smart_board', { mode: 'boolean' }).default(false),
+  hasWifi: integer('has_wifi', { mode: 'boolean' }).default(false),
+  hasCctv: integer('has_cctv', { mode: 'boolean' }).default(false),
+  hasElearning: integer('has_elearning', { mode: 'boolean' }).default(false),
+  hasAcClassrooms: integer('has_ac_classrooms', { mode: 'boolean' }).default(false),
+  hasAiTools: integer('has_ai_tools', { mode: 'boolean' }).default(false),
+  
+  // Transport
+  hasTransport: integer('has_transport', { mode: 'boolean' }).default(false),
+  hasGpsBuses: integer('has_gps_buses', { mode: 'boolean' }).default(false),
+  hasCctvBuses: integer('has_cctv_buses', { mode: 'boolean' }).default(false),
+  hasBusCaretaker: integer('has_bus_caretaker', { mode: 'boolean' }).default(false),
+  
+  // Health & Safety
+  hasMedicalRoom: integer('has_medical_room', { mode: 'boolean' }).default(false),
+  hasDoctorNurse: integer('has_doctor_nurse', { mode: 'boolean' }).default(false),
+  hasFireSafety: integer('has_fire_safety', { mode: 'boolean' }).default(false),
+  hasCleanWater: integer('has_clean_water', { mode: 'boolean' }).default(false),
+  hasSecurityGuards: integer('has_security_guards', { mode: 'boolean' }).default(false),
+  hasAirPurifier: integer('has_air_purifier', { mode: 'boolean' }).default(false),
+  
+  // Boarding
+  hasHostel: integer('has_hostel', { mode: 'boolean' }).default(false),
+  hasMess: integer('has_mess', { mode: 'boolean' }).default(false),
+  hasHostelStudyRoom: integer('has_hostel_study_room', { mode: 'boolean' }).default(false),
+  hasAcHostel: integer('has_ac_hostel', { mode: 'boolean' }).default(false),
+  
+  // Others
+  hasCafeteria: integer('has_cafeteria', { mode: 'boolean' }).default(false),
+  galleryImages: text('gallery_images', { mode: 'json' }), // Array of image URLs
+  virtualTourUrl: text('virtual_tour_url'),
+  prospectusUrl: text('prospectus_url'),
+  awards: text('awards', { mode: 'json' }), // Array of awards
+  newsletterUrl: text('newsletter_url'),
+  feesStructure: text('fees_structure', { mode: 'json' }), // Object with fee details
+  
+  // Legacy fields for compatibility
+  logo: text('logo'),
+  bannerImage: text('banner_image'),
   pincode: text('pincode'),
-  board: text('board').notNull(), // CBSE/ICSE/IB/State Board
   medium: text('medium'),
   classesOffered: text('classes_offered'),
-  establishmentYear: integer('establishment_year'),
   studentTeacherRatio: text('student_teacher_ratio'),
-  schoolType: text('school_type'), // Day School/Boarding/Both
+  schoolType: text('school_type'),
   feesMin: integer('fees_min'),
   feesMax: integer('fees_max'),
-  facilities: text('facilities', { mode: 'json' }), // Array of strings
+  facilities: text('facilities', { mode: 'json' }),
   description: text('description'),
-  gallery: text('gallery', { mode: 'json' }), // Array of image URLs
+  gallery: text('gallery', { mode: 'json' }),
   contactEmail: text('contact_email'),
   contactPhone: text('contact_phone'),
   rating: real('rating').default(0),
@@ -45,6 +132,8 @@ export const schools = sqliteTable('schools', {
   featured: integer('featured', { mode: 'boolean' }).default(false),
   latitude: real('latitude'),
   longitude: real('longitude'),
+  
+  // Timestamps
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
