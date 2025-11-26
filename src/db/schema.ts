@@ -24,14 +24,14 @@ export const schools = sqliteTable('schools', {
   // Basic Info
   name: text('name').notNull(),
   establishmentYear: integer('establishment_year'),
-  schoolType: text('school_type'), // 'Private', 'Govt', 'Day School', 'Boarding', 'Both'
-  k12Level: text('k12_level'), // 'Foundational', 'Preparatory', 'Middle', 'Secondary'
-  board: text('board').notNull(), // 'CBSE', 'ICSE', 'State Board', 'Others', 'Unregistered'
-  gender: text('gender'), // 'Co-Ed', 'Boys', 'Girls'
+  schoolType: text('school_type'),
+  k12Level: text('k12_level'),
+  board: text('board').notNull(),
+  gender: text('gender'),
   isInternational: integer('is_international', { mode: 'boolean' }).default(false),
-  streamsAvailable: text('streams_available'), // Comma separated
-  languages: text('languages'), // Comma separated
-  totalStudents: text('total_students'), // Range text
+  streamsAvailable: text('streams_available'),
+  languages: text('languages'),
+  totalStudents: text('total_students'),
   totalTeachers: integer('total_teachers'),
   logoUrl: text('logo_url'),
   
@@ -51,7 +51,7 @@ export const schools = sqliteTable('schools', {
   googleMapUrl: text('google_map_url'),
   
   // Academic Facilities
-  classroomType: text('classroom_type'), // 'Smart Class', 'Digital Class', 'Traditional'
+  classroomType: text('classroom_type'),
   hasLibrary: integer('has_library', { mode: 'boolean' }).default(false),
   hasComputerLab: integer('has_computer_lab', { mode: 'boolean' }).default(false),
   computerCount: integer('computer_count'),
@@ -66,7 +66,7 @@ export const schools = sqliteTable('schools', {
   
   // Sports & Fitness
   hasPlayground: integer('has_playground', { mode: 'boolean' }).default(false),
-  sportsFacilities: text('sports_facilities'), // Comma separated
+  sportsFacilities: text('sports_facilities'),
   hasSwimmingPool: integer('has_swimming_pool', { mode: 'boolean' }).default(false),
   hasFitnessCentre: integer('has_fitness_centre', { mode: 'boolean' }).default(false),
   hasYoga: integer('has_yoga', { mode: 'boolean' }).default(false),
@@ -104,13 +104,13 @@ export const schools = sqliteTable('schools', {
   
   // Others
   hasCafeteria: integer('has_cafeteria', { mode: 'boolean' }).default(false),
-  galleryImages: text('gallery_images', { mode: 'json' }), // Array of image URLs
+  galleryImages: text('gallery_images', { mode: 'json' }),
   virtualTourUrl: text('virtual_tour_url'),
   prospectusUrl: text('prospectus_url'),
-  awards: text('awards', { mode: 'json' }), // Array of awards
+  awards: text('awards', { mode: 'json' }),
   newsletterUrl: text('newsletter_url'),
-  feesStructure: text('fees_structure', { mode: 'json' }), // Object with fee details
-  facilityImages: text('facility_images', { mode: 'json' }), // Object with facility name as key and array of image URLs as value
+  feesStructure: text('fees_structure', { mode: 'json' }),
+  facilityImages: text('facility_images', { mode: 'json' }),
   
   // Legacy fields for compatibility
   logo: text('logo'),
