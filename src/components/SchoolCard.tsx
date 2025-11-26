@@ -14,40 +14,17 @@ interface SchoolCardProps {
 export default function SchoolCard({ school }: SchoolCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      {/* School Banner/Logo */}
-      <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden">
-        {school.bannerImage ? (
-          <img
-            src={school.bannerImage}
-            alt={school.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            {school.logo ? (
-              <img
-                src={school.logo}
-                alt={school.name}
-                className="max-h-32 max-w-[80%] object-contain"
-              />
-            ) : (
-              <div className="text-4xl font-bold text-gray-300">
-                {school.name.charAt(0)}
-              </div>
-            )}
-          </div>
-        )}
+      <CardContent className="p-5">
+        {/* Featured Badge */}
         {school.featured && (
           <Badge
-            className="absolute top-3 right-3"
+            className="mb-3"
             style={{ backgroundColor: '#04d3d3', color: 'white' }}
           >
             Featured
           </Badge>
         )}
-      </div>
 
-      <CardContent className="p-5">
         {/* School Name */}
         <Link href={`/schools/${school.id}`}>
           <h3 className="text-xl font-bold text-foreground hover:text-[#04d3d3] transition-colors mb-2 line-clamp-2">
