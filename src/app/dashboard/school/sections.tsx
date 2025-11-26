@@ -108,6 +108,7 @@ interface SchoolProfile {
   awards?: string[];
   newsletterUrl?: string;
   feesStructure?: any;
+  facilityImages?: Record<string, string[]>;
 }
 
 interface SectionProps {
