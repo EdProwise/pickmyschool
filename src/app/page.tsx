@@ -209,44 +209,93 @@ export default function HomePage() {
                   {featuredSchools.slice(0, 2).map((school) => (
                     <Card
                       key={school.id}
-                      className="overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 bg-white"
+                      className="overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-purple-200 rounded-3xl"
                       onClick={() => router.push(`/schools/${school.id}`)}
                     >
-                      <div className="flex">
-                        <div className="relative w-32 h-32 flex-shrink-0">
-                          <img
-                            src={school.bannerImage || school.logo || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800'}
-                            alt={school.name}
-                            className="w-full h-full object-cover"
-                          />
+                      <CardContent className="p-6">
+                        {/* Featured Badge */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="bg-gradient-to-r from-cyan-400 to-cyan-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-md">
+                            Featured School
+                          </div>
+                          {school.logo && (
+                            <div className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
+                              <img
+                                src={school.logo}
+                                alt={school.name}
+                                className="w-10 h-10 object-contain"
+                              />
+                            </div>
+                          )}
                         </div>
-                        <CardContent className="p-4 flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="text-base font-bold text-foreground line-clamp-1 flex-1">
-                              {school.name}
-                            </h4>
-                            <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm ml-2">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-semibold text-foreground">{school.rating}</span>
+
+                        {/* School Name */}
+                        <h4 className="text-xl font-bold text-foreground mb-3 line-clamp-2 text-center">
+                          {school.name}
+                        </h4>
+
+                        {/* Star Rating */}
+                        <div className="flex items-center justify-center gap-1 mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-6 h-6 ${
+                                i < Math.floor(school.rating)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : i < school.rating
+                                  ? 'fill-yellow-400/50 text-yellow-400'
+                                  : 'fill-gray-200 text-gray-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {school.type && (
+                            <div className="bg-white px-3 py-1.5 rounded-lg text-sm font-semibold text-foreground shadow-sm">
+                              {school.type}
                             </div>
+                          )}
+                          <div className="bg-white px-3 py-1.5 rounded-lg text-sm font-semibold text-foreground shadow-sm">
+                            {school.board}
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                            <MapPin className="w-3 h-3" style={{ color: '#04d3d3' }} />
-                            <span className="line-clamp-1">{school.city}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <BookOpen className="w-3 h-3" style={{ color: '#04d3d3' }} />
-                              <span className="text-xs font-medium">{school.board}</span>
+                          {school.affiliations && school.affiliations.includes('International') && (
+                            <div className="bg-white px-3 py-1.5 rounded-lg text-sm font-semibold text-foreground shadow-sm">
+                              International School
                             </div>
-                            <div className="text-xs font-semibold" style={{ color: '#04d3d3' }}>
-                              {school.feesMin && school.feesMax
-                                ? `₹${(school.feesMin / 1000).toFixed(0)}K - ₹${(school.feesMax / 1000).toFixed(0)}K`
-                                : 'Contact for Fees'}
+                          )}
+                          {school.gender && (
+                            <div className="bg-white px-3 py-1.5 rounded-lg text-sm font-semibold text-foreground shadow-sm">
+                              {school.gender}
                             </div>
+                          )}
+                        </div>
+
+                        {/* Phone Number */}
+                        {school.phone && (
+                          <div className="flex items-center justify-center gap-2 mb-4 text-foreground">
+                            <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                              </svg>
+                            </div>
+                            <span className="text-lg font-bold">{school.phone}</span>
                           </div>
-                        </CardContent>
-                      </div>
+                        )}
+
+                        {/* Explore Button */}
+                        <div className="flex items-center justify-center gap-2">
+                          <button className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-2.5 rounded-full font-bold text-base hover:shadow-lg transition-all duration-300 hover:scale-105">
+                            Explore
+                          </button>
+                          <button className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-500 flex items-center justify-center text-white hover:shadow-lg transition-all duration-300 hover:scale-105">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </CardContent>
                     </Card>
                   ))}
                 </div>
