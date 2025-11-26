@@ -135,7 +135,10 @@ export default function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-2xl border-gray-200/60 shadow-2xl rounded-xl p-2">
                   <DropdownMenuItem asChild>
-                    <Link href={user.role === 'student' ? '/dashboard/student' : '/dashboard/school'} className="cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
+                    <Link 
+                      href={user.role === 'student' ? '/dashboard/student' : '/dashboard/school'} 
+                      className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200"
+                    >
                       <User className="h-4 w-4 mr-2.5 text-cyan-500" />
                       <span className="font-medium">Dashboard</span>
                     </Link>
