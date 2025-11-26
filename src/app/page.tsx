@@ -202,7 +202,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Side - Featured School Card */}
-            <div className="w-full lg:w-80 flex-shrink-0">
+            <div className="w-full lg:w-80 flex-shrink-0 lg:mt-12">
               <Card className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
                 <CardContent className="p-0">
                   {/* Featured Badge */}
