@@ -6,7 +6,7 @@ import {
   Youtube, Phone, Mail, Info, Contact2, Building,
   Image, DollarSign, Link, FileText, Download, School,
   BookOpen, Laptop, Wifi, Video, Shield, Bus, Heart,
-  Home, Coffee, Trophy
+  Home, Coffee, Trophy, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 
 interface SchoolProfile {
   // Basic Info
@@ -119,12 +120,40 @@ interface SectionProps {
 // Basic Info Section
 export function BasicInfoSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
+  const [logoPreview, setLogoPreview] = useState<string>('');
 
   useEffect(() => {
     if (profile) {
       setFormData(profile);
+      if (profile.logoUrl) {
+        setLogoPreview(profile.logoUrl);
+      }
     }
   }, [profile]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setLogoPreview(dataUrl);
+        setFormData({ ...formData, logoUrl: dataUrl });
+        toast.success('Logo uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,14 +350,50 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="logoUrl">Logo of School (URL)</Label>
-              <Input
-                id="logoUrl"
-                value={formData.logoUrl || ''}
-                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                placeholder="https://example.com/logo.png"
-              />
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="logoUpload">Logo of School</Label>
+              <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border-2 border-dashed border-cyan-200">
+                <div className="flex flex-col items-center gap-4">
+                  {logoPreview && (
+                    <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-cyan-300 shadow-lg">
+                      <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain bg-white" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 w-full">
+                    <Input
+                      id="logoUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => document.getElementById('logoUpload')?.click()}
+                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                    >
+                      <Upload className="mr-2" size={16} />
+                      {logoPreview ? 'Change Logo' : 'Upload Logo Image'}
+                    </Button>
+                    {logoPreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setLogoPreview('');
+                          setFormData({ ...formData, logoUrl: '' });
+                        }}
+                        className="shrink-0"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Upload PNG, JPG or WEBP (Max 5MB)
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1243,12 +1308,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 // Gallery & Documents Section
 export function GallerySection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
-  const [newGalleryImage, setNewGalleryImage] = useState('');
-  const [newVirtualTour, setNewVirtualTour] = useState('');
-  const [newProspectus, setNewProspectus] = useState('');
-  const [newNewsletter, setNewNewsletter] = useState('');
   const [newAwardText, setNewAwardText] = useState('');
-  const [newAwardImage, setNewAwardImage] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -1261,35 +1321,157 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
     onSave(formData);
   };
 
-  const handleAddGalleryImage = () => {
-    if (newGalleryImage.trim()) {
-      const currentImages = formData.galleryImages || [];
-      setFormData({ ...formData, galleryImages: [...currentImages, newGalleryImage.trim()] });
-      setNewGalleryImage('');
+  // Handle multiple gallery images upload
+  const handleGalleryImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const validFiles = Array.from(files).filter(file => {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} is not an image file`);
+          return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 5MB limit`);
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length === 0) return;
+
+      const readers = validFiles.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readers).then(dataUrls => {
+        const currentImages = formData.galleryImages || [];
+        setFormData({ ...formData, galleryImages: [...currentImages, ...dataUrls] });
+        toast.success(`${dataUrls.length} image(s) uploaded successfully`);
+      });
     }
   };
 
   const handleRemoveGalleryImage = (index: number) => {
     const currentImages = formData.galleryImages || [];
     setFormData({ ...formData, galleryImages: currentImages.filter((_, i) => i !== index) });
+    toast.success('Image removed');
   };
 
-  const handleAddAward = () => {
-    if (newAwardText.trim() || newAwardImage.trim()) {
-      const currentAwards = formData.awards || [];
-      const awardEntry = {
-        text: newAwardText.trim(),
-        image: newAwardImage.trim()
+  // Handle virtual tour upload
+  const handleVirtualTourUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('video/')) {
+        toast.error('Please upload a video file');
+        return;
+      }
+      
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error('Video size should be less than 100MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setFormData({ ...formData, virtualTourUrl: dataUrl });
+        toast.success('Virtual tour uploaded successfully');
       };
-      setFormData({ ...formData, awards: [...currentAwards, JSON.stringify(awardEntry)] });
-      setNewAwardText('');
-      setNewAwardImage('');
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle prospectus upload
+  const handleProspectusUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        toast.error('Please upload a PDF file');
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('PDF size should be less than 10MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setFormData({ ...formData, prospectusUrl: dataUrl });
+        toast.success('Prospectus uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle award image upload
+  const handleAwardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      if (!newAwardText.trim()) {
+        toast.error('Please enter award title first');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        const currentAwards = formData.awards || [];
+        const awardEntry = {
+          text: newAwardText.trim(),
+          image: dataUrl
+        };
+        setFormData({ ...formData, awards: [...currentAwards, JSON.stringify(awardEntry)] });
+        setNewAwardText('');
+        toast.success('Award added successfully');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveAward = (index: number) => {
     const currentAwards = formData.awards || [];
     setFormData({ ...formData, awards: currentAwards.filter((_, i) => i !== index) });
+    toast.success('Award removed');
+  };
+
+  // Handle newsletter upload
+  const handleNewsletterUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        toast.error('Please upload a PDF file');
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('PDF size should be less than 10MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setFormData({ ...formData, newsletterUrl: dataUrl });
+        toast.success('Newsletter uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const parseAward = (award: string) => {
@@ -1338,43 +1520,50 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
             </div>
             <p className="text-sm text-muted-foreground">Upload multiple images of your school campus, classrooms, and facilities</p>
             
-            {/* Add New Image */}
-            <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border-2 border-dashed border-blue-200">
-              <div className="flex gap-2">
+            {/* Upload Field */}
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border-2 border-dashed border-blue-300">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                  <Upload className="text-white" size={28} />
+                </div>
                 <Input
-                  value={newGalleryImage}
-                  onChange={(e) => setNewGalleryImage(e.target.value)}
-                  placeholder="Paste image URL here (e.g., https://example.com/image.jpg)"
-                  className="flex-1 bg-white"
+                  id="galleryImages"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleGalleryImagesUpload}
+                  className="hidden"
                 />
                 <Button
                   type="button"
-                  onClick={handleAddGalleryImage}
-                  className="shrink-0 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white"
+                  onClick={() => document.getElementById('galleryImages')?.click()}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-8"
                 >
-                  <FileText className="mr-2" size={16} />
-                  Upload Image
+                  <Upload className="mr-2" size={16} />
+                  Select Images to Upload
                 </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  PNG, JPG or WEBP (Max 5MB per image)
+                </p>
               </div>
             </div>
 
             {/* Display Uploaded Images */}
             {formData.galleryImages && formData.galleryImages.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">{formData.galleryImages.length} image(s) uploaded</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {formData.galleryImages.map((img, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors">
-                      <div className="w-10 h-10 rounded bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center shrink-0">
-                        <Image className="text-blue-600" size={20} />
+                    <div key={index} className="relative group">
+                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors">
+                        <img src={img} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-sm flex-1 truncate font-medium">{img}</span>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
                         onClick={() => handleRemoveGalleryImage(index)}
-                        className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                        className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         ×
                       </Button>
@@ -1393,29 +1582,31 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               <Video className="text-purple-600" size={20} />
               <Label className="text-base font-semibold">Virtual Tour of School</Label>
             </div>
-            <p className="text-sm text-muted-foreground">Upload a 360° virtual tour or video walkthrough of your school</p>
+            <p className="text-sm text-muted-foreground">Upload a video walkthrough of your school</p>
             
-            <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-dashed border-purple-200">
-              <div className="flex gap-2">
+            <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-dashed border-purple-300">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                  <Video className="text-white" size={28} />
+                </div>
                 <Input
-                  value={newVirtualTour}
-                  onChange={(e) => setNewVirtualTour(e.target.value)}
-                  placeholder="Paste virtual tour URL here (e.g., YouTube, Vimeo, or 360° tour link)"
-                  className="flex-1 bg-white"
+                  id="virtualTour"
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVirtualTourUpload}
+                  className="hidden"
                 />
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (newVirtualTour.trim()) {
-                      setFormData({ ...formData, virtualTourUrl: newVirtualTour.trim() });
-                      setNewVirtualTour('');
-                    }
-                  }}
-                  className="shrink-0 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                  onClick={() => document.getElementById('virtualTour')?.click()}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-8"
                 >
-                  <Video className="mr-2" size={16} />
-                  Upload Tour
+                  <Upload className="mr-2" size={16} />
+                  Upload Video
                 </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  MP4, MOV or WEBM (Max 100MB)
+                </p>
               </div>
             </div>
 
@@ -1426,7 +1617,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium mb-1">Virtual Tour Uploaded</p>
-                  <span className="text-xs text-muted-foreground truncate block">{formData.virtualTourUrl}</span>
+                  <span className="text-xs text-muted-foreground">Video file ready</span>
                 </div>
                 <Button
                   type="button"
@@ -1451,27 +1642,29 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
             </div>
             <p className="text-sm text-muted-foreground">Upload your school prospectus document</p>
             
-            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-dashed border-green-200">
-              <div className="flex gap-2">
+            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-dashed border-green-300">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                  <FileText className="text-white" size={28} />
+                </div>
                 <Input
-                  value={newProspectus}
-                  onChange={(e) => setNewProspectus(e.target.value)}
-                  placeholder="Paste prospectus PDF URL here"
-                  className="flex-1 bg-white"
+                  id="prospectus"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleProspectusUpload}
+                  className="hidden"
                 />
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (newProspectus.trim()) {
-                      setFormData({ ...formData, prospectusUrl: newProspectus.trim() });
-                      setNewProspectus('');
-                    }
-                  }}
-                  className="shrink-0 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                  onClick={() => document.getElementById('prospectus')?.click()}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8"
                 >
-                  <FileText className="mr-2" size={16} />
+                  <Upload className="mr-2" size={16} />
                   Upload PDF
                 </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  PDF only (Max 10MB)
+                </p>
               </div>
             </div>
 
@@ -1482,7 +1675,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium mb-1">Prospectus Uploaded</p>
-                  <span className="text-xs text-muted-foreground truncate block">{formData.prospectusUrl}</span>
+                  <span className="text-xs text-muted-foreground">PDF file ready</span>
                 </div>
                 <Button
                   type="button"
@@ -1499,7 +1692,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 
           <div className="border-t-2 pt-8" />
 
-          {/* Awards - Text and Image */}
+          {/* Awards - Text and Image Upload */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Trophy className="text-yellow-600" size={20} />
@@ -1508,7 +1701,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
             <p className="text-sm text-muted-foreground">Add your school's awards with descriptions and certificate images</p>
             
             {/* Add New Award */}
-            <div className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border-2 border-dashed border-yellow-200 space-y-4">
+            <div className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border-2 border-dashed border-yellow-300 space-y-4">
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="awardText" className="text-sm font-semibold flex items-center gap-2">
@@ -1524,27 +1717,33 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="awardImage" className="text-sm font-semibold flex items-center gap-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
                     <Image size={16} className="text-yellow-600" />
-                    Award Certificate / Image (URL)
+                    Award Certificate / Image
                   </Label>
-                  <Input
-                    id="awardImage"
-                    value={newAwardImage}
-                    onChange={(e) => setNewAwardImage(e.target.value)}
-                    placeholder="Paste image URL of the award certificate"
-                    className="bg-white"
-                  />
+                  <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-lg border-2 border-dashed border-yellow-200">
+                    <Input
+                      id="awardImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAwardImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => document.getElementById('awardImage')?.click()}
+                      disabled={!newAwardText.trim()}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white px-6"
+                    >
+                      <Upload className="mr-2" size={16} />
+                      Upload Award Image
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      PNG, JPG or WEBP (Max 5MB)
+                    </p>
+                  </div>
                 </div>
               </div>
-              <Button
-                type="button"
-                onClick={handleAddAward}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white"
-              >
-                <Trophy className="mr-2" size={16} />
-                Add Award
-              </Button>
             </div>
 
             {/* Display Awards */}
@@ -1569,13 +1768,10 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                             </div>
                           )}
                           {parsedAward.image && (
-                            <div className="flex items-start gap-3 pl-11">
-                              <div className="flex-1">
-                                <p className="text-xs text-muted-foreground mb-1">Certificate Image</p>
-                                <div className="flex items-center gap-2">
-                                  <Image className="text-blue-600 shrink-0" size={14} />
-                                  <span className="text-xs text-muted-foreground truncate">{parsedAward.image}</span>
-                                </div>
+                            <div className="pl-11">
+                              <p className="text-xs text-muted-foreground mb-2">Certificate Image</p>
+                              <div className="w-full max-w-xs rounded-lg overflow-hidden border-2 border-gray-200">
+                                <img src={parsedAward.image} alt="Award certificate" className="w-full h-auto" />
                               </div>
                             </div>
                           )}
@@ -1607,27 +1803,29 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
             </div>
             <p className="text-sm text-muted-foreground">Upload your school newsletter or magazine</p>
             
-            <div className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border-2 border-dashed border-indigo-200">
-              <div className="flex gap-2">
+            <div className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border-2 border-dashed border-indigo-300">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
+                  <Download className="text-white" size={28} />
+                </div>
                 <Input
-                  value={newNewsletter}
-                  onChange={(e) => setNewNewsletter(e.target.value)}
-                  placeholder="Paste newsletter/magazine URL here"
-                  className="flex-1 bg-white"
+                  id="newsletter"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleNewsletterUpload}
+                  className="hidden"
                 />
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (newNewsletter.trim()) {
-                      setFormData({ ...formData, newsletterUrl: newNewsletter.trim() });
-                      setNewNewsletter('');
-                    }
-                  }}
-                  className="shrink-0 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white"
+                  onClick={() => document.getElementById('newsletter')?.click()}
+                  className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-8"
                 >
-                  <Download className="mr-2" size={16} />
+                  <Upload className="mr-2" size={16} />
                   Upload File
                 </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  PDF only (Max 10MB)
+                </p>
               </div>
             </div>
 
@@ -1638,7 +1836,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium mb-1">Newsletter Uploaded</p>
-                  <span className="text-xs text-muted-foreground truncate block">{formData.newsletterUrl}</span>
+                  <span className="text-xs text-muted-foreground">PDF file ready</span>
                 </div>
                 <Button
                   type="button"
