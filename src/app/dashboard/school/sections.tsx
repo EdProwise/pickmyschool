@@ -6,7 +6,7 @@ import {
   Youtube, Phone, Mail, Info, Contact2, Building,
   Image, DollarSign, Link, FileText, Download, School,
   BookOpen, Laptop, Wifi, Video, Shield, Bus, Heart,
-  Home, Coffee, Trophy, Upload
+  Home, Coffee, Trophy, Upload, GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1552,13 +1552,56 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 // Fees Structure Section
 export function FeesSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
-  const [feesData, setFeesData] = useState<string>('');
+  const [fees, setFees] = useState<any>({
+    class1: '',
+    class2: '',
+    class3: '',
+    class4: '',
+    class5: '',
+    class6: '',
+    class7: '',
+    class8: '',
+    class9: '',
+    class10: '',
+    class11: {
+      commerce: '',
+      arts: '',
+      science: ''
+    },
+    class12: {
+      commerce: '',
+      arts: '',
+      science: ''
+    }
+  });
 
   useEffect(() => {
     if (profile) {
       setFormData(profile);
       if (profile.feesStructure) {
-        setFeesData(JSON.stringify(profile.feesStructure, null, 2));
+        // Parse existing fees structure
+        setFees({
+          class1: profile.feesStructure.class1 || '',
+          class2: profile.feesStructure.class2 || '',
+          class3: profile.feesStructure.class3 || '',
+          class4: profile.feesStructure.class4 || '',
+          class5: profile.feesStructure.class5 || '',
+          class6: profile.feesStructure.class6 || '',
+          class7: profile.feesStructure.class7 || '',
+          class8: profile.feesStructure.class8 || '',
+          class9: profile.feesStructure.class9 || '',
+          class10: profile.feesStructure.class10 || '',
+          class11: {
+            commerce: profile.feesStructure.class11?.commerce || '',
+            arts: profile.feesStructure.class11?.arts || '',
+            science: profile.feesStructure.class11?.science || ''
+          },
+          class12: {
+            commerce: profile.feesStructure.class12?.commerce || '',
+            arts: profile.feesStructure.class12?.arts || '',
+            science: profile.feesStructure.class12?.science || ''
+          }
+        });
       }
     }
   }, [profile]);
@@ -1566,17 +1609,52 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    let parsedFees = null;
-    if (feesData.trim()) {
-      try {
-        parsedFees = JSON.parse(feesData);
-      } catch (error) {
-        alert('Invalid JSON format for fees structure');
-        return;
+    // Convert fees to numbers and build structure
+    const feesStructure: any = {};
+    
+    // Classes 1-10
+    for (let i = 1; i <= 10; i++) {
+      const classKey = `class${i}`;
+      const value = fees[classKey];
+      if (value && value.toString().trim() !== '') {
+        feesStructure[classKey] = parseFloat(value);
       }
     }
     
-    onSave({ ...formData, feesStructure: parsedFees });
+    // Class 11 with streams
+    if (fees.class11.commerce || fees.class11.arts || fees.class11.science) {
+      feesStructure.class11 = {};
+      if (fees.class11.commerce) feesStructure.class11.commerce = parseFloat(fees.class11.commerce);
+      if (fees.class11.arts) feesStructure.class11.arts = parseFloat(fees.class11.arts);
+      if (fees.class11.science) feesStructure.class11.science = parseFloat(fees.class11.science);
+    }
+    
+    // Class 12 with streams
+    if (fees.class12.commerce || fees.class12.arts || fees.class12.science) {
+      feesStructure.class12 = {};
+      if (fees.class12.commerce) feesStructure.class12.commerce = parseFloat(fees.class12.commerce);
+      if (fees.class12.arts) feesStructure.class12.arts = parseFloat(fees.class12.arts);
+      if (fees.class12.science) feesStructure.class12.science = parseFloat(fees.class12.science);
+    }
+    
+    onSave({ ...formData, feesStructure });
+  };
+
+  const handleFeeChange = (classKey: string, value: string, stream?: string) => {
+    if (stream) {
+      setFees({
+        ...fees,
+        [classKey]: {
+          ...fees[classKey],
+          [stream]: value
+        }
+      });
+    } else {
+      setFees({
+        ...fees,
+        [classKey]: value
+      });
+    }
   };
 
   if (profileLoading) {
@@ -1600,61 +1678,208 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center">
             <DollarSign className="text-white" size={20} />
           </div>
-          Fees Structure
+          Annual Fees Structure
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="feesStructure">Fees Structure (JSON Format)</Label>
-            <Textarea
-              id="feesStructure"
-              value={feesData}
-              onChange={(e) => setFeesData(e.target.value)}
-              placeholder={`{
-  "nursery": { "admission": 5000, "tuition": 25000, "annual": 30000 },
-  "primary": { "admission": 7000, "tuition": 35000, "annual": 42000 },
-  "secondary": { "admission": 10000, "tuition": 45000, "annual": 55000 }
-}`}
-              rows={12}
-              className="font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter your fees structure in JSON format. You can structure it by class, year, or any other breakdown.
-            </p>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Classes 1-10 */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <School className="text-cyan-600" size={20} />
+              <h3 className="text-lg font-semibold">Class 1 to Class 10</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Enter annual fees for each class (in ₹)</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((classNum) => (
+                <div key={classNum} className="space-y-2">
+                  <Label htmlFor={`class${classNum}`} className="font-semibold">
+                    Class {classNum}
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                    <Input
+                      id={`class${classNum}`}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={fees[`class${classNum}`]}
+                      onChange={(e) => handleFeeChange(`class${classNum}`, e.target.value)}
+                      placeholder="Enter annual fees"
+                      className="pl-8 bg-white"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="border-t-2 pt-8" />
+
+          {/* Class 11 with Streams */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <BookOpen className="text-purple-600" size={20} />
+              <h3 className="text-lg font-semibold">Class 11 (Stream-wise Fees)</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Enter annual fees for each stream (in ₹)</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="class11-commerce" className="font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  Commerce Stream
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="class11-commerce"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fees.class11.commerce}
+                    onChange={(e) => handleFeeChange('class11', e.target.value, 'commerce')}
+                    placeholder="Annual fees"
+                    className="pl-8 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="class11-arts" className="font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                  Arts Stream
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="class11-arts"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fees.class11.arts}
+                    onChange={(e) => handleFeeChange('class11', e.target.value, 'arts')}
+                    placeholder="Annual fees"
+                    className="pl-8 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="class11-science" className="font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  Science Stream
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="class11-science"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fees.class11.science}
+                    onChange={(e) => handleFeeChange('class11', e.target.value, 'science')}
+                    placeholder="Annual fees"
+                    className="pl-8 bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t-2 pt-8" />
+
+          {/* Class 12 with Streams */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap className="text-orange-600" size={20} />
+              <h3 className="text-lg font-semibold">Class 12 (Stream-wise Fees)</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Enter annual fees for each stream (in ₹)</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="class12-commerce" className="font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  Commerce Stream
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="class12-commerce"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fees.class12.commerce}
+                    onChange={(e) => handleFeeChange('class12', e.target.value, 'commerce')}
+                    placeholder="Annual fees"
+                    className="pl-8 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="class12-arts" className="font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                  Arts Stream
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="class12-arts"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fees.class12.arts}
+                    onChange={(e) => handleFeeChange('class12', e.target.value, 'arts')}
+                    placeholder="Annual fees"
+                    className="pl-8 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="class12-science" className="font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  Science Stream
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="class12-science"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fees.class12.science}
+                    onChange={(e) => handleFeeChange('class12', e.target.value, 'science')}
+                    placeholder="Annual fees"
+                    className="pl-8 bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <Info size={16} className="text-blue-600" />
-              Example Format
+              Fee Structure Information
             </h4>
-            <pre className="text-xs bg-white p-3 rounded border overflow-x-auto">
-{`{
-  "nursery": {
-    "admission": 5000,
-    "tuition": 25000,
-    "transport": 8000,
-    "books": 3000,
-    "uniform": 2000,
-    "annual": 43000
-  },
-  "primary": {
-    "admission": 7000,
-    "tuition": 35000,
-    "transport": 10000,
-    "books": 5000,
-    "uniform": 3000,
-    "annual": 60000
-  }
-}`}</pre>
+            <ul className="text-xs text-muted-foreground space-y-1 ml-6 list-disc">
+              <li>Enter annual fees in Indian Rupees (₹)</li>
+              <li>Leave fields empty if you don't offer that class or stream</li>
+              <li>For Classes 11 & 12, enter stream-specific fees (Commerce, Arts, Science)</li>
+              <li>All fees are displayed to parents as annual charges</li>
+            </ul>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-6 border-t-2">
             <Button
               type="submit"
               disabled={saving}
-              className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white"
+              className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white px-8"
+              size="lg"
             >
               {saving ? (
                 <>
