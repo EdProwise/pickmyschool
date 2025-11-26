@@ -1249,8 +1249,16 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {formData.galleryImages.map((img, index) => (
                     <div key={index} className="relative group">
-                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors">
-                        <img src={img} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
+                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col items-center justify-center p-4">
+                        <Image className="text-blue-400 mb-3" size={48} />
+                        <a
+                          href={img}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 hover:underline"
+                        >
+                          View Image
+                        </a>
                       </div>
                       <Button
                         type="button"
