@@ -105,9 +105,7 @@ export default function HomePage() {
                     Discover Schools
                   </span>
                   <br />
-                  <span className="text-foreground">with Data,</span>
-                  <br />
-                  <span className="text-foreground">Not Guesswork</span>
+                  <span className="text-foreground">with Data, Not Guesswork</span>
                 </h1>
                 <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed">
                   Explore, Compare, and Choose from Over 20,000 Schools to Shape Your Child's Bright Future
