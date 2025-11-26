@@ -672,6 +672,13 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required basic fields first
+    if (!profile?.name || !profile?.city || !profile?.board) {
+      toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first before adding facilities');
+      return;
+    }
+    
     onSave(formData);
   };
 
