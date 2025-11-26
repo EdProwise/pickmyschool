@@ -29,6 +29,8 @@ function authenticateRequest(request: NextRequest): { user: JWTPayload } | { err
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     
+    console.log('Decoded JWT:', decoded);
+    
     if (decoded.role !== 'school') {
       return {
         error: NextResponse.json(
@@ -40,6 +42,7 @@ function authenticateRequest(request: NextRequest): { user: JWTPayload } | { err
 
     return { user: decoded };
   } catch (error) {
+    console.error('JWT verification error:', error);
     return {
       error: NextResponse.json(
         { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
@@ -57,11 +60,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { user } = auth;
+    
+    console.log('GET: Looking for profile with userId:', user.userId);
 
     const profile = await db.select()
       .from(schools)
       .where(eq(schools.userId, user.userId))
       .limit(1);
+      
+    console.log('GET: Profile query result:', profile);
 
     if (profile.length === 0) {
       return NextResponse.json(
