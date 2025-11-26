@@ -44,7 +44,21 @@ export async function GET(
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
 
-    return NextResponse.json(school[0], { status: 200 });
+    // Increment profile views
+    await db.update(schools)
+      .set({ 
+        profileViews: school[0].profileViews !== null ? school[0].profileViews + 1 : 1,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(schools.id, schoolId));
+
+    // Fetch updated school with incremented views
+    const updatedSchool = await db.select()
+      .from(schools)
+      .where(eq(schools.id, schoolId))
+      .limit(1);
+
+    return NextResponse.json(updatedSchool[0], { status: 200 });
   } catch (error) {
     console.error('GET error:', error);
     return NextResponse.json({ 
