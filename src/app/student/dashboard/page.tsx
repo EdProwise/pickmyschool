@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { getMe, getMyEnquiries, getSchools, type User, type Enquiry, type School } from '@/lib/api';
 import { toast } from 'sonner';
+import { AIChat } from '@/components/AIChat';
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -498,6 +499,8 @@ export default function StudentDashboard() {
       </div>
 
       <Footer />
+      
+      <AIChat />
     </div>
   );
 }

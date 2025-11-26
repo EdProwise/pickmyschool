@@ -6,6 +6,7 @@ import { Search, GraduationCap, Users, Award, TrendingUp, ChevronRight, MapPin, 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
+import { AIChat } from '@/components/AIChat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -463,6 +464,8 @@ export default function HomePage() {
       </section>
 
       <Footer />
+      
+      <AIChat />
     </div>
   );
 }

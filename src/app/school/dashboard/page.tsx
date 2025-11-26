@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getMe, type User, type Enquiry } from '@/lib/api';
 import { toast } from 'sonner';
+import { AIChat } from '@/components/AIChat';
 
 export default function SchoolDashboard() {
   const router = useRouter();
@@ -589,6 +590,8 @@ export default function SchoolDashboard() {
       </div>
 
       <Footer />
+      
+      <AIChat />
     </div>
   );
 }
