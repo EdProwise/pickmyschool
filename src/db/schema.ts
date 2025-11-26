@@ -110,6 +110,7 @@ export const schools = sqliteTable('schools', {
   awards: text('awards', { mode: 'json' }), // Array of awards
   newsletterUrl: text('newsletter_url'),
   feesStructure: text('fees_structure', { mode: 'json' }), // Object with fee details
+  facilityImages: text('facility_images', { mode: 'json' }), // Object with facility name as key and array of image URLs as value
   
   // Legacy fields for compatibility
   logo: text('logo'),
