@@ -201,7 +201,7 @@ export default function HomePage() {
               </Card>
             </div>
 
-            {/* Right Side - Featured School Card */}
+            {/* Right Side - Featured School Card 1 */}
             <div className="w-full lg:w-80 flex-shrink-0 lg:mt-12 order-2">
               <Card className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
                 <CardContent className="p-0">
@@ -286,6 +286,99 @@ export default function HomePage() {
                       className="w-full h-10 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-sm rounded-xl"
                       style={{ backgroundColor: '#04d3d3' }}
                       onClick={() => router.push('/schools/1')}
+                    >
+                      Explore
+                      <ChevronRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Side - Featured School Card 2 */}
+            <div className="w-full lg:w-80 flex-shrink-0 lg:mt-12 order-3">
+              <Card className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
+                <CardContent className="p-0">
+                  {/* Featured Badge */}
+                  <div className="p-4 pb-3">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full shadow-md bg-gradient-to-r from-purple-500 to-indigo-600">
+                      <Star className="w-4 h-4 text-white fill-white" />
+                      <span className="text-white font-semibold text-xs">Featured School</span>
+                    </div>
+                  </div>
+
+                  {/* School Image/Logo */}
+                  <div className="px-4 pb-3">
+                    <div className="relative h-28 bg-gradient-to-br from-purple-100/50 to-indigo-100/50 rounded-xl overflow-hidden group">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50">
+                        <GraduationCap size={60} className="text-purple-600/20" />
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="relative z-10 w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <GraduationCap size={32} className="text-purple-600" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* School Details */}
+                  <div className="px-4 pb-4 space-y-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground mb-1">
+                        Delhi Public School
+                      </h3>
+                      <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        New Delhi
+                      </p>
+                    </div>
+
+                    {/* Star Rating */}
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                        />
+                      ))}
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2">
+                      {['CBSE', 'Day School', 'Co-Ed', 'Sports Excellence'].map((tag) => (
+                        <span 
+                          key={tag}
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-foreground border border-gray-200 transition-colors cursor-default"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                      <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="font-semibold text-foreground text-sm">+91-9876543210</span>
+                    </div>
+
+                    {/* Explore Button */}
+                    <Button
+                      className="w-full h-10 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-sm rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
+                      onClick={() => router.push('/schools/2')}
                     >
                       Explore
                       <ChevronRight className="ml-2 w-4 h-4" />
