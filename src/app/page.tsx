@@ -97,102 +97,8 @@ export default function HomePage() {
         
         <div className="container mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-12">
-            {/* Left Side - Featured School Card */}
-            <div className="w-full lg:w-72 flex-shrink-0 lg:mt-12 order-2 lg:order-1">
-              <Card className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                  {/* Featured Badge */}
-                  <div className="p-3.5 pb-2.5">
-                    <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full shadow-md" style={{ backgroundColor: '#8b5cf6' }}>
-                      <Star className="w-3.5 h-3.5 text-white fill-white" />
-                      <span className="text-white font-semibold text-xs">Featured School</span>
-                    </div>
-                  </div>
-
-                  {/* School Image/Logo */}
-                  <div className="px-3.5 pb-2.5">
-                    <div className="relative h-24 bg-gradient-to-br from-purple-100/50 to-pink-100/50 rounded-xl overflow-hidden group">
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
-                        <GraduationCap size={54} className="text-purple-600/20" />
-                      </div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="relative z-10 w-14 h-14 rounded-full bg-white shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                          <GraduationCap size={28} style={{ color: '#8b5cf6' }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* School Details */}
-                  <div className="px-3.5 pb-3.5 space-y-2.5">
-                    <div>
-                      <h3 className="text-base font-bold text-foreground mb-1">
-                        Delhi Public School
-                      </h3>
-                      <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                        New Delhi
-                      </p>
-                    </div>
-
-                    {/* Star Rating */}
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`w-3.5 h-3.5 ${i < 5 ? 'fill-yellow-400 text-yellow-400' : 'fill-yellow-400/50 text-yellow-400/50'}`}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {['CBSE', 'Day School', 'Co-Ed'].map((tag) => (
-                        <span 
-                          key={tag}
-                          className="px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-foreground border border-gray-200 transition-colors cursor-default"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Phone Number */}
-                    <div className="flex items-center gap-2 p-2.5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                      <div className="w-7 h-7 rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-3.5 h-3.5 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                          />
-                        </svg>
-                      </div>
-                      <span className="font-semibold text-foreground text-xs">+91-9876543210</span>
-                    </div>
-
-                    {/* Explore Button */}
-                    <Button
-                      className="w-full h-9 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-xs rounded-xl"
-                      style={{ backgroundColor: '#8b5cf6' }}
-                      onClick={() => router.push('/schools/1')}
-                    >
-                      Explore
-                      <ChevronRight className="ml-2 w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Center - Main Content + Search */}
-            <div className="flex-1 w-full order-1 lg:order-2">
+            <div className="flex-1 w-full order-1 lg:order-1">
               <div className="space-y-5 mb-6">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                   <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
@@ -296,39 +202,39 @@ export default function HomePage() {
             </div>
 
             {/* Right Side - Featured School Card */}
-            <div className="w-full lg:w-72 flex-shrink-0 lg:mt-12 order-3">
+            <div className="w-full lg:w-80 flex-shrink-0 lg:mt-12 order-2">
               <Card className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl overflow-hidden">
                 <CardContent className="p-0">
                   {/* Featured Badge */}
-                  <div className="p-3.5 pb-2.5">
-                    <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full shadow-md" style={{ backgroundColor: '#04d3d3' }}>
-                      <Star className="w-3.5 h-3.5 text-white fill-white" />
+                  <div className="p-4 pb-3">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full shadow-md" style={{ backgroundColor: '#04d3d3' }}>
+                      <Star className="w-4 h-4 text-white fill-white" />
                       <span className="text-white font-semibold text-xs">Featured School</span>
                     </div>
                   </div>
 
                   {/* School Image/Logo */}
-                  <div className="px-3.5 pb-2.5">
-                    <div className="relative h-24 bg-gradient-to-br from-cyan-100/50 to-blue-100/50 rounded-xl overflow-hidden group">
+                  <div className="px-4 pb-3">
+                    <div className="relative h-28 bg-gradient-to-br from-cyan-100/50 to-blue-100/50 rounded-xl overflow-hidden group">
                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-cyan-50 to-blue-50">
-                        <GraduationCap size={54} className="text-cyan-600/20" />
+                        <GraduationCap size={60} className="text-cyan-600/20" />
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="relative z-10 w-14 h-14 rounded-full bg-white shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                          <GraduationCap size={28} style={{ color: '#04d3d3' }} />
+                        <div className="relative z-10 w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <GraduationCap size={32} style={{ color: '#04d3d3' }} />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* School Details */}
-                  <div className="px-3.5 pb-3.5 space-y-2.5">
+                  <div className="px-4 pb-4 space-y-3">
                     <div>
-                      <h3 className="text-base font-bold text-foreground mb-1">
+                      <h3 className="text-lg font-bold text-foreground mb-1">
                         St. Mary Convent School
                       </h3>
-                      <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
                         Bangalore
                       </p>
                     </div>
@@ -338,17 +244,17 @@ export default function HomePage() {
                       {[...Array(5)].map((_, i) => (
                         <Star 
                           key={i} 
-                          className={`w-3.5 h-3.5 ${i < 4 ? 'fill-yellow-400 text-yellow-400' : 'fill-yellow-400/50 text-yellow-400/50'}`}
+                          className={`w-4 h-4 ${i < 4 ? 'fill-yellow-400 text-yellow-400' : 'fill-yellow-400/50 text-yellow-400/50'}`}
                         />
                       ))}
                     </div>
 
                     {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {['KG School', 'CBSE', 'International School', 'Co-Ed'].map((tag) => (
                         <span 
                           key={tag}
-                          className="px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-foreground border border-gray-200 transition-colors cursor-default"
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-foreground border border-gray-200 transition-colors cursor-default"
                         >
                           {tag}
                         </span>
@@ -356,10 +262,10 @@ export default function HomePage() {
                     </div>
 
                     {/* Phone Number */}
-                    <div className="flex items-center gap-2 p-2.5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                      <div className="w-7 h-7 rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
+                    <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                      <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
                         <svg
-                          className="w-3.5 h-3.5 text-white"
+                          className="w-4 h-4 text-white"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -372,17 +278,17 @@ export default function HomePage() {
                           />
                         </svg>
                       </div>
-                      <span className="font-semibold text-foreground text-xs">+91-9643349619</span>
+                      <span className="font-semibold text-foreground text-sm">+91-9643349619</span>
                     </div>
 
                     {/* Explore Button */}
                     <Button
-                      className="w-full h-9 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-xs rounded-xl"
+                      className="w-full h-10 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-sm rounded-xl"
                       style={{ backgroundColor: '#04d3d3' }}
                       onClick={() => router.push('/schools/1')}
                     >
                       Explore
-                      <ChevronRight className="ml-2 w-3.5 h-3.5" />
+                      <ChevronRight className="ml-2 w-4 h-4" />
                     </Button>
                   </div>
                 </CardContent>
