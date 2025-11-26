@@ -675,6 +675,138 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
     onSave(formData);
   };
 
+  // Handle facility image upload
+  const handleFacilityImageUpload = (facilityName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const validFiles = Array.from(files).filter(file => {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} is not an image file`);
+          return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 5MB limit`);
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length === 0) return;
+
+      const readers = validFiles.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readers).then(dataUrls => {
+        const currentFacilityImages = formData.facilityImages || {};
+        const currentImages = currentFacilityImages[facilityName] || [];
+        const updatedFacilityImages = {
+          ...currentFacilityImages,
+          [facilityName]: [...currentImages, ...dataUrls]
+        };
+        setFormData({ ...formData, facilityImages: updatedFacilityImages });
+        toast.success(`${dataUrls.length} image(s) uploaded for ${facilityName}`);
+      });
+    }
+  };
+
+  // Handle removing facility image
+  const handleRemoveFacilityImage = (facilityName: string, index: number) => {
+    const currentFacilityImages = formData.facilityImages || {};
+    const currentImages = currentFacilityImages[facilityName] || [];
+    const updatedImages = currentImages.filter((_, i) => i !== index);
+    
+    const updatedFacilityImages = {
+      ...currentFacilityImages,
+      [facilityName]: updatedImages
+    };
+    
+    // Remove the facility key if no images left
+    if (updatedImages.length === 0) {
+      delete updatedFacilityImages[facilityName];
+    }
+    
+    setFormData({ ...formData, facilityImages: updatedFacilityImages });
+    toast.success('Image removed');
+  };
+
+  // Render facility with image upload
+  const renderFacilityWithUpload = (
+    facilityKey: keyof SchoolProfile,
+    facilityLabel: string,
+    facilityName: string
+  ) => {
+    const isEnabled = formData[facilityKey] as boolean || false;
+    const facilityImages = formData.facilityImages?.[facilityName] || [];
+
+    return (
+      <div className="md:col-span-2 space-y-3">
+        <div className="flex items-center justify-between">
+          <Label>{facilityLabel}</Label>
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={(checked) => setFormData({ ...formData, [facilityKey]: checked })}
+          />
+        </div>
+
+        {isEnabled && (
+          <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            {/* Upload Button */}
+            <div className="flex items-center gap-3">
+              <Input
+                id={`${facilityName}-upload`}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleFacilityImageUpload(facilityName, e)}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => document.getElementById(`${facilityName}-upload`)?.click()}
+                className="flex-1"
+              >
+                <Upload className="mr-2" size={14} />
+                Upload Images for {facilityLabel}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {facilityImages.length} image(s)
+              </span>
+            </div>
+
+            {/* Display Images */}
+            {facilityImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {facilityImages.map((img, idx) => (
+                  <div key={idx} className="relative group">
+                    <div className="aspect-square rounded overflow-hidden border border-gray-300">
+                      <img src={img} alt={`${facilityLabel} ${idx + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemoveFacilityImage(facilityName, idx)}
+                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (profileLoading) {
     return (
       <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
@@ -733,32 +865,6 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Library</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasLibrary || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasLibrary: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasLibrary ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Computer Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasComputerLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasComputerLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasComputerLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="computerCount">No. of Computers</Label>
                   <Input
                     id="computerCount"
@@ -769,128 +875,22 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Physics Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasPhysicsLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasPhysicsLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasPhysicsLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Chemistry Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasChemistryLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasChemistryLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasChemistryLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Biology Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasBiologyLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasBiologyLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasBiologyLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Maths Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasMathsLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasMathsLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasMathsLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Language Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasLanguageLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasLanguageLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasLanguageLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Robotics Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasRoboticsLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasRoboticsLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasRoboticsLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>STEM/Innovation Lab</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasStemLab || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasStemLab: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasStemLab ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Auditorium Hall</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasAuditorium || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasAuditorium: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasAuditorium ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasLibrary', 'Library', 'Library')}
+                {renderFacilityWithUpload('hasComputerLab', 'Computer Lab', 'ComputerLab')}
+                {renderFacilityWithUpload('hasPhysicsLab', 'Physics Lab', 'PhysicsLab')}
+                {renderFacilityWithUpload('hasChemistryLab', 'Chemistry Lab', 'ChemistryLab')}
+                {renderFacilityWithUpload('hasBiologyLab', 'Biology Lab', 'BiologyLab')}
+                {renderFacilityWithUpload('hasMathsLab', 'Maths Lab', 'MathsLab')}
+                {renderFacilityWithUpload('hasLanguageLab', 'Language Lab', 'LanguageLab')}
+                {renderFacilityWithUpload('hasRoboticsLab', 'Robotics Lab', 'RoboticsLab')}
+                {renderFacilityWithUpload('hasStemLab', 'STEM/Innovation Lab', 'StemLab')}
+                {renderFacilityWithUpload('hasAuditorium', 'Auditorium Hall', 'Auditorium')}
               </div>
             </TabsContent>
 
             {/* Sports & Fitness Tab */}
             <TabsContent value="sports" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Playground</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasPlayground || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasPlayground: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasPlayground ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="sportsFacilities">Sports Facilities</Label>
                   <Input
@@ -902,381 +902,66 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                   <p className="text-xs text-muted-foreground">Separate with commas</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Swimming Pool</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasSwimmingPool || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasSwimmingPool: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasSwimmingPool ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                <div className="space-y-2" />
 
-                <div className="space-y-2">
-                  <Label>Fitness Centre</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasFitnessCentre || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasFitnessCentre: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasFitnessCentre ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Yoga</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasYoga || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasYoga: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasYoga ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Martial Arts Training</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasMartialArts || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasMartialArts: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasMartialArts ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Music & Dance Class</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasMusicDance || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasMusicDance: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasMusicDance ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Horse Riding / Archery / Shooting Range</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasHorseRiding || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasHorseRiding: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasHorseRiding ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasPlayground', 'Playground', 'Playground')}
+                {renderFacilityWithUpload('hasSwimmingPool', 'Swimming Pool', 'SwimmingPool')}
+                {renderFacilityWithUpload('hasFitnessCentre', 'Fitness Centre', 'FitnessCentre')}
+                {renderFacilityWithUpload('hasYoga', 'Yoga', 'Yoga')}
+                {renderFacilityWithUpload('hasMartialArts', 'Martial Arts Training', 'MartialArts')}
+                {renderFacilityWithUpload('hasMusicDance', 'Music & Dance Class', 'MusicDance')}
+                {renderFacilityWithUpload('hasHorseRiding', 'Horse Riding / Archery / Shooting Range', 'HorseRiding')}
               </div>
             </TabsContent>
 
             {/* Technology & Digital Tab */}
             <TabsContent value="technology" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Smart Board</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasSmartBoard || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasSmartBoard: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasSmartBoard ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>WiFi Campus</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasWifi || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasWifi: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasWifi ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>CCTV System</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasCctv || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasCctv: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasCctv ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>E-Learning Platform</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasElearning || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasElearning: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasElearning ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Air Conditioned Classrooms</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasAcClassrooms || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasAcClassrooms: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasAcClassrooms ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>AI Enable Learning Tools</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasAiTools || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasAiTools: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasAiTools ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasSmartBoard', 'Smart Board', 'SmartBoard')}
+                {renderFacilityWithUpload('hasWifi', 'WiFi Campus', 'Wifi')}
+                {renderFacilityWithUpload('hasCctv', 'CCTV System', 'CCTV')}
+                {renderFacilityWithUpload('hasElearning', 'E-Learning Platform', 'Elearning')}
+                {renderFacilityWithUpload('hasAcClassrooms', 'Air Conditioned Classrooms', 'AcClassrooms')}
+                {renderFacilityWithUpload('hasAiTools', 'AI Enable Learning Tools', 'AiTools')}
               </div>
             </TabsContent>
 
             {/* Transport Tab */}
             <TabsContent value="transport" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>School Bus/Vans</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasTransport || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasTransport: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasTransport ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>GPS Enabled Buses</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasGpsBuses || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasGpsBuses: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasGpsBuses ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>CCTV in Buses</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasCctvBuses || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasCctvBuses: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasCctvBuses ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Caretaker in Bus</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasBusCaretaker || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasBusCaretaker: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasBusCaretaker ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasTransport', 'School Bus/Vans', 'Transport')}
+                {renderFacilityWithUpload('hasGpsBuses', 'GPS Enabled Buses', 'GpsBuses')}
+                {renderFacilityWithUpload('hasCctvBuses', 'CCTV in Buses', 'CctvBuses')}
+                {renderFacilityWithUpload('hasBusCaretaker', 'Caretaker in Bus', 'BusCaretaker')}
               </div>
             </TabsContent>
 
             {/* Health & Safety Tab */}
             <TabsContent value="health" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Medical Room</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasMedicalRoom || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasMedicalRoom: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasMedicalRoom ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>On Campus Doctor/Nurse</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasDoctorNurse || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasDoctorNurse: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasDoctorNurse ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Fire Safety</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasFireSafety || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasFireSafety: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasFireSafety ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Clean Drinking Water</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasCleanWater || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasCleanWater: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasCleanWater ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Security Guards</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasSecurityGuards || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasSecurityGuards: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasSecurityGuards ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Air Purifier in Classroom</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasAirPurifier || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasAirPurifier: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasAirPurifier ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasMedicalRoom', 'Medical Room', 'MedicalRoom')}
+                {renderFacilityWithUpload('hasDoctorNurse', 'On Campus Doctor/Nurse', 'DoctorNurse')}
+                {renderFacilityWithUpload('hasFireSafety', 'Fire Safety', 'FireSafety')}
+                {renderFacilityWithUpload('hasCleanWater', 'Clean Drinking Water', 'CleanWater')}
+                {renderFacilityWithUpload('hasSecurityGuards', 'Security Guards', 'SecurityGuards')}
+                {renderFacilityWithUpload('hasAirPurifier', 'Air Purifier in Classroom', 'AirPurifier')}
               </div>
             </TabsContent>
 
             {/* Boarding Tab */}
             <TabsContent value="boarding" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Hostel</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasHostel || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasHostel: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasHostel ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Mess</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasMess || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasMess: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasMess ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Study Room in Hostel</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasHostelStudyRoom || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasHostelStudyRoom: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasHostelStudyRoom ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Air Conditioner Hostel</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasAcHostel || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasAcHostel: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasAcHostel ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasHostel', 'Hostel', 'Hostel')}
+                {renderFacilityWithUpload('hasMess', 'Mess', 'Mess')}
+                {renderFacilityWithUpload('hasHostelStudyRoom', 'Study Room in Hostel', 'HostelStudyRoom')}
+                {renderFacilityWithUpload('hasAcHostel', 'Air Conditioner Hostel', 'AcHostel')}
               </div>
             </TabsContent>
 
             {/* Others Tab */}
             <TabsContent value="others" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Cafeteria</Label>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Switch
-                      checked={formData.hasCafeteria || false}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasCafeteria: checked })}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {formData.hasCafeteria ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
+                {renderFacilityWithUpload('hasCafeteria', 'Cafeteria', 'Cafeteria')}
               </div>
             </TabsContent>
           </Tabs>
