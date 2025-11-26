@@ -1,0 +1,127 @@
+'use client';
+
+import Link from 'next/link';
+import { MapPin, Star, IndianRupee, MessageCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import type { School } from '@/lib/api';
+
+interface SchoolCardProps {
+  school: School;
+}
+
+export default function SchoolCard({ school }: SchoolCardProps) {
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      {/* School Banner/Logo */}
+      <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden">
+        {school.bannerImage ? (
+          <img
+            src={school.bannerImage}
+            alt={school.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            {school.logo ? (
+              <img
+                src={school.logo}
+                alt={school.name}
+                className="max-h-32 max-w-[80%] object-contain"
+              />
+            ) : (
+              <div className="text-4xl font-bold text-gray-300">
+                {school.name.charAt(0)}
+              </div>
+            )}
+          </div>
+        )}
+        {school.featured && (
+          <Badge
+            className="absolute top-3 right-3"
+            style={{ backgroundColor: '#04d3d3', color: 'white' }}
+          >
+            Featured
+          </Badge>
+        )}
+      </div>
+
+      <CardContent className="p-5">
+        {/* School Name */}
+        <Link href={`/schools/${school.id}`}>
+          <h3 className="text-xl font-bold text-foreground hover:text-[#04d3d3] transition-colors mb-2 line-clamp-2">
+            {school.name}
+          </h3>
+        </Link>
+
+        {/* Location */}
+        <div className="flex items-center text-muted-foreground mb-3">
+          <MapPin size={16} className="mr-1" />
+          <span className="text-sm">
+            {school.city}
+            {school.state && `, ${school.state}`}
+          </span>
+        </div>
+
+        {/* Board and Type */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Badge variant="secondary">{school.board}</Badge>
+          {school.schoolType && <Badge variant="outline">{school.schoolType}</Badge>}
+        </div>
+
+        {/* Fees Range */}
+        {school.feesMin && school.feesMax && (
+          <div className="flex items-center text-sm text-muted-foreground mb-3">
+            <IndianRupee size={14} className="mr-1" />
+            <span>
+              ₹{school.feesMin.toLocaleString()} - ₹{school.feesMax.toLocaleString()} / year
+            </span>
+          </div>
+        )}
+
+        {/* Rating */}
+        <div className="flex items-center mb-4">
+          <Star size={16} className="fill-yellow-400 text-yellow-400 mr-1" />
+          <span className="font-semibold text-foreground">{school.rating}</span>
+          <span className="text-sm text-muted-foreground ml-1">
+            ({school.reviewCount} reviews)
+          </span>
+        </div>
+
+        {/* Key Highlights */}
+        {school.facilities && school.facilities.length > 0 && (
+          <div className="mb-4">
+            <div className="flex flex-wrap gap-1">
+              {school.facilities.slice(0, 3).map((facility, index) => (
+                <span
+                  key={index}
+                  className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                >
+                  {facility}
+                </span>
+              ))}
+              {school.facilities.length > 3 && (
+                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  +{school.facilities.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Link href={`/schools/${school.id}`} className="flex-1">
+            <Button className="w-full" style={{ backgroundColor: '#04d3d3', color: 'white' }}>
+              View Details
+            </Button>
+          </Link>
+          <Button variant="outline" size="icon">
+            <MessageCircle size={18} />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
