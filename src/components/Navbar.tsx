@@ -43,47 +43,63 @@ export default function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled 
-          ? 'bg-white/70 backdrop-blur-2xl shadow-lg border-b border-gray-100' 
-          : 'bg-white/50 backdrop-blur-xl'
+          ? 'bg-white/80 backdrop-blur-2xl shadow-2xl border-b border-gray-200/60' 
+          : 'bg-white/60 backdrop-blur-2xl shadow-lg'
       }`}
     >
       <div className="container mx-auto px-4">
+        {/* Premium gradient line at top */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+        
         <div className="flex items-center justify-between h-20">
-          {/* Logo with gradient glow */}
-          <Link href="/" className="flex items-center space-x-2 group">
+          {/* Logo with enhanced premium glow */}
+          <Link href="/" className="flex items-center space-x-2 group relative">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-              <div className="relative flex items-center gap-2">
-                <Sparkles className="text-cyan-500 transition-transform group-hover:rotate-12 duration-300" size={28} />
-                <div className="text-2xl font-bold">
-                  <span className="text-foreground">Pick</span>
-                  <span style={{ color: '#04d3d3' }}>MySchool</span>
+              {/* Enhanced multi-layer glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 to-blue-400 blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+              
+              <div className="relative flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-br from-white/50 to-white/30 group-hover:from-white/60 group-hover:to-white/40 transition-all duration-300 border border-white/50 shadow-lg group-hover:shadow-xl">
+                <div className="relative">
+                  <Sparkles className="text-cyan-500 transition-all group-hover:rotate-12 group-hover:scale-110 duration-500 drop-shadow-lg" size={30} />
+                  <div className="absolute inset-0 bg-cyan-400 blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+                </div>
+                <div className="text-2xl font-bold tracking-tight">
+                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Pick</span>
+                  <span className="bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 bg-clip-text text-transparent">MySchool</span>
                 </div>
               </div>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
+          {/* Desktop Navigation with premium styling */}
+          <div className="hidden md:flex items-center gap-2">
             <Link
               href="/"
-              className="relative px-4 py-2 text-foreground hover:text-cyan-600 transition-colors font-medium group"
+              className="relative group px-5 py-2.5 rounded-xl overflow-hidden transition-all duration-300"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                <Home size={16} />
-                Home
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100" />
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-cyan-400/30 rounded-xl transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-cyan-400/5 to-cyan-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              
+              <span className="relative z-10 flex items-center gap-2 font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors duration-300">
+                <Home size={18} className="transition-transform group-hover:scale-110 duration-300" />
+                <span className="text-sm">Home</span>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
+
             <Link
               href="/schools"
-              className="relative px-4 py-2 text-foreground hover:text-cyan-600 transition-colors font-medium group"
+              className="relative group px-5 py-2.5 rounded-xl overflow-hidden transition-all duration-300"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                <School size={16} />
-                Find Schools
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100" />
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-cyan-400/30 rounded-xl transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-cyan-400/5 to-cyan-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              
+              <span className="relative z-10 flex items-center gap-2 font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors duration-300">
+                <School size={18} className="transition-transform group-hover:scale-110 duration-300" />
+                <span className="text-sm">Find Schools</span>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
             <Link
               href="/for-schools"
