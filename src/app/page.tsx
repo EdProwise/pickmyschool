@@ -43,7 +43,6 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (searchCity) params.append('city', searchCity);
     if (searchBoard) params.append('board', searchBoard);
-    if (searchType) params.append('schoolType', searchType);
     if (searchBudget) {
       const budget = parseInt(searchBudget);
       params.append('feesMax', budget.toString());
