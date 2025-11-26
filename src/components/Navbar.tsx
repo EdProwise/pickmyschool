@@ -103,13 +103,16 @@ export default function Navbar() {
             </Link>
             <Link
               href="/for-schools"
-              className="relative px-4 py-2 text-foreground hover:text-cyan-600 transition-colors font-medium group"
+              className="relative group px-5 py-2.5 rounded-xl overflow-hidden transition-all duration-300"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                <Building2 size={16} />
-                For Schools
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100" />
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-cyan-400/30 rounded-xl transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-cyan-400/5 to-cyan-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              
+              <span className="relative z-10 flex items-center gap-2 font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors duration-300">
+                <Building2 size={18} className="transition-transform group-hover:scale-110 duration-300" />
+                <span className="text-sm">For Schools</span>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
             
             {user ? (
@@ -117,45 +120,57 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="relative group ml-2 px-4 py-2 overflow-hidden"
+                    className="relative group ml-3 px-4 py-2.5 rounded-xl overflow-hidden hover:bg-transparent"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative flex items-center space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold">
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-cyan-400/30 rounded-xl transition-all duration-300" />
+                    
+                    <div className="relative flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/50 group-hover:ring-cyan-400/50 transition-all duration-300">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">{user.name}</span>
+                      <span className="font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors duration-300">{user.name}</span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-gray-200">
+                <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-2xl border-gray-200/60 shadow-2xl rounded-xl p-2">
                   <DropdownMenuItem asChild>
-                    <Link href={user.role === 'student' ? '/dashboard/student' : '/dashboard/school'} className="cursor-pointer">
-                      <User className="h-4 w-4 mr-2 text-cyan-500" />
-                      Dashboard
+                    <Link href={user.role === 'student' ? '/dashboard/student' : '/dashboard/school'} className="cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
+                      <User className="h-4 w-4 mr-2.5 text-cyan-500" />
+                      <span className="font-medium">Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer px-3 py-2.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200">
+                    <LogOut className="h-4 w-4 mr-2.5" />
+                    <span className="font-medium">Logout</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-3 ml-2">
+              <div className="flex items-center gap-2 ml-3">
                 <Link href="/login">
                   <Button 
                     variant="ghost" 
-                    className="relative group overflow-hidden font-semibold"
+                    className="relative group overflow-hidden px-5 py-2.5 rounded-xl hover:bg-transparent font-semibold"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative">Login</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-gray-300/50 rounded-xl transition-all duration-300" />
+                    <span className="relative text-gray-700 group-hover:text-gray-900 transition-colors duration-300">Login</span>
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="relative group overflow-hidden bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 px-6">
-                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative">Sign Up</span>
+                  <Button className="relative group overflow-hidden px-6 py-2.5 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300">
+                    {/* Animated gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 transition-all duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    
+                    {/* Border glow */}
+                    <div className="absolute inset-0 rounded-xl ring-2 ring-white/20 group-hover:ring-white/40 transition-all duration-300" />
+                    
+                    <span className="relative text-white drop-shadow-sm">Sign Up</span>
                   </Button>
                 </Link>
               </div>
