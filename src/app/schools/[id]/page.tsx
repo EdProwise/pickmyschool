@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   MapPin, Star, IndianRupee, Phone, Mail, Calendar, Users, 
-  CheckCircle2, Heart, Share2, Bookmark, MessageCircle, ArrowLeft
+  CheckCircle2, Heart, Share2, Bookmark, MessageCircle, ArrowLeft,
+  Globe, Facebook, Instagram, Linkedin, Youtube, Download, Trophy,
+  Video, FileText, Wifi, Shield, Bus, Laptop, BookOpen, GraduationCap
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -16,9 +18,113 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { getSchoolById, submitEnquiry, type School } from '@/lib/api';
 import { toast } from 'sonner';
 import { AIChat } from '@/components/AIChat';
+
+// Extended School interface with all comprehensive fields
+interface School {
+  id: number;
+  name: string;
+  
+  // Basic Info
+  establishmentYear?: number;
+  schoolType?: string;
+  k12Level?: string;
+  board: string;
+  gender?: string;
+  isInternational?: boolean;
+  streamsAvailable?: string;
+  languages?: string;
+  totalStudents?: string;
+  totalTeachers?: number;
+  logoUrl?: string;
+  
+  // Contact Info
+  address?: string;
+  city: string;
+  state?: string;
+  country?: string;
+  website?: string;
+  contactNumber?: string;
+  whatsappNumber?: string;
+  email?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
+  youtubeUrl?: string;
+  googleMapUrl?: string;
+  
+  // Comprehensive Facilities
+  classroomType?: string;
+  hasLibrary?: boolean;
+  hasComputerLab?: boolean;
+  computerCount?: number;
+  hasPhysicsLab?: boolean;
+  hasChemistryLab?: boolean;
+  hasBiologyLab?: boolean;
+  hasMathsLab?: boolean;
+  hasLanguageLab?: boolean;
+  hasRoboticsLab?: boolean;
+  hasStemLab?: boolean;
+  hasAuditorium?: boolean;
+  hasPlayground?: boolean;
+  sportsFacilities?: string;
+  hasSwimmingPool?: boolean;
+  hasFitnessCentre?: boolean;
+  hasYoga?: boolean;
+  hasMartialArts?: boolean;
+  hasMusicDance?: boolean;
+  hasHorseRiding?: boolean;
+  hasSmartBoard?: boolean;
+  hasWifi?: boolean;
+  hasCctv?: boolean;
+  hasElearning?: boolean;
+  hasAcClassrooms?: boolean;
+  hasAiTools?: boolean;
+  hasTransport?: boolean;
+  hasGpsBuses?: boolean;
+  hasCctvBuses?: boolean;
+  hasBusCaretaker?: boolean;
+  hasMedicalRoom?: boolean;
+  hasDoctorNurse?: boolean;
+  hasFireSafety?: boolean;
+  hasCleanWater?: boolean;
+  hasSecurityGuards?: boolean;
+  hasAirPurifier?: boolean;
+  hasHostel?: boolean;
+  hasMess?: boolean;
+  hasHostelStudyRoom?: boolean;
+  hasAcHostel?: boolean;
+  hasCafeteria?: boolean;
+  
+  // Media & Documents
+  galleryImages?: string[];
+  virtualTourUrl?: string;
+  prospectusUrl?: string;
+  awards?: string[];
+  newsletterUrl?: string;
+  feesStructure?: any;
+  facilityImages?: Record<string, string[]>;
+  
+  // Legacy fields
+  logo?: string;
+  bannerImage?: string;
+  pincode?: string;
+  medium?: string;
+  classesOffered?: string;
+  studentTeacherRatio?: string;
+  feesMin?: number;
+  feesMax?: number;
+  facilities?: string[];
+  description?: string;
+  gallery?: string[];
+  contactEmail?: string;
+  contactPhone?: string;
+  rating: number;
+  reviewCount: number;
+  profileViews: number;
+  featured: boolean;
+}
 
 export default function SchoolDetailPage() {
   const params = useParams();
@@ -45,7 +151,9 @@ export default function SchoolDetailPage() {
 
   const loadSchool = async () => {
     try {
-      const data = await getSchoolById(schoolId);
+      const response = await fetch(`/api/schools?id=${schoolId}`);
+      if (!response.ok) throw new Error('Failed to fetch school');
+      const data = await response.json();
       setSchool(data);
     } catch (error) {
       console.error('Failed to load school:', error);
@@ -67,10 +175,19 @@ export default function SchoolDetailPage() {
 
     setSubmittingEnquiry(true);
     try {
-      await submitEnquiry(token, {
-        schoolId,
-        ...enquiryForm,
+      const response = await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          schoolId,
+          ...enquiryForm,
+        }),
       });
+
+      if (!response.ok) throw new Error('Failed to submit enquiry');
       
       toast.success('Enquiry submitted successfully! The school will contact you soon.');
       setEnquiryForm({
@@ -85,6 +202,85 @@ export default function SchoolDetailPage() {
     } finally {
       setSubmittingEnquiry(false);
     }
+  };
+
+  // Helper function to parse awards (can be string or JSON)
+  const parseAward = (award: string) => {
+    try {
+      const parsed = JSON.parse(award);
+      if (typeof parsed === 'object' && (parsed.text || parsed.image)) {
+        return parsed;
+      }
+    } catch (e) {
+      // If not JSON, treat as plain text
+    }
+    return { text: award, image: '' };
+  };
+
+  // Build comprehensive facilities list
+  const buildFacilitiesList = () => {
+    if (!school) return [];
+    
+    const facilities = [];
+    
+    // Academic
+    if (school.hasLibrary) facilities.push('Library');
+    if (school.hasComputerLab) facilities.push('Computer Lab');
+    if (school.hasPhysicsLab) facilities.push('Physics Lab');
+    if (school.hasChemistryLab) facilities.push('Chemistry Lab');
+    if (school.hasBiologyLab) facilities.push('Biology Lab');
+    if (school.hasMathsLab) facilities.push('Maths Lab');
+    if (school.hasLanguageLab) facilities.push('Language Lab');
+    if (school.hasRoboticsLab) facilities.push('Robotics Lab');
+    if (school.hasStemLab) facilities.push('STEM/Innovation Lab');
+    if (school.hasAuditorium) facilities.push('Auditorium');
+    
+    // Sports
+    if (school.hasPlayground) facilities.push('Playground');
+    if (school.hasSwimmingPool) facilities.push('Swimming Pool');
+    if (school.hasFitnessCentre) facilities.push('Fitness Centre');
+    if (school.hasYoga) facilities.push('Yoga');
+    if (school.hasMartialArts) facilities.push('Martial Arts');
+    if (school.hasMusicDance) facilities.push('Music & Dance');
+    if (school.hasHorseRiding) facilities.push('Horse Riding/Archery');
+    
+    // Technology
+    if (school.hasSmartBoard) facilities.push('Smart Board');
+    if (school.hasWifi) facilities.push('WiFi Campus');
+    if (school.hasCctv) facilities.push('CCTV Surveillance');
+    if (school.hasElearning) facilities.push('E-Learning Platform');
+    if (school.hasAcClassrooms) facilities.push('AC Classrooms');
+    if (school.hasAiTools) facilities.push('AI Learning Tools');
+    
+    // Transport
+    if (school.hasTransport) facilities.push('School Bus');
+    if (school.hasGpsBuses) facilities.push('GPS Enabled Buses');
+    if (school.hasCctvBuses) facilities.push('CCTV in Buses');
+    if (school.hasBusCaretaker) facilities.push('Bus Caretaker');
+    
+    // Health & Safety
+    if (school.hasMedicalRoom) facilities.push('Medical Room');
+    if (school.hasDoctorNurse) facilities.push('On-Campus Doctor/Nurse');
+    if (school.hasFireSafety) facilities.push('Fire Safety');
+    if (school.hasCleanWater) facilities.push('Clean Drinking Water');
+    if (school.hasSecurityGuards) facilities.push('Security Guards');
+    if (school.hasAirPurifier) facilities.push('Air Purifier');
+    
+    // Boarding
+    if (school.hasHostel) facilities.push('Hostel');
+    if (school.hasMess) facilities.push('Mess/Cafeteria');
+    if (school.hasHostelStudyRoom) facilities.push('Hostel Study Room');
+    if (school.hasAcHostel) facilities.push('AC Hostel');
+    
+    // Others
+    if (school.hasCafeteria) facilities.push('Cafeteria');
+    
+    // Add legacy facilities if present
+    if (school.facilities && Array.isArray(school.facilities)) {
+      facilities.push(...school.facilities);
+    }
+    
+    return [...new Set(facilities)]; // Remove duplicates
   };
 
   if (loading) {
@@ -118,6 +314,11 @@ export default function SchoolDetailPage() {
     );
   }
 
+  const facilitiesList = buildFacilitiesList();
+  const displayLogo = school.logoUrl || school.logo;
+  const displayBanner = school.bannerImage;
+  const displayGallery = school.galleryImages || school.gallery || [];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -125,17 +326,17 @@ export default function SchoolDetailPage() {
       <div className="pt-20">
         {/* Hero Banner */}
         <div className="relative h-80 md:h-96 bg-gradient-to-br from-blue-500 to-indigo-600">
-          {school.bannerImage ? (
+          {displayBanner ? (
             <img
-              src={school.bannerImage}
+              src={displayBanner}
               alt={school.name}
               className="w-full h-full object-cover"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600">
-              {school.logo && (
+              {displayLogo && (
                 <img
-                  src={school.logo}
+                  src={displayLogo}
                   alt={school.name}
                   className="max-h-48 max-w-md object-contain"
                 />
@@ -188,9 +389,19 @@ export default function SchoolDetailPage() {
                         {school.schoolType}
                       </Badge>
                     )}
-                    {school.medium && (
+                    {(school.medium || school.languages) && (
                       <Badge variant="outline" className="text-base">
-                        {school.medium}
+                        {school.languages || school.medium}
+                      </Badge>
+                    )}
+                    {school.gender && (
+                      <Badge variant="outline" className="text-base">
+                        {school.gender}
+                      </Badge>
+                    )}
+                    {school.isInternational && (
+                      <Badge variant="outline" className="text-base">
+                        International
                       </Badge>
                     )}
                     {school.featured && (
@@ -216,11 +427,15 @@ export default function SchoolDetailPage() {
                       </div>
                     )}
                     
-                    {school.studentTeacherRatio && (
+                    {(school.studentTeacherRatio || school.totalStudents) && (
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
                         <Users className="mx-auto mb-1 text-blue-500" size={24} />
-                        <div className="font-bold text-lg">{school.studentTeacherRatio}</div>
-                        <div className="text-sm text-muted-foreground">Student:Teacher</div>
+                        <div className="font-bold text-lg">
+                          {school.studentTeacherRatio || school.totalStudents}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {school.studentTeacherRatio ? 'Student:Teacher' : 'Students'}
+                        </div>
                       </div>
                     )}
                     
@@ -229,7 +444,7 @@ export default function SchoolDetailPage() {
                       <div className="font-bold text-lg">
                         {school.feesMin && school.feesMax
                           ? `${(school.feesMin / 1000).toFixed(0)}-${(school.feesMax / 1000).toFixed(0)}K`
-                          : 'N/A'}
+                          : school.feesStructure ? 'Available' : 'N/A'}
                       </div>
                       <div className="text-sm text-muted-foreground">Annual Fees</div>
                     </div>
@@ -265,6 +480,7 @@ export default function SchoolDetailPage() {
                   <TabsTrigger value="gallery">Gallery</TabsTrigger>
                   <TabsTrigger value="fees">Fees</TabsTrigger>
                   <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                  <TabsTrigger value="documents">Documents</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
                   <TabsTrigger value="enquire">Enquire</TabsTrigger>
                 </TabsList>
@@ -275,7 +491,7 @@ export default function SchoolDetailPage() {
                     <CardContent className="p-6">
                       <h2 className="text-2xl font-bold mb-4">About the School</h2>
                       <p className="text-muted-foreground mb-6 leading-relaxed">
-                        {school.description || 'No description available.'}
+                        {school.description || 'Welcome to ' + school.name + '. We are committed to providing quality education and holistic development for our students.'}
                       </p>
 
                       <Separator className="my-6" />
@@ -286,16 +502,16 @@ export default function SchoolDetailPage() {
                           <span className="font-semibold">Board:</span>{' '}
                           <span className="text-muted-foreground">{school.board}</span>
                         </div>
-                        {school.medium && (
+                        {(school.medium || school.languages) && (
                           <div>
-                            <span className="font-semibold">Medium:</span>{' '}
-                            <span className="text-muted-foreground">{school.medium}</span>
+                            <span className="font-semibold">Language:</span>{' '}
+                            <span className="text-muted-foreground">{school.languages || school.medium}</span>
                           </div>
                         )}
-                        {school.classesOffered && (
+                        {(school.classesOffered || school.k12Level) && (
                           <div>
                             <span className="font-semibold">Classes Offered:</span>{' '}
-                            <span className="text-muted-foreground">{school.classesOffered}</span>
+                            <span className="text-muted-foreground">{school.classesOffered || school.k12Level}</span>
                           </div>
                         )}
                         {school.schoolType && (
@@ -304,10 +520,34 @@ export default function SchoolDetailPage() {
                             <span className="text-muted-foreground">{school.schoolType}</span>
                           </div>
                         )}
+                        {school.gender && (
+                          <div>
+                            <span className="font-semibold">Gender:</span>{' '}
+                            <span className="text-muted-foreground">{school.gender}</span>
+                          </div>
+                        )}
                         {school.establishmentYear && (
                           <div>
                             <span className="font-semibold">Establishment Year:</span>{' '}
                             <span className="text-muted-foreground">{school.establishmentYear}</span>
+                          </div>
+                        )}
+                        {school.streamsAvailable && (
+                          <div>
+                            <span className="font-semibold">Streams Available:</span>{' '}
+                            <span className="text-muted-foreground">{school.streamsAvailable}</span>
+                          </div>
+                        )}
+                        {school.totalStudents && (
+                          <div>
+                            <span className="font-semibold">Total Students:</span>{' '}
+                            <span className="text-muted-foreground">{school.totalStudents}</span>
+                          </div>
+                        )}
+                        {school.totalTeachers && (
+                          <div>
+                            <span className="font-semibold">Total Teachers:</span>{' '}
+                            <span className="text-muted-foreground">{school.totalTeachers}</span>
                           </div>
                         )}
                         {school.studentTeacherRatio && (
@@ -316,7 +556,44 @@ export default function SchoolDetailPage() {
                             <span className="text-muted-foreground">{school.studentTeacherRatio}</span>
                           </div>
                         )}
+                        {school.classroomType && (
+                          <div>
+                            <span className="font-semibold">Classroom Type:</span>{' '}
+                            <span className="text-muted-foreground">{school.classroomType}</span>
+                          </div>
+                        )}
                       </div>
+
+                      {/* Awards Section */}
+                      {school.awards && school.awards.length > 0 && (
+                        <>
+                          <Separator className="my-6" />
+                          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <Trophy className="text-yellow-600" size={24} />
+                            Awards & Achievements
+                          </h3>
+                          <div className="space-y-4">
+                            {school.awards.map((award, index) => {
+                              const parsedAward = parseAward(award);
+                              return (
+                                <div key={index} className="p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                                  {parsedAward.text && (
+                                    <p className="font-semibold mb-2 flex items-center gap-2">
+                                      <Trophy className="text-yellow-600" size={18} />
+                                      {parsedAward.text}
+                                    </p>
+                                  )}
+                                  {parsedAward.image && (
+                                    <div className="mt-3">
+                                      <img src={parsedAward.image} alt="Award certificate" className="max-w-md rounded-lg border-2 border-yellow-300" />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -326,9 +603,9 @@ export default function SchoolDetailPage() {
                   <Card>
                     <CardContent className="p-6">
                       <h2 className="text-2xl font-bold mb-4">Facilities & Infrastructure</h2>
-                      {school.facilities && school.facilities.length > 0 ? (
+                      {facilitiesList.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                          {school.facilities.map((facility, index) => (
+                          {facilitiesList.map((facility, index) => (
                             <div
                               key={index}
                               className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg"
@@ -341,6 +618,15 @@ export default function SchoolDetailPage() {
                       ) : (
                         <p className="text-muted-foreground">No facilities information available.</p>
                       )}
+
+                      {/* Sports Facilities Detail */}
+                      {school.sportsFacilities && (
+                        <>
+                          <Separator className="my-6" />
+                          <h3 className="text-xl font-semibold mb-3">Sports Facilities</h3>
+                          <p className="text-muted-foreground">{school.sportsFacilities}</p>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -350,9 +636,32 @@ export default function SchoolDetailPage() {
                   <Card>
                     <CardContent className="p-6">
                       <h2 className="text-2xl font-bold mb-4">School Gallery</h2>
-                      {school.gallery && school.gallery.length > 0 ? (
+                      
+                      {/* Virtual Tour */}
+                      {school.virtualTourUrl && (
+                        <div className="mb-8">
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <Video className="text-purple-600" size={20} />
+                            Virtual Tour
+                          </h3>
+                          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                            <a 
+                              href={school.virtualTourUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold"
+                            >
+                              <Video size={24} />
+                              View Virtual Tour
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Gallery Images */}
+                      {displayGallery.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {school.gallery.map((image, index) => (
+                          {displayGallery.map((image, index) => (
                             <div
                               key={index}
                               className="aspect-video rounded-lg overflow-hidden"
@@ -377,7 +686,100 @@ export default function SchoolDetailPage() {
                   <Card>
                     <CardContent className="p-6">
                       <h2 className="text-2xl font-bold mb-4">Fee Structure</h2>
-                      {school.feesMin && school.feesMax ? (
+                      
+                      {/* Detailed Fees Structure */}
+                      {school.feesStructure && Object.keys(school.feesStructure).length > 0 ? (
+                        <div className="space-y-6">
+                          {/* Class 1-10 Fees */}
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].some(i => school.feesStructure?.[`class${i}`]) && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <BookOpen className="text-cyan-600" size={20} />
+                                Class 1 to 10
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(classNum => {
+                                  const fee = school.feesStructure?.[`class${classNum}`];
+                                  if (!fee) return null;
+                                  return (
+                                    <div key={classNum} className="p-3 bg-gray-50 rounded-lg">
+                                      <div className="text-sm text-muted-foreground">Class {classNum}</div>
+                                      <div className="font-bold text-lg">₹{fee.toLocaleString()}/year</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Class 11 & 12 Stream-wise */}
+                          {(school.feesStructure?.class11 || school.feesStructure?.class12) && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <GraduationCap className="text-orange-600" size={20} />
+                                Class 11 & 12 (Stream-wise)
+                              </h3>
+                              <div className="space-y-4">
+                                {school.feesStructure?.class11 && (
+                                  <div>
+                                    <div className="font-semibold mb-2">Class 11</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                      {school.feesStructure.class11.commerce && (
+                                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                          <div className="text-sm text-blue-700">Commerce</div>
+                                          <div className="font-bold">₹{school.feesStructure.class11.commerce.toLocaleString()}/year</div>
+                                        </div>
+                                      )}
+                                      {school.feesStructure.class11.arts && (
+                                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                          <div className="text-sm text-purple-700">Arts</div>
+                                          <div className="font-bold">₹{school.feesStructure.class11.arts.toLocaleString()}/year</div>
+                                        </div>
+                                      )}
+                                      {school.feesStructure.class11.science && (
+                                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                                          <div className="text-sm text-green-700">Science</div>
+                                          <div className="font-bold">₹{school.feesStructure.class11.science.toLocaleString()}/year</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {school.feesStructure?.class12 && (
+                                  <div>
+                                    <div className="font-semibold mb-2">Class 12</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                      {school.feesStructure.class12.commerce && (
+                                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                          <div className="text-sm text-blue-700">Commerce</div>
+                                          <div className="font-bold">₹{school.feesStructure.class12.commerce.toLocaleString()}/year</div>
+                                        </div>
+                                      )}
+                                      {school.feesStructure.class12.arts && (
+                                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                          <div className="text-sm text-purple-700">Arts</div>
+                                          <div className="font-bold">₹{school.feesStructure.class12.arts.toLocaleString()}/year</div>
+                                        </div>
+                                      )}
+                                      {school.feesStructure.class12.science && (
+                                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                                          <div className="text-sm text-green-700">Science</div>
+                                          <div className="font-bold">₹{school.feesStructure.class12.science.toLocaleString()}/year</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-muted-foreground text-sm mt-6">
+                            * Fees may vary based on additional services and payment plans. Please contact the school for detailed information.
+                          </p>
+                        </div>
+                      ) : school.feesMin && school.feesMax ? (
                         <div>
                           <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-lg mb-4">
                             <div className="text-center">
@@ -439,6 +841,72 @@ export default function SchoolDetailPage() {
                   </Card>
                 </TabsContent>
 
+                {/* Documents Tab */}
+                <TabsContent value="documents">
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-2xl font-bold mb-4">Documents & Resources</h2>
+                      <div className="space-y-4">
+                        {school.prospectusUrl && (
+                          <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center">
+                                  <FileText className="text-white" size={24} />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold">School Prospectus</h3>
+                                  <p className="text-sm text-muted-foreground">Download our detailed prospectus</p>
+                                </div>
+                              </div>
+                              <a
+                                href={school.prospectusUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
+                              >
+                                <Download size={20} />
+                                Download
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {school.newsletterUrl && (
+                          <div className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-indigo-500 flex items-center justify-center">
+                                  <FileText className="text-white" size={24} />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold">Newsletter / Magazine</h3>
+                                  <p className="text-sm text-muted-foreground">Read our latest newsletter</p>
+                                </div>
+                              </div>
+                              <a
+                                href={school.newsletterUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold"
+                              >
+                                <Download size={20} />
+                                Download
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {!school.prospectusUrl && !school.newsletterUrl && (
+                          <p className="text-muted-foreground text-center py-8">
+                            No documents available at the moment.
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
                 {/* Location Tab */}
                 <TabsContent value="location">
                   <Card>
@@ -453,13 +921,29 @@ export default function SchoolDetailPage() {
                               {school.city}
                               {school.state && `, ${school.state}`}
                               {school.pincode && ` - ${school.pincode}`}
+                              {school.country && `, ${school.country}`}
                             </p>
                           </div>
                         </div>
                       </div>
-                      <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                        <p className="text-muted-foreground">Map view coming soon</p>
-                      </div>
+                      
+                      {school.googleMapUrl ? (
+                        <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+                          <iframe
+                            src={school.googleMapUrl}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
+                          <p className="text-muted-foreground">Map view not available</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -560,34 +1044,118 @@ export default function SchoolDetailPage() {
                 <CardContent className="p-6">
                   <h3 className="text-xl font-semibold mb-4">Contact Information</h3>
                   
-                  {school.contactPhone && (
+                  {(school.contactPhone || school.contactNumber) && (
                     <div className="flex items-start space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
                       <Phone size={20} style={{ color: '#04d3d3' }} className="mt-1" />
                       <div>
                         <div className="text-sm text-muted-foreground">Phone</div>
                         <a
-                          href={`tel:${school.contactPhone}`}
+                          href={`tel:${school.contactPhone || school.contactNumber}`}
                           className="font-medium hover:underline"
                         >
-                          {school.contactPhone}
+                          {school.contactPhone || school.contactNumber}
                         </a>
                       </div>
                     </div>
                   )}
 
-                  {school.contactEmail && (
+                  {school.whatsappNumber && (
+                    <div className="flex items-start space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                      <Phone size={20} style={{ color: '#04d3d3' }} className="mt-1" />
+                      <div>
+                        <div className="text-sm text-muted-foreground">WhatsApp</div>
+                        <a
+                          href={`https://wa.me/${school.whatsappNumber.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium hover:underline"
+                        >
+                          {school.whatsappNumber}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {(school.contactEmail || school.email) && (
                     <div className="flex items-start space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
                       <Mail size={20} style={{ color: '#04d3d3' }} className="mt-1" />
                       <div>
                         <div className="text-sm text-muted-foreground">Email</div>
                         <a
-                          href={`mailto:${school.contactEmail}`}
+                          href={`mailto:${school.contactEmail || school.email}`}
                           className="font-medium hover:underline break-all"
                         >
-                          {school.contactEmail}
+                          {school.contactEmail || school.email}
                         </a>
                       </div>
                     </div>
+                  )}
+
+                  {school.website && (
+                    <div className="flex items-start space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                      <Globe size={20} style={{ color: '#04d3d3' }} className="mt-1" />
+                      <div>
+                        <div className="text-sm text-muted-foreground">Website</div>
+                        <a
+                          href={school.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium hover:underline break-all"
+                        >
+                          Visit Website
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Social Media Links */}
+                  {(school.facebookUrl || school.instagramUrl || school.linkedinUrl || school.youtubeUrl) && (
+                    <>
+                      <Separator className="my-4" />
+                      <h4 className="font-semibold mb-3">Follow Us</h4>
+                      <div className="flex gap-2">
+                        {school.facebookUrl && (
+                          <a
+                            href={school.facebookUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
+                          >
+                            <Facebook size={20} className="text-blue-600" />
+                          </a>
+                        )}
+                        {school.instagramUrl && (
+                          <a
+                            href={school.instagramUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center hover:bg-pink-200 transition-colors"
+                          >
+                            <Instagram size={20} className="text-pink-600" />
+                          </a>
+                        )}
+                        {school.linkedinUrl && (
+                          <a
+                            href={school.linkedinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
+                          >
+                            <Linkedin size={20} className="text-blue-700" />
+                          </a>
+                        )}
+                        {school.youtubeUrl && (
+                          <a
+                            href={school.youtubeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 transition-colors"
+                          >
+                            <Youtube size={20} className="text-red-600" />
+                          </a>
+                        )}
+                      </div>
+                    </>
                   )}
 
                   <Separator className="my-6" />
