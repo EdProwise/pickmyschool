@@ -8,7 +8,7 @@ import {
   LayoutDashboard, MessageSquare, Info, Contact2, Building,
   Image, DollarSign, Trophy, GraduationCap, Newspaper,
   Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X
+  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,6 +88,14 @@ export default function SchoolDashboard() {
       loadSchoolProfile();
     }
   }, [activeSection]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    toast.success('Logged out successfully');
+    router.push('/');
+  };
 
   const loadSchoolData = async () => {
     const token = localStorage.getItem('token');
@@ -394,10 +402,24 @@ export default function SchoolDashboard() {
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               </button>
               
-              {/* User Profile */}
-              <button className="p-3 hover:bg-gray-100 rounded-xl transition-colors group">
-                <UserIcon size={20} className="text-gray-600 group-hover:text-cyan-600 transition-colors" />
-              </button>
+              {/* User Profile with Logout */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-3 hover:bg-gray-100 rounded-xl transition-colors group">
+                    <UserIcon size={20} className="text-gray-600 group-hover:text-cyan-600 transition-colors" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-2xl border-gray-200/60 shadow-2xl rounded-xl p-2">
+                  <div className="px-3 py-2 mb-2">
+                    <p className="font-semibold text-gray-900">{user?.name}</p>
+                    <p className="text-xs text-muted-foreground">School Admin</p>
+                  </div>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer px-3 py-2.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200">
+                    <LogOut className="h-4 w-4 mr-2.5" />
+                    <span className="font-medium">Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
