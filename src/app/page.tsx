@@ -96,21 +96,22 @@ export default function HomePage() {
         <div className="absolute bottom-10 left-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
         
         <div className="container mx-auto relative z-10">
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-5 mb-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-center">
-                <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Discover Schools
-                </span>
-                <br />
-                <span className="text-foreground">with Data, Not Guesswork</span>
-              </h1>
-              <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed text-center mx-auto">
-                Explore, Compare, and Choose from Over 20,000 Schools to Shape Your Child's Bright Future
-              </p>
-            </div>
+          <div className="space-y-5 mb-8">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-center">
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Discover Schools
+              </span>
+              <br />
+              <span className="text-foreground">with Data, Not Guesswork</span>
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed text-center mx-auto">
+              Explore, Compare, and Choose from Over 20,000 Schools to Shape Your Child's Bright Future
+            </p>
+          </div>
 
-            {/* Search Form */}
+          {/* Search Form and Featured Schools Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Search Form - Left Side */}
             <Card className="w-full shadow-2xl border-0 rounded-2xl overflow-hidden bg-white">
               <CardContent className="p-5 md:p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -198,60 +199,54 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            {/* Featured Schools Cards */}
+            {/* Featured Schools - Right Side */}
             {!loading && featuredSchools.length >= 2 && (
-              <div className="mt-8">
-                <h3 className="text-xl font-semibold text-foreground mb-4 text-center">
+              <div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">
                   Featured Schools
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
                   {featuredSchools.slice(0, 2).map((school) => (
                     <Card
                       key={school.id}
                       className="overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 bg-white"
                       onClick={() => router.push(`/schools/${school.id}`)}
                     >
-                      <div className="relative h-48">
-                        <img
-                          src={school.bannerImage || school.logo || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800'}
-                          alt={school.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-semibold text-foreground">{school.rating}</span>
+                      <div className="flex">
+                        <div className="relative w-32 h-32 flex-shrink-0">
+                          <img
+                            src={school.bannerImage || school.logo || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800'}
+                            alt={school.name}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
+                        <CardContent className="p-4 flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="text-base font-bold text-foreground line-clamp-1 flex-1">
+                              {school.name}
+                            </h4>
+                            <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm ml-2">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-semibold text-foreground">{school.rating}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                            <MapPin className="w-3 h-3" style={{ color: '#04d3d3' }} />
+                            <span className="line-clamp-1">{school.city}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <BookOpen className="w-3 h-3" style={{ color: '#04d3d3' }} />
+                              <span className="text-xs font-medium">{school.board}</span>
+                            </div>
+                            <div className="text-xs font-semibold" style={{ color: '#04d3d3' }}>
+                              {school.feesMin && school.feesMax
+                                ? `₹${(school.feesMin / 1000).toFixed(0)}K - ₹${(school.feesMax / 1000).toFixed(0)}K`
+                                : 'Contact for Fees'}
+                            </div>
+                          </div>
+                        </CardContent>
                       </div>
-                      <CardContent className="p-5">
-                        <h4 className="text-lg font-bold text-foreground mb-2 line-clamp-1">
-                          {school.name}
-                        </h4>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                          <MapPin className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                          <span className="line-clamp-1">{school.city}</span>
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                            <span className="text-sm font-medium">{school.board}</span>
-                          </div>
-                          <div className="text-sm font-semibold" style={{ color: '#04d3d3' }}>
-                            {school.feesMin && school.feesMax
-                              ? `₹${(school.feesMin / 1000).toFixed(0)}K - ₹${(school.feesMax / 1000).toFixed(0)}K`
-                              : 'Contact for Fees'}
-                          </div>
-                        </div>
-                        <Button
-                          className="w-full mt-2"
-                          style={{ backgroundColor: '#04d3d3', color: 'white' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/schools/${school.id}`);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </CardContent>
                     </Card>
                   ))}
                 </div>
