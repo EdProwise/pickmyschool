@@ -779,36 +779,6 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 {facilityImages.length} image(s)
               </span>
             </div>
-
-            {/* Display Images */}
-            {facilityImages.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {facilityImages.map((img, idx) => (
-                  <div key={idx} className="relative group">
-                    <div className="aspect-square rounded overflow-hidden border border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-3">
-                      <Image className="text-gray-400 mb-2" size={32} />
-                      <a
-                        href={img}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 hover:underline"
-                      >
-                        View Image
-                      </a>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleRemoveFacilityImage(facilityName, idx)}
-                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
