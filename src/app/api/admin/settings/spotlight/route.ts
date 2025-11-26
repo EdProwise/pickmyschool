@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
 interface JWTPayload {
-  userId: number;
+  adminId: number;
   role: string;
   email: string;
 }
@@ -19,12 +19,7 @@ function verifyAdminToken(request: NextRequest): { isValid: boolean; payload?: J
     }
 
     const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      console.error('JWT_SECRET not configured');
-      return { isValid: false, error: 'Server configuration error', code: 'SERVER_ERROR' };
-    }
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
 
     const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
 
