@@ -6,7 +6,7 @@ import {
   Youtube, Phone, Mail, Info, Contact2, Building,
   Image, DollarSign, Link, FileText, Download, School,
   BookOpen, Laptop, Wifi, Video, Shield, Bus, Heart,
-  Home, Coffee
+  Home, Coffee, Trophy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1243,6 +1243,12 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 // Gallery & Documents Section
 export function GallerySection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
+  const [newGalleryImage, setNewGalleryImage] = useState('');
+  const [newVirtualTour, setNewVirtualTour] = useState('');
+  const [newProspectus, setNewProspectus] = useState('');
+  const [newNewsletter, setNewNewsletter] = useState('');
+  const [newAwardText, setNewAwardText] = useState('');
+  const [newAwardImage, setNewAwardImage] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -1253,6 +1259,49 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
+  };
+
+  const handleAddGalleryImage = () => {
+    if (newGalleryImage.trim()) {
+      const currentImages = formData.galleryImages || [];
+      setFormData({ ...formData, galleryImages: [...currentImages, newGalleryImage.trim()] });
+      setNewGalleryImage('');
+    }
+  };
+
+  const handleRemoveGalleryImage = (index: number) => {
+    const currentImages = formData.galleryImages || [];
+    setFormData({ ...formData, galleryImages: currentImages.filter((_, i) => i !== index) });
+  };
+
+  const handleAddAward = () => {
+    if (newAwardText.trim() || newAwardImage.trim()) {
+      const currentAwards = formData.awards || [];
+      const awardEntry = {
+        text: newAwardText.trim(),
+        image: newAwardImage.trim()
+      };
+      setFormData({ ...formData, awards: [...currentAwards, JSON.stringify(awardEntry)] });
+      setNewAwardText('');
+      setNewAwardImage('');
+    }
+  };
+
+  const handleRemoveAward = (index: number) => {
+    const currentAwards = formData.awards || [];
+    setFormData({ ...formData, awards: currentAwards.filter((_, i) => i !== index) });
+  };
+
+  const parseAward = (award: string) => {
+    try {
+      const parsed = JSON.parse(award);
+      if (typeof parsed === 'object' && (parsed.text || parsed.image)) {
+        return parsed;
+      }
+    } catch (e) {
+      // If not JSON, treat as plain text
+    }
+    return { text: award, image: '' };
   };
 
   if (profileLoading) {
@@ -1280,73 +1329,259 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="galleryImages">Images of School (URLs)</Label>
-              <Textarea
-                id="galleryImages"
-                value={formData.galleryImages?.join(', ') || ''}
-                onChange={(e) => setFormData({ ...formData, galleryImages: e.target.value.split(',').map(img => img.trim()).filter(Boolean) })}
-                placeholder="Enter image URLs separated by commas"
-                rows={3}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Images of School */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Images of School</Label>
+            
+            {/* Add New Image */}
+            <div className="flex gap-2">
+              <Input
+                value={newGalleryImage}
+                onChange={(e) => setNewGalleryImage(e.target.value)}
+                placeholder="Enter image URL to upload"
+                className="flex-1"
               />
-              <p className="text-xs text-muted-foreground">Example: https://example.com/image1.jpg, https://example.com/image2.jpg</p>
+              <Button
+                type="button"
+                onClick={handleAddGalleryImage}
+                variant="outline"
+                className="shrink-0"
+              >
+                <FileText className="mr-2" size={16} />
+                Upload
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground">Enter the URL of your school images</p>
 
-            <div className="space-y-2">
-              <Label htmlFor="virtualTourUrl">Virtual Tour of School</Label>
-              <div className="relative">
-                <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-                <Input
-                  id="virtualTourUrl"
-                  value={formData.virtualTourUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, virtualTourUrl: e.target.value })}
-                  placeholder="https://virtualtour.example.com"
-                  className="pl-10"
-                />
+            {/* Display Uploaded Images */}
+            {formData.galleryImages && formData.galleryImages.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                {formData.galleryImages.map((img, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                    <Image className="text-cyan-600 shrink-0" size={20} />
+                    <span className="text-sm flex-1 truncate">{img}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveGalleryImage(index)}
+                      className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="prospectusUrl">Prospectus (PDF URL)</Label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-                <Input
-                  id="prospectusUrl"
-                  value={formData.prospectusUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, prospectusUrl: e.target.value })}
-                  placeholder="https://example.com/prospectus.pdf"
-                  className="pl-10"
-                />
-              </div>
-            </div>
+          <div className="border-t pt-6" />
 
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="awards">Awards</Label>
-              <Textarea
-                id="awards"
-                value={formData.awards?.join(', ') || ''}
-                onChange={(e) => setFormData({ ...formData, awards: e.target.value.split(',').map(award => award.trim()).filter(Boolean) })}
-                placeholder="Enter award names separated by commas"
-                rows={3}
+          {/* Virtual Tour */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Virtual Tour of School</Label>
+            <div className="flex gap-2">
+              <Input
+                value={newVirtualTour}
+                onChange={(e) => setNewVirtualTour(e.target.value)}
+                placeholder="Enter virtual tour URL"
+                className="flex-1"
               />
-              <p className="text-xs text-muted-foreground">Example: National Excellence Award 2023, State Level Achievement 2022</p>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (newVirtualTour.trim()) {
+                    setFormData({ ...formData, virtualTourUrl: newVirtualTour.trim() });
+                    setNewVirtualTour('');
+                  }
+                }}
+                variant="outline"
+                className="shrink-0"
+              >
+                <Video className="mr-2" size={16} />
+                Upload
+              </Button>
             </div>
+            {formData.virtualTourUrl && (
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                <Video className="text-cyan-600 shrink-0" size={20} />
+                <span className="text-sm flex-1 truncate">{formData.virtualTourUrl}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, virtualTourUrl: '' })}
+                  className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                >
+                  ×
+                </Button>
+              </div>
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="newsletterUrl">Newsletter / Magazine</Label>
-              <div className="relative">
-                <Download className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+          <div className="border-t pt-6" />
+
+          {/* Prospectus */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Prospectus (PDF)</Label>
+            <div className="flex gap-2">
+              <Input
+                value={newProspectus}
+                onChange={(e) => setNewProspectus(e.target.value)}
+                placeholder="Enter prospectus PDF URL"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={() => {
+                  if (newProspectus.trim()) {
+                    setFormData({ ...formData, prospectusUrl: newProspectus.trim() });
+                    setNewProspectus('');
+                  }
+                }}
+                variant="outline"
+                className="shrink-0"
+              >
+                <FileText className="mr-2" size={16} />
+                Upload
+              </Button>
+            </div>
+            {formData.prospectusUrl && (
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                <FileText className="text-cyan-600 shrink-0" size={20} />
+                <span className="text-sm flex-1 truncate">{formData.prospectusUrl}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, prospectusUrl: '' })}
+                  className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                >
+                  ×
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-6" />
+
+          {/* Awards - Text and Image */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Awards</Label>
+            
+            {/* Add New Award */}
+            <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+              <div className="space-y-2">
+                <Label htmlFor="awardText" className="text-sm">Award Title/Description</Label>
                 <Input
-                  id="newsletterUrl"
-                  value={formData.newsletterUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, newsletterUrl: e.target.value })}
-                  placeholder="https://example.com/newsletter.pdf"
-                  className="pl-10"
+                  id="awardText"
+                  value={newAwardText}
+                  onChange={(e) => setNewAwardText(e.target.value)}
+                  placeholder="e.g., National Excellence Award 2023"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="awardImage" className="text-sm">Award Certificate/Image (URL)</Label>
+                <Input
+                  id="awardImage"
+                  value={newAwardImage}
+                  onChange={(e) => setNewAwardImage(e.target.value)}
+                  placeholder="Enter image URL for award certificate"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={handleAddAward}
+                variant="outline"
+                className="w-full"
+              >
+                <FileText className="mr-2" size={16} />
+                Add Award
+              </Button>
             </div>
+
+            {/* Display Awards */}
+            {formData.awards && formData.awards.length > 0 && (
+              <div className="space-y-3 mt-4">
+                {formData.awards.map((award, index) => {
+                  const parsedAward = parseAward(award);
+                  return (
+                    <div key={index} className="p-4 bg-white rounded-lg border space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 space-y-2">
+                          {parsedAward.text && (
+                            <div className="flex items-start gap-2">
+                              <Trophy className="text-yellow-600 shrink-0 mt-0.5" size={18} />
+                              <span className="text-sm font-medium">{parsedAward.text}</span>
+                            </div>
+                          )}
+                          {parsedAward.image && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Image className="text-cyan-600 shrink-0" size={16} />
+                              <span className="truncate">{parsedAward.image}</span>
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAward(index)}
+                          className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-6" />
+
+          {/* Newsletter */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Newsletter / Magazine</Label>
+            <div className="flex gap-2">
+              <Input
+                value={newNewsletter}
+                onChange={(e) => setNewNewsletter(e.target.value)}
+                placeholder="Enter newsletter/magazine URL"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={() => {
+                  if (newNewsletter.trim()) {
+                    setFormData({ ...formData, newsletterUrl: newNewsletter.trim() });
+                    setNewNewsletter('');
+                  }
+                }}
+                variant="outline"
+                className="shrink-0"
+              >
+                <Download className="mr-2" size={16} />
+                Upload
+              </Button>
+            </div>
+            {formData.newsletterUrl && (
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                <Download className="text-cyan-600 shrink-0" size={20} />
+                <span className="text-sm flex-1 truncate">{formData.newsletterUrl}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, newsletterUrl: '' })}
+                  className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                >
+                  ×
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
