@@ -4,6 +4,8 @@ import { chats, schools, users } from '@/db/schema';
 import { eq, like, gte, lte, and, desc, or } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
 interface ParsedCriteria {
   city?: string;
   board?: string;
@@ -158,7 +160,7 @@ export async function POST(request: NextRequest) {
     let decoded: any;
 
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      decoded = jwt.verify(token, JWT_SECRET) as any;
     } catch (error) {
       return NextResponse.json(
         { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
