@@ -4,6 +4,8 @@ import { schools } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
 interface JWTPayload {
   userId: number;
   email: string;
@@ -20,8 +22,7 @@ function verifyToken(request: NextRequest): JWTPayload | null {
   const token = authHeader.substring(7);
   
   try {
-    const secret = process.env.JWT_SECRET || 'your-secret-key';
-    const decoded = jwt.verify(token, secret) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Find school profile by userId
     const schoolProfile = await db.select()
       .from(schools)
-      .where(eq(schools.id, payload.userId))
+      .where(eq(schools.userId, payload.userId))
       .limit(1);
 
     if (schoolProfile.length === 0) {
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
-      .where(eq(schools.id, payload.userId))
+      .where(eq(schools.userId, payload.userId))
       .returning();
 
     if (updatedProfile.length === 0) {
@@ -188,7 +189,7 @@ export async function DELETE(request: NextRequest) {
     // Find school profile by userId
     const schoolProfile = await db.select()
       .from(schools)
-      .where(eq(schools.id, payload.userId))
+      .where(eq(schools.userId, payload.userId))
       .limit(1);
 
     if (schoolProfile.length === 0) {
@@ -221,7 +222,7 @@ export async function DELETE(request: NextRequest) {
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
-      .where(eq(schools.id, payload.userId))
+      .where(eq(schools.userId, payload.userId))
       .returning();
 
     if (updatedProfile.length === 0) {
