@@ -23,7 +23,6 @@ export default function HomePage() {
   const [searchBoard, setSearchBoard] = useState('');
   const [searchClass, setSearchClass] = useState('');
   const [searchBudget, setSearchBudget] = useState('');
-  const [searchType, setSearchType] = useState('');
 
   useEffect(() => {
     const loadFeaturedSchools = async () => {
@@ -98,11 +97,9 @@ export default function HomePage() {
         <div className="container mx-auto relative z-10">
           <div className="space-y-5 mb-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-center">
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                Discover Schools
-              </span>
+              Making Schools, <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Search</span>
               <br />
-              <span className="text-foreground">with Data, Not Guesswork</span>
+              <span className="text-foreground">Simple</span>
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed text-center mx-auto">
               Explore, Compare, and Choose from Over 20,000 Schools to Shape Your Child's Bright Future
@@ -110,92 +107,62 @@ export default function HomePage() {
           </div>
 
           {/* Search Form and Featured Schools Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             {/* Search Form - Left Side */}
-            <Card className="w-full shadow-2xl border-0 rounded-2xl overflow-hidden bg-white">
-              <CardContent className="p-5 md:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                      City/Area
-                    </label>
-                    <Input
-                      placeholder="e.g., Delhi"
-                      value={searchCity}
-                      onChange={(e) => setSearchCity(e.target.value)}
-                      className="h-10 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all"
-                    />
-                  </div>
+            <Card className="w-full shadow-2xl border-2 border-purple-500 rounded-3xl overflow-hidden bg-white p-8">
+              <CardContent className="p-0">
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <Button
+                    variant="outline"
+                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
+                    onClick={() => {
+                      const city = prompt('Enter city/location:');
+                      if (city) setSearchCity(city);
+                    }}
+                  >
+                    {searchCity || 'Location'}
+                  </Button>
                   
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                      <BookOpen className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                      Board
-                    </label>
-                    <Select value={searchBoard} onValueChange={setSearchBoard}>
-                      <SelectTrigger className="h-10 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                        <SelectValue placeholder="Select Board" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CBSE">CBSE</SelectItem>
-                        <SelectItem value="ICSE">ICSE</SelectItem>
-                        <SelectItem value="IB">IB</SelectItem>
-                        <SelectItem value="State Board">State Board</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
+                    onClick={() => {
+                      const board = prompt('Select board (CBSE/ICSE/IB/State Board):');
+                      if (board) setSearchBoard(board);
+                    }}
+                  >
+                    {searchBoard || 'Board'}
+                  </Button>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                      Class
-                    </label>
-                    <Select value={searchClass} onValueChange={setSearchClass}>
-                      <SelectTrigger className="h-10 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                        <SelectValue placeholder="Select Class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Nursery">Nursery</SelectItem>
-                        <SelectItem value="KG">KG</SelectItem>
-                        <SelectItem value="1-5">Class 1-5</SelectItem>
-                        <SelectItem value="6-8">Class 6-8</SelectItem>
-                        <SelectItem value="9-10">Class 9-10</SelectItem>
-                        <SelectItem value="11-12">Class 11-12</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
+                    onClick={() => {
+                      const schoolClass = prompt('Select class (Nursery/KG/1-5/6-8/9-10/11-12):');
+                      if (schoolClass) setSearchClass(schoolClass);
+                    }}
+                  >
+                    {searchClass || 'K-12 School'}
+                  </Button>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                      <svg className="w-4 h-4" style={{ color: '#04d3d3' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Budget
-                    </label>
-                    <Select value={searchBudget} onValueChange={setSearchBudget}>
-                      <SelectTrigger className="h-10 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                        <SelectValue placeholder="Max Budget" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="50000">Under ₹50,000</SelectItem>
-                        <SelectItem value="100000">Under ₹1,00,000</SelectItem>
-                        <SelectItem value="150000">Under ₹1,50,000</SelectItem>
-                        <SelectItem value="200000">Under ₹2,00,000</SelectItem>
-                        <SelectItem value="999999">Above ₹2,00,000</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
+                    onClick={() => {
+                      const budget = prompt('Select budget (50000/100000/150000/200000/999999):');
+                      if (budget) setSearchBudget(budget);
+                    }}
+                  >
+                    {searchBudget ? `₹${parseInt(searchBudget).toLocaleString('en-IN')}` : 'Budget'}
+                  </Button>
+
+                  <Button
+                    onClick={handleSearch}
+                    className="h-12 px-8 text-base font-semibold bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  >
+                    Search
+                  </Button>
                 </div>
-
-                <Button
-                  onClick={handleSearch}
-                  className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
-                  style={{ backgroundColor: '#04d3d3', color: 'white' }}
-                >
-                  <Search className="mr-2" size={20} />
-                  Search Schools
-                </Button>
               </CardContent>
             </Card>
 
