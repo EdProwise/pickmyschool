@@ -96,23 +96,111 @@ export default function HomePage() {
         <div className="absolute bottom-10 left-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
         
         <div className="container mx-auto relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-            {/* Left Side - Main Content */}
-            <div className="flex-1">
-              <div className="space-y-6">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-                  Making Schools,
-                  <br />
+          <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-16">
+            {/* Left Side - Main Content + Search */}
+            <div className="flex-1 w-full">
+              <div className="space-y-6 mb-8">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                   <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                    Search
+                    Discover Schools
                   </span>
                   <br />
-                  <span className="text-foreground">Simple</span>
+                  <span className="text-foreground">with Data,</span>
+                  <br />
+                  <span className="text-foreground">Not Guesswork</span>
                 </h1>
-                <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed">
+                <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed">
                   Explore, Compare, and Choose from Over 20,000 Schools to Shape Your Child's Bright Future
                 </p>
               </div>
+
+              {/* Search Form */}
+              <Card className="w-full shadow-2xl border-0 rounded-2xl overflow-hidden bg-white">
+                <CardContent className="p-6 md:p-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4" style={{ color: '#04d3d3' }} />
+                        City/Area
+                      </label>
+                      <Input
+                        placeholder="e.g., Delhi"
+                        value={searchCity}
+                        onChange={(e) => setSearchCity(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4" style={{ color: '#04d3d3' }} />
+                        Board
+                      </label>
+                      <Select value={searchBoard} onValueChange={setSearchBoard}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
+                          <SelectValue placeholder="Select Board" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CBSE">CBSE</SelectItem>
+                          <SelectItem value="ICSE">ICSE</SelectItem>
+                          <SelectItem value="IB">IB</SelectItem>
+                          <SelectItem value="State Board">State Board</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4" style={{ color: '#04d3d3' }} />
+                        Class
+                      </label>
+                      <Select value={searchClass} onValueChange={setSearchClass}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
+                          <SelectValue placeholder="Select Class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Nursery">Nursery</SelectItem>
+                          <SelectItem value="KG">KG</SelectItem>
+                          <SelectItem value="1-5">Class 1-5</SelectItem>
+                          <SelectItem value="6-8">Class 6-8</SelectItem>
+                          <SelectItem value="9-10">Class 9-10</SelectItem>
+                          <SelectItem value="11-12">Class 11-12</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <svg className="w-4 h-4" style={{ color: '#04d3d3' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Budget
+                      </label>
+                      <Select value={searchBudget} onValueChange={setSearchBudget}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
+                          <SelectValue placeholder="Max Budget" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="50000">Under ₹50,000</SelectItem>
+                          <SelectItem value="100000">Under ₹1,00,000</SelectItem>
+                          <SelectItem value="150000">Under ₹1,50,000</SelectItem>
+                          <SelectItem value="200000">Under ₹2,00,000</SelectItem>
+                          <SelectItem value="999999">Above ₹2,00,000</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleSearch}
+                    className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
+                    style={{ backgroundColor: '#04d3d3', color: 'white' }}
+                  >
+                    <Search className="mr-2" size={20} />
+                    Search Schools
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Right Side - Featured School Card */}
@@ -209,115 +297,6 @@ export default function HomePage() {
               </Card>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Search Section - Clean Modern Design */}
-      <section className="relative pb-20 px-4 -mt-12">
-        <div className="container mx-auto">
-          <Card className="max-w-7xl mx-auto shadow-2xl border-0 rounded-2xl overflow-hidden bg-white">
-            <CardContent className="p-8 md:p-10">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                    City/Area
-                  </label>
-                  <Input
-                    placeholder="e.g., Delhi"
-                    value={searchCity}
-                    onChange={(e) => setSearchCity(e.target.value)}
-                    className="h-12 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                    Board
-                  </label>
-                  <Select value={searchBoard} onValueChange={setSearchBoard}>
-                    <SelectTrigger className="h-12 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                      <SelectValue placeholder="Select Board" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CBSE">CBSE</SelectItem>
-                      <SelectItem value="ICSE">ICSE</SelectItem>
-                      <SelectItem value="IB">IB</SelectItem>
-                      <SelectItem value="State Board">State Board</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                    Class
-                  </label>
-                  <Select value={searchClass} onValueChange={setSearchClass}>
-                    <SelectTrigger className="h-12 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                      <SelectValue placeholder="Select Class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Nursery">Nursery</SelectItem>
-                      <SelectItem value="KG">KG</SelectItem>
-                      <SelectItem value="1-5">Class 1-5</SelectItem>
-                      <SelectItem value="6-8">Class 6-8</SelectItem>
-                      <SelectItem value="9-10">Class 9-10</SelectItem>
-                      <SelectItem value="11-12">Class 11-12</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <svg className="w-4 h-4" style={{ color: '#04d3d3' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Budget
-                  </label>
-                  <Select value={searchBudget} onValueChange={setSearchBudget}>
-                    <SelectTrigger className="h-12 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                      <SelectValue placeholder="Max Budget" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="50000">Under ₹50,000</SelectItem>
-                      <SelectItem value="100000">Under ₹1,00,000</SelectItem>
-                      <SelectItem value="150000">Under ₹1,50,000</SelectItem>
-                      <SelectItem value="200000">Under ₹2,00,000</SelectItem>
-                      <SelectItem value="999999">Above ₹2,00,000</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <Users className="w-4 h-4" style={{ color: '#04d3d3' }} />
-                    Type
-                  </label>
-                  <Select value={searchType} onValueChange={setSearchType}>
-                    <SelectTrigger className="h-12 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-xl transition-all">
-                      <SelectValue placeholder="School Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Day School">Day School</SelectItem>
-                      <SelectItem value="Boarding">Boarding</SelectItem>
-                      <SelectItem value="Both">Both</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleSearch}
-                className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
-                style={{ backgroundColor: '#04d3d3', color: 'white' }}
-              >
-                <Search className="mr-2" size={22} />
-                Search Schools
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </section>
 
