@@ -88,36 +88,42 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 pb-16 px-4">
+      {/* Hero Section - Separated and cleaner */}
+      <section className="relative bg-gradient-to-br from-gray-50 via-white to-cyan-50/30 pt-32 pb-20 px-4">
         <div className="container mx-auto">
-          <div className="max-w-4xl mx-auto text-center mb-12">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Find the Perfect School for Your Child's{' '}
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+              Find the Perfect School for<br />
+              Your Child's{' '}
               <span style={{ color: '#04d3d3' }}>Bright Future</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8">
+            <p className="text-xl md:text-2xl text-muted-foreground mb-0 max-w-3xl mx-auto">
               Discover, compare, and connect with the best schools in your city. Making informed decisions easier.
             </p>
           </div>
+        </div>
+      </section>
 
-          {/* Search Bar */}
-          <Card className="max-w-5xl mx-auto shadow-xl">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Search Section - Separated with better spacing */}
+      <section className="relative -mt-8 pb-20 px-4">
+        <div className="container mx-auto">
+          <Card className="max-w-6xl mx-auto shadow-2xl border-0">
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">City/Area</label>
+                  <label className="text-sm font-semibold mb-2 block text-foreground">City/Area</label>
                   <Input
                     placeholder="e.g., Delhi"
                     value={searchCity}
                     onChange={(e) => setSearchCity(e.target.value)}
+                    className="h-11"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Board</label>
+                  <label className="text-sm font-semibold mb-2 block text-foreground">Board</label>
                   <Select value={searchBoard} onValueChange={setSearchBoard}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select Board" />
                     </SelectTrigger>
                     <SelectContent>
@@ -130,9 +136,9 @@ export default function HomePage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Class</label>
+                  <label className="text-sm font-semibold mb-2 block text-foreground">Class</label>
                   <Select value={searchClass} onValueChange={setSearchClass}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select Class" />
                     </SelectTrigger>
                     <SelectContent>
@@ -147,9 +153,9 @@ export default function HomePage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Budget</label>
+                  <label className="text-sm font-semibold mb-2 block text-foreground">Budget</label>
                   <Select value={searchBudget} onValueChange={setSearchBudget}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="Max Budget" />
                     </SelectTrigger>
                     <SelectContent>
@@ -163,9 +169,9 @@ export default function HomePage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Type</label>
+                  <label className="text-sm font-semibold mb-2 block text-foreground">Type</label>
                   <Select value={searchType} onValueChange={setSearchType}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="School Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -179,10 +185,10 @@ export default function HomePage() {
 
               <Button
                 onClick={handleSearch}
-                className="w-full mt-6 h-12 text-lg"
+                className="w-full h-14 text-lg font-semibold"
                 style={{ backgroundColor: '#04d3d3', color: 'white' }}
               >
-                <Search className="mr-2" size={20} />
+                <Search className="mr-2" size={22} />
                 Search Schools
               </Button>
             </CardContent>
@@ -191,7 +197,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-20 px-4 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
