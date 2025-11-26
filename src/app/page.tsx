@@ -112,50 +112,73 @@ export default function HomePage() {
             <Card className="w-full shadow-2xl border-2 border-purple-500 rounded-3xl overflow-hidden bg-white p-8">
               <CardContent className="p-0">
                 <div className="flex flex-wrap gap-3 mb-6">
-                  <Button
-                    variant="outline"
-                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
-                    onClick={() => {
-                      const city = prompt('Enter city/location:');
-                      if (city) setSearchCity(city);
-                    }}
-                  >
-                    {searchCity || 'Location'}
-                  </Button>
+                  {/* Location Filter */}
+                  <div className="relative">
+                    <Select value={searchCity} onValueChange={setSearchCity}>
+                      <SelectTrigger className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all bg-white">
+                        <SelectValue placeholder="Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Delhi">Delhi</SelectItem>
+                        <SelectItem value="Mumbai">Mumbai</SelectItem>
+                        <SelectItem value="Bangalore">Bangalore</SelectItem>
+                        <SelectItem value="Pune">Pune</SelectItem>
+                        <SelectItem value="Chennai">Chennai</SelectItem>
+                        <SelectItem value="Hyderabad">Hyderabad</SelectItem>
+                        <SelectItem value="Kolkata">Kolkata</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
-                  <Button
-                    variant="outline"
-                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
-                    onClick={() => {
-                      const board = prompt('Select board (CBSE/ICSE/IB/State Board):');
-                      if (board) setSearchBoard(board);
-                    }}
-                  >
-                    {searchBoard || 'Board'}
-                  </Button>
+                  {/* Board Filter */}
+                  <div className="relative">
+                    <Select value={searchBoard} onValueChange={setSearchBoard}>
+                      <SelectTrigger className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all bg-white">
+                        <SelectValue placeholder="Board" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CBSE">CBSE</SelectItem>
+                        <SelectItem value="ICSE">ICSE</SelectItem>
+                        <SelectItem value="IB">IB</SelectItem>
+                        <SelectItem value="State Board">State Board</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
-                    onClick={() => {
-                      const schoolClass = prompt('Select class (Nursery/KG/1-5/6-8/9-10/11-12):');
-                      if (schoolClass) setSearchClass(schoolClass);
-                    }}
-                  >
-                    {searchClass || 'K-12 School'}
-                  </Button>
+                  {/* K-12 School (Class) Filter */}
+                  <div className="relative">
+                    <Select value={searchClass} onValueChange={setSearchClass}>
+                      <SelectTrigger className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all bg-white">
+                        <SelectValue placeholder="K-12 School" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Nursery">Nursery</SelectItem>
+                        <SelectItem value="KG">KG</SelectItem>
+                        <SelectItem value="1-5">Class 1-5</SelectItem>
+                        <SelectItem value="6-8">Class 6-8</SelectItem>
+                        <SelectItem value="9-10">Class 9-10</SelectItem>
+                        <SelectItem value="11-12">Class 11-12</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
-                    onClick={() => {
-                      const budget = prompt('Select budget (50000/100000/150000/200000/999999):');
-                      if (budget) setSearchBudget(budget);
-                    }}
-                  >
-                    {searchBudget ? `₹${parseInt(searchBudget).toLocaleString('en-IN')}` : 'Budget'}
-                  </Button>
+                  {/* Budget Filter */}
+                  <div className="relative">
+                    <Select value={searchBudget} onValueChange={setSearchBudget}>
+                      <SelectTrigger className="h-12 px-6 text-base font-semibold border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all bg-white">
+                        <SelectValue placeholder="Budget" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="50000">Under ₹50,000</SelectItem>
+                        <SelectItem value="100000">Under ₹1,00,000</SelectItem>
+                        <SelectItem value="150000">Under ₹1,50,000</SelectItem>
+                        <SelectItem value="200000">Under ₹2,00,000</SelectItem>
+                        <SelectItem value="999999">Above ₹2,00,000</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
+                  {/* Search Button */}
                   <Button
                     onClick={handleSearch}
                     className="h-12 px-8 text-base font-semibold bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105"
