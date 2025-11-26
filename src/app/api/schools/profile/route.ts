@@ -274,6 +274,16 @@ export async function PUT(request: NextRequest) {
       updateData.gallery = body.gallery;
     }
 
+    if (body.facilityImages !== undefined) {
+      if (typeof body.facilityImages !== 'object') {
+        return NextResponse.json(
+          { error: 'facilityImages must be an object', code: 'VALIDATION_ERROR' },
+          { status: 400 }
+        );
+      }
+      updateData.facilityImages = body.facilityImages;
+    }
+
     if (isCreating) {
       // Create new profile
       updateData.userId = user.userId;
