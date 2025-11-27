@@ -863,7 +863,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       hasHostelStudyRoom: formData.hasHostelStudyRoom,
       hasAcHostel: formData.hasAcHostel,
       hasCafeteria: formData.hasCafeteria,
-      facilityImages: formData.facilityImages,
+      // Intentionally skip facilityImages in PUT to avoid large payload errors
     };
     
     onSave(facilitiesData);
@@ -1149,7 +1149,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
     }
   }, [profile]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required basic fields first
@@ -1157,17 +1157,44 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first before adding gallery');
       return;
     }
+
+    // First, upload gallery images via dedicated API in small chunks to avoid large PUT payloads
+    try {
+      const token = localStorage.getItem('token');
+      const imgs = formData.galleryImages || [];
+      const urlsToUpload = imgs.filter((u) => typeof u === 'string' && u.trim() !== '');
+      // Upload in chunks of 2 to stay well under body size limits
+      const chunkSize = 2;
+      for (let i = 0; i < urlsToUpload.length; i += chunkSize) {
+        const chunk = urlsToUpload.slice(i, i + chunkSize);
+        const res = await fetch('/api/schools/profile/images', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ imageUrls: chunk }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to upload gallery images');
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload one or more images');
+      // Continue to save metadata even if some images failed
+    }
     
-    // Include required fields from existing profile to ensure validation passes
+    // Include metadata only in PUT to keep payload small
     const galleryData: Partial<SchoolProfile> = {
       name: profile.name,
       board: profile.board,
       city: profile.city,
-      galleryImages: formData.galleryImages,
       virtualTourUrl: formData.virtualTourUrl,
       prospectusUrl: formData.prospectusUrl,
       awards: formData.awards,
       newsletterUrl: formData.newsletterUrl,
+      // Intentionally omit galleryImages from PUT
     };
     
     onSave(galleryData);
