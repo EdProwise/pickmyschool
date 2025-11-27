@@ -1429,8 +1429,11 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
       if (fees.class12.science) feesStructure.class12.science = parseFloat(fees.class12.science);
     }
     
-    // Only send fees structure field
+    // Include required fields from existing profile to ensure validation passes
     const feesData: Partial<SchoolProfile> = {
+      name: profile.name,
+      board: profile.board,
+      city: profile.city,
       feesStructure
     };
     
