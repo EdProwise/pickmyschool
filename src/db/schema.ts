@@ -34,6 +34,8 @@ export const schools = sqliteTable('schools', {
   totalStudents: text('total_students'),
   totalTeachers: integer('total_teachers'),
   logoUrl: text('logo_url'),
+  aboutSchool: text('about_school'),
+  bannerImageUrl: text('banner_image_url'),
   
   // Contact Info
   address: text('address'),
