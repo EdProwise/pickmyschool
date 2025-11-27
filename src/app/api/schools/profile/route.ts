@@ -130,6 +130,8 @@ export async function PUT(request: NextRequest) {
     if (body.totalStudents !== undefined) updateData.totalStudents = String(body.totalStudents).trim();
     if (body.totalTeachers !== undefined) updateData.totalTeachers = parseInt(body.totalTeachers);
     if (body.logoUrl !== undefined) updateData.logoUrl = String(body.logoUrl).trim();
+    if (body.aboutSchool !== undefined) updateData.aboutSchool = String(body.aboutSchool).trim();
+    if (body.bannerImageUrl !== undefined) updateData.bannerImageUrl = String(body.bannerImageUrl).trim();
     
     // Contact Info
     if (body.address !== undefined) updateData.address = String(body.address).trim();
