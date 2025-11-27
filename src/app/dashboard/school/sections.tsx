@@ -717,8 +717,11 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       return;
     }
     
-    // Only send facilities fields
+    // Include required fields from existing profile to ensure validation passes
     const facilitiesData: Partial<SchoolProfile> = {
+      name: profile.name,
+      board: profile.board,
+      city: profile.city,
       classroomType: formData.classroomType,
       hasLibrary: formData.hasLibrary,
       hasComputerLab: formData.hasComputerLab,
