@@ -315,12 +315,15 @@ export default function SchoolDashboard() {
         {/* Logo */}
         <div className="mb-8 relative">
           <div className="absolute inset-0 bg-white/10 blur-xl rounded-full" />
-          <div className="relative flex items-center gap-3">
+          <button
+            onClick={() => router.push('/')}
+            className="relative flex items-center gap-3 w-full hover:scale-105 transition-transform duration-200 cursor-pointer"
+          >
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <Sparkles className="text-white" size={24} />
             </div>
             <h2 className="text-white text-2xl font-bold">PickMySchool</h2>
-          </div>
+          </button>
         </div>
         
         {/* Navigation */}
