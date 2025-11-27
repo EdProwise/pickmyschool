@@ -38,6 +38,8 @@ interface School {
   totalStudents?: string;
   totalTeachers?: number;
   logoUrl?: string;
+  aboutSchool?: string;
+  bannerImageUrl?: string;
   
   // Contact Info
   address?: string;
@@ -316,7 +318,7 @@ export default function SchoolDetailPage() {
 
   const facilitiesList = buildFacilitiesList();
   const displayLogo = school.logoUrl || school.logo;
-  const displayBanner = school.bannerImage;
+  const displayBanner = school.bannerImageUrl || school.bannerImage;
   const displayGallery = school.galleryImages || school.gallery || [];
 
   return (
@@ -490,8 +492,8 @@ export default function SchoolDetailPage() {
                   <Card>
                     <CardContent className="p-6">
                       <h2 className="text-2xl font-bold mb-4">About the School</h2>
-                      <p className="text-muted-foreground mb-6 leading-relaxed">
-                        {school.description || 'Welcome to ' + school.name + '. We are committed to providing quality education and holistic development for our students.'}
+                      <p className="text-muted-foreground mb-6 leading-relaxed whitespace-pre-line">
+                        {school.aboutSchool || school.description || 'Welcome to ' + school.name + '. We are committed to providing quality education and holistic development for our students.'}
                       </p>
 
                       <Separator className="my-6" />
