@@ -111,16 +111,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get existing gallery images
-    const existingGallery = schoolProfile[0].gallery as string[] | null;
-    const currentGallery = Array.isArray(existingGallery) ? existingGallery : [];
+    // Get existing gallery images (prefer new field, fallback to legacy)
+    const existing = (schoolProfile[0].galleryImages as string[] | null) || (schoolProfile[0].gallery as string[] | null);
+    const currentGallery = Array.isArray(existing) ? existing : [];
 
-    // Add new images to gallery
-    const updatedGallery = [...currentGallery, ...urlsToAdd];
+    // Add new images to gallery (avoid duplicates)
+    const set = new Set(currentGallery);
+    for (const u of urlsToAdd) set.add(u);
+    const updatedGallery = Array.from(set);
 
-    // Update school profile
+    // Update school profile - write to both galleryImages (current) and gallery (legacy) for compatibility
     const updatedProfile = await db.update(schools)
       .set({
+        galleryImages: updatedGallery,
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
@@ -199,9 +202,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get existing gallery images
-    const existingGallery = schoolProfile[0].gallery as string[] | null;
-    const currentGallery = Array.isArray(existingGallery) ? existingGallery : [];
+    // Get existing gallery images (prefer new field, fallback to legacy)
+    const existing = (schoolProfile[0].galleryImages as string[] | null) || (schoolProfile[0].gallery as string[] | null);
+    const currentGallery = Array.isArray(existing) ? existing : [];
 
     // Check if image exists in gallery
     const imageIndex = currentGallery.indexOf(imageUrl.trim());
@@ -216,9 +219,10 @@ export async function DELETE(request: NextRequest) {
     // Remove image from gallery
     const updatedGallery = currentGallery.filter((url: string) => url !== imageUrl.trim());
 
-    // Update school profile
+    // Update school profile - write to both fields
     const updatedProfile = await db.update(schools)
       .set({
+        galleryImages: updatedGallery,
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
