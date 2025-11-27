@@ -454,10 +454,12 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only send contact info fields
+    // Include required fields from existing profile to ensure validation passes
     const contactInfoData: Partial<SchoolProfile> = {
-      address: formData.address,
+      name: profile?.name || formData.name, // Include required name
+      board: profile?.board || formData.board, // Include required board
       city: formData.city,
+      address: formData.address,
       state: formData.state,
       country: formData.country,
       website: formData.website,
