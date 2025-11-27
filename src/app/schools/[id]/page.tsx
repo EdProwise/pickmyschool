@@ -336,13 +336,7 @@ export default function SchoolDetailPage() {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600">
-              {displayLogo && (
-                <img
-                  src={displayLogo}
-                  alt={school.name}
-                  className="max-h-48 max-w-md object-contain"
-                />
-              )}
+              <p className="text-white text-xl font-semibold">Banner Image</p>
             </div>
           )}
           <div className="absolute inset-0 bg-black/30" />
