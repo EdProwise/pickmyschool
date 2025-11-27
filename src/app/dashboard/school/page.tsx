@@ -135,6 +135,10 @@ export default function SchoolDashboard() {
     }
   };
 
+  const handleUserUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   const loadSchoolProfile = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
