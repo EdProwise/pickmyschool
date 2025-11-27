@@ -1058,8 +1058,11 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       return;
     }
     
-    // Only send gallery fields
+    // Include required fields from existing profile to ensure validation passes
     const galleryData: Partial<SchoolProfile> = {
+      name: profile.name,
+      board: profile.board,
+      city: profile.city,
       galleryImages: formData.galleryImages,
       virtualTourUrl: formData.virtualTourUrl,
       prospectusUrl: formData.prospectusUrl,
