@@ -218,6 +218,37 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
+              <Input
+                id="city"
+                value={formData.city || ''}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="Enter city"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="board">Board <span className="text-red-500">*</span></Label>
+              <Select
+                value={formData.board || ''}
+                onValueChange={(value) => setFormData({ ...formData, board: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Board" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CBSE">CBSE</SelectItem>
+                  <SelectItem value="ICSE">ICSE</SelectItem>
+                  <SelectItem value="State Board">State Board</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                  <SelectItem value="Unregistered">Unregistered</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="establishmentYear">Establishment Year</Label>
               <Input
                 id="establishmentYear"
@@ -258,26 +289,6 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                   <SelectItem value="Preparatory">Preparatory (Class 3 to 5)</SelectItem>
                   <SelectItem value="Middle">Middle (Class 6 to 8)</SelectItem>
                   <SelectItem value="Secondary">Secondary (Class 9 to 12)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="board">Board <span className="text-red-500">*</span></Label>
-              <Select
-                value={formData.board || ''}
-                onValueChange={(value) => setFormData({ ...formData, board: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Board" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CBSE">CBSE</SelectItem>
-                  <SelectItem value="ICSE">ICSE</SelectItem>
-                  <SelectItem value="State Board">State Board</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                  <SelectItem value="Unregistered">Unregistered</SelectItem>
                 </SelectContent>
               </Select>
             </div>
