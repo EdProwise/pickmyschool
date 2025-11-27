@@ -359,6 +359,15 @@ export default function SchoolDetailPage() {
                   </Button>
 
                   <div className="flex items-start justify-between mb-4">
+                    {displayLogo && (
+                      <div className="mr-4 flex-shrink-0">
+                        <img
+                          src={displayLogo}
+                          alt={`${school.name} logo`}
+                          className="w-20 h-20 md:w-24 md:h-24 object-contain rounded-lg border-2 border-gray-200 bg-white p-2"
+                        />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                         {school.name}
