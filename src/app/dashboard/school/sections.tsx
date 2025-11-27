@@ -32,6 +32,8 @@ interface SchoolProfile {
   totalStudents?: string;
   totalTeachers?: number;
   logoUrl?: string;
+  aboutSchool?: string;
+  bannerImageUrl?: string;
   
   // Contact Info
   address?: string;
@@ -174,6 +176,8 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
       totalStudents: formData.totalStudents,
       totalTeachers: formData.totalTeachers,
       logoUrl: formData.logoUrl,
+      aboutSchool: formData.aboutSchool,
+      bannerImageUrl: formData.bannerImageUrl,
     };
     
     onSave(basicInfoData);
@@ -412,6 +416,84 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                         onClick={() => {
                           setLogoPreview('');
                           setFormData({ ...formData, logoUrl: '' });
+                        }}
+                        className="shrink-0"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Upload PNG, JPG or WEBP (Max 5MB)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="aboutSchool">About School</Label>
+              <Textarea
+                id="aboutSchool"
+                value={formData.aboutSchool || ''}
+                onChange={(e) => setFormData({ ...formData, aboutSchool: e.target.value })}
+                placeholder="Enter a brief description of your school"
+                rows={3}
+              />
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="bannerImageUrl">Banner Image</Label>
+              <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border-2 border-dashed border-cyan-200">
+                <div className="flex flex-col items-center gap-4">
+                  {logoPreview && (
+                    <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-cyan-300 shadow-lg">
+                      <img src={logoPreview} alt="Banner preview" className="w-full h-full object-contain bg-white" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 w-full">
+                    <Input
+                      id="bannerImageUrl"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (!file.type.startsWith('image/')) {
+                            toast.error('Please upload an image file');
+                            return;
+                          }
+                          
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error('Image size should be less than 5MB');
+                            return;
+                          }
+
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const dataUrl = reader.result as string;
+                            setFormData({ ...formData, bannerImageUrl: dataUrl });
+                            toast.success('Banner image uploaded successfully');
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => document.getElementById('bannerImageUrl')?.click()}
+                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                    >
+                      <Upload className="mr-2" size={16} />
+                      {logoPreview ? 'Change Banner' : 'Upload Banner Image'}
+                    </Button>
+                    {logoPreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setLogoPreview('');
+                          setFormData({ ...formData, bannerImageUrl: '' });
                         }}
                         className="shrink-0"
                       >
