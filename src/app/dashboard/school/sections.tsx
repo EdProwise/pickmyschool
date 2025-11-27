@@ -124,12 +124,16 @@ interface SectionProps {
 export function BasicInfoSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [logoPreview, setLogoPreview] = useState<string>('');
+  const [bannerPreview, setBannerPreview] = useState<string>('');
 
   useEffect(() => {
     if (profile) {
       setFormData(profile);
       if (profile.logoUrl) {
         setLogoPreview(profile.logoUrl);
+      }
+      if (profile.bannerImageUrl) {
+        setBannerPreview(profile.bannerImageUrl);
       }
     }
   }, [profile]);
@@ -158,6 +162,30 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
     }
   };
 
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setBannerPreview(dataUrl);
+        setFormData({ ...formData, bannerImageUrl: dataUrl });
+        toast.success('Banner image uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -165,7 +193,7 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
     const basicInfoData: Partial<SchoolProfile> = {
       name: formData.name,
       board: formData.board,
-      city: profile?.city || formData.city, // Include city from existing profile
+      city: profile?.city || formData.city,
       establishmentYear: formData.establishmentYear,
       schoolType: formData.schoolType,
       k12Level: formData.k12Level,
@@ -431,23 +459,23 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
             </div>
 
             <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="aboutSchool">About School</Label>
+              <Label htmlFor="aboutSchool">About the School</Label>
               <Textarea
                 id="aboutSchool"
                 value={formData.aboutSchool || ''}
                 onChange={(e) => setFormData({ ...formData, aboutSchool: e.target.value })}
-                placeholder="Enter a brief description of your school"
-                rows={3}
+                placeholder="Enter a brief description of your school, its history, mission, and values..."
+                rows={5}
               />
             </div>
 
             <div className="md:col-span-2 space-y-2">
               <Label htmlFor="bannerImageUrl">Banner Image</Label>
-              <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border-2 border-dashed border-cyan-200">
+              <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-dashed border-purple-200">
                 <div className="flex flex-col items-center gap-4">
-                  {logoPreview && (
-                    <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-cyan-300 shadow-lg">
-                      <img src={logoPreview} alt="Banner preview" className="w-full h-full object-contain bg-white" />
+                  {bannerPreview && (
+                    <div className="relative w-full max-w-2xl h-48 rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
+                      <img src={bannerPreview} alt="Banner preview" className="w-full h-full object-cover bg-white" />
                     </div>
                   )}
                   <div className="flex items-center gap-3 w-full">
@@ -455,44 +483,23 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                       id="bannerImageUrl"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (!file.type.startsWith('image/')) {
-                            toast.error('Please upload an image file');
-                            return;
-                          }
-                          
-                          if (file.size > 5 * 1024 * 1024) {
-                            toast.error('Image size should be less than 5MB');
-                            return;
-                          }
-
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            const dataUrl = reader.result as string;
-                            setFormData({ ...formData, bannerImageUrl: dataUrl });
-                            toast.success('Banner image uploaded successfully');
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
+                      onChange={handleBannerUpload}
                       className="hidden"
                     />
                     <Button
                       type="button"
                       onClick={() => document.getElementById('bannerImageUrl')?.click()}
-                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
                     >
                       <Upload className="mr-2" size={16} />
-                      {logoPreview ? 'Change Banner' : 'Upload Banner Image'}
+                      {bannerPreview ? 'Change Banner' : 'Upload Banner Image'}
                     </Button>
-                    {logoPreview && (
+                    {bannerPreview && (
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => {
-                          setLogoPreview('');
+                          setBannerPreview('');
                           setFormData({ ...formData, bannerImageUrl: '' });
                         }}
                         className="shrink-0"
@@ -502,7 +509,7 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    Upload PNG, JPG or WEBP (Max 5MB)
+                    Upload PNG, JPG or WEBP (Max 5MB) • Recommended: Wide format image (e.g., 1920x600)
                   </p>
                 </div>
               </div>
