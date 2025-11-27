@@ -159,13 +159,14 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only send basic info fields
+    // Include required fields from existing profile to ensure validation passes
     const basicInfoData: Partial<SchoolProfile> = {
       name: formData.name,
+      board: formData.board,
+      city: profile?.city || formData.city, // Include city from existing profile
       establishmentYear: formData.establishmentYear,
       schoolType: formData.schoolType,
       k12Level: formData.k12Level,
-      board: formData.board,
       gender: formData.gender,
       isInternational: formData.isInternational,
       streamsAvailable: formData.streamsAvailable,
