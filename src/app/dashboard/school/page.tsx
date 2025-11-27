@@ -805,8 +805,15 @@ export default function SchoolDashboard() {
             />
           )}
 
+          {activeSection === 'settings' && (
+            <SettingsSection
+              user={user}
+              onUserUpdate={handleUserUpdate}
+            />
+          )}
+
           {/* Other sections - Coming Soon */}
-          {!['dashboard', 'enquiry', 'basic-info', 'contact', 'facilities', 'gallery', 'fees'].includes(activeSection) && (
+          {!['dashboard', 'enquiry', 'basic-info', 'contact', 'facilities', 'gallery', 'fees', 'settings'].includes(activeSection) && (
             <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="p-16">
                 <div className="text-center text-muted-foreground">
