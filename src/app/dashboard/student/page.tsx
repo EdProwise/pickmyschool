@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookMarked, MessageSquare, ClipboardList, User, Heart, TrendingUp, Search, Sparkles, ArrowRight, Clock, CheckCircle2, Target, Zap } from 'lucide-react';
+import { BookMarked, MessageSquare, ClipboardList, User as UserIcon, Heart, TrendingUp, Search, Sparkles, ArrowRight, Clock, CheckCircle2, Target, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
@@ -490,7 +490,7 @@ export default function StudentDashboard() {
                               </div>
                               <div className="text-sm text-muted-foreground space-y-2 bg-gray-50 rounded-lg p-4">
                                 <p className="flex items-center gap-2">
-                                  <User size={14} />
+                                  <UserIcon size={14} />
                                   <strong>Student:</strong> {enquiry.studentName}
                                 </p>
                                 <p><strong>Class:</strong> {enquiry.studentClass}</p>
@@ -540,7 +540,7 @@ export default function StudentDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                    <User className="text-white" size={20} />
+                    <UserIcon className="text-white" size={20} />
                   </div>
                   My Profile
                 </CardTitle>
