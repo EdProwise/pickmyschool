@@ -8,7 +8,7 @@ import {
   LayoutDashboard, MessageSquare, Info, Contact2, Building,
   Image, DollarSign, Trophy, GraduationCap, Newspaper,
   Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut
+  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,7 @@ const sidebarItems = [
   { id: 'review', label: 'Review', icon: Star },
   { id: 'campaign', label: 'Campaign', icon: TrendingUp },
   { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export default function SchoolDashboard() {
