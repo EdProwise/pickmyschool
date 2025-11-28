@@ -631,10 +631,10 @@ export default function SchoolDetailPage() {
                 <TabsList className="w-full flex-wrap h-auto">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="facilities">Facilities</TabsTrigger>
-                  <TabsTrigger value="gallery">Gallery</TabsTrigger>
+                  <TabsTrigger value="gallery">Gallery & Documents</TabsTrigger>
+                  <TabsTrigger value="virtualtour">Virtual Tour</TabsTrigger>
                   <TabsTrigger value="fees">Fees</TabsTrigger>
                   <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                  <TabsTrigger value="documents">Documents</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
                   <TabsTrigger value="enquire">Enquire</TabsTrigger>
                 </TabsList>
@@ -785,11 +785,11 @@ export default function SchoolDetailPage() {
                   </Card>
                 </TabsContent>
 
-                {/* Gallery Tab */}
+                {/* Gallery & Documents Tab */}
                 <TabsContent value="gallery">
                   <Card>
                     <CardContent className="p-6">
-                      <h2 className="text-2xl font-bold mb-4">School Gallery</h2>
+                      <h2 className="text-2xl font-bold mb-4">School Gallery & Documents</h2>
                       
                       {/* Virtual Tour */}
                       {school.virtualTourUrl && (
@@ -831,6 +831,99 @@ export default function SchoolDetailPage() {
                         </div>
                       ) : (
                         <p className="text-muted-foreground">No gallery images available.</p>
+                      )}
+
+                      {/* Documents */}
+                      <Separator className="my-8" />
+
+                      <h3 className="text-xl font-semibold mb-4">Documents & Resources</h3>
+                      <div className="space-y-4">
+                        {school.prospectusUrl && (
+                          <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center">
+                                  <FileText className="text-white" size={24} />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold">School Prospectus</h3>
+                                  <p className="text-sm text-muted-foreground">Download our detailed prospectus</p>
+                                </div>
+                              </div>
+                              <a
+                                href={school.prospectusUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
+                              >
+                                <Download size={20} />
+                                Download
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {school.newsletterUrl && (
+                          <div className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-indigo-500 flex items-center justify-center">
+                                  <FileText className="text-white" size={24} />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold">Newsletter / Magazine</h3>
+                                  <p className="text-sm text-muted-foreground">Read our latest newsletter</p>
+                                </div>
+                              </div>
+                              <a
+                                href={school.newsletterUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold"
+                              >
+                                <Download size={20} />
+                                Download
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {!school.prospectusUrl && !school.newsletterUrl && (
+                          <p className="text-muted-foreground text-center py-8">
+                            No documents available at the moment.
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Virtual Tour Tab */}
+                <TabsContent value="virtualtour">
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-2xl font-bold mb-4">Virtual Tour</h2>
+                      
+                      {school.virtualTourUrl ? (
+                        <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                          <a 
+                            href={school.virtualTourUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold"
+                          >
+                            <Video size={24} />
+                            View Virtual Tour
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="text-center py-16 text-muted-foreground">
+                          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
+                            <Video className="opacity-50" size={48} />
+                          </div>
+                          <p className="text-xl font-semibold mb-2">Virtual Tour not available</p>
+                          <p>Check back later or contact the school for more information.</p>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
@@ -1191,72 +1284,6 @@ export default function SchoolDetailPage() {
                           )}
                         </>
                       )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Documents Tab */}
-                <TabsContent value="documents">
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-2xl font-bold mb-4">Documents & Resources</h2>
-                      <div className="space-y-4">
-                        {school.prospectusUrl && (
-                          <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center">
-                                  <FileText className="text-white" size={24} />
-                                </div>
-                                <div>
-                                  <h3 className="font-semibold">School Prospectus</h3>
-                                  <p className="text-sm text-muted-foreground">Download our detailed prospectus</p>
-                                </div>
-                              </div>
-                              <a
-                                href={school.prospectusUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
-                              >
-                                <Download size={20} />
-                                Download
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {school.newsletterUrl && (
-                          <div className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-lg bg-indigo-500 flex items-center justify-center">
-                                  <FileText className="text-white" size={24} />
-                                </div>
-                                <div>
-                                  <h3 className="font-semibold">Newsletter / Magazine</h3>
-                                  <p className="text-sm text-muted-foreground">Read our latest newsletter</p>
-                                </div>
-                              </div>
-                              <a
-                                href={school.newsletterUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold"
-                              >
-                                <Download size={20} />
-                                Download
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {!school.prospectusUrl && !school.newsletterUrl && (
-                          <p className="text-muted-foreground text-center py-8">
-                            No documents available at the moment.
-                          </p>
-                        )}
-                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
