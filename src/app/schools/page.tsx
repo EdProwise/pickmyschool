@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { getSchools, type School } from '@/lib/api';
 import { AIChat } from '@/components/AIChat';
+import { Slider } from '@/components/ui/slider';
 
 export default function SchoolsPage() {
   const searchParams = useSearchParams();
@@ -32,6 +33,14 @@ export default function SchoolsPage() {
   const [sortBy, setSortBy] = useState('rating');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
+  
+  // New filter states
+  const [minRating, setMinRating] = useState<number[]>([0]);
+  const [gender, setGender] = useState('');
+  const [language, setLanguage] = useState('');
+  const [stream, setStream] = useState('');
+  const [k12Level, setK12Level] = useState('');
+  const [isInternational, setIsInternational] = useState<boolean | null>(null);
 
   const facilities = [
     'Library',
@@ -49,7 +58,7 @@ export default function SchoolsPage() {
 
   useEffect(() => {
     loadSchools();
-  }, [city, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities]);
+  }, [city, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities, minRating, gender, language, stream, k12Level, isInternational]);
 
   const loadSchools = async () => {
     setLoading(true);
@@ -61,12 +70,18 @@ export default function SchoolsPage() {
       };
 
       if (city) params.city = city;
-      if (board) params.board = board;
-      if (schoolType) params.schoolType = schoolType;
+      if (board && board !== 'all') params.board = board;
+      if (schoolType && schoolType !== 'all') params.schoolType = schoolType;
       if (feesMin) params.feesMin = parseInt(feesMin);
       if (feesMax) params.feesMax = parseInt(feesMax);
       if (search) params.search = search;
       if (selectedFacilities.length > 0) params.facilities = selectedFacilities.join(',');
+      if (minRating[0] > 0) params.minRating = minRating[0];
+      if (gender && gender !== 'all') params.gender = gender;
+      if (language) params.language = language;
+      if (stream) params.stream = stream;
+      if (k12Level && k12Level !== 'all') params.k12Level = k12Level;
+      if (isInternational !== null) params.isInternational = isInternational.toString();
 
       const data = await getSchools(params);
       setSchools(data);
@@ -93,6 +108,12 @@ export default function SchoolsPage() {
     setFeesMax('');
     setSearch('');
     setSelectedFacilities([]);
+    setMinRating([0]);
+    setGender('');
+    setLanguage('');
+    setStream('');
+    setK12Level('');
+    setIsInternational(null);
   };
 
   const FilterPanel = () => (
@@ -117,6 +138,23 @@ export default function SchoolsPage() {
         />
       </div>
 
+      {/* Rating Filter */}
+      <div>
+        <Label className="mb-3">Minimum Rating: {minRating[0]} ★</Label>
+        <Slider
+          value={minRating}
+          onValueChange={setMinRating}
+          min={0}
+          max={5}
+          step={0.5}
+          className="mt-2"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          <span>0★</span>
+          <span>5★</span>
+        </div>
+      </div>
+
       {/* Board */}
       <div>
         <Label className="mb-2">Board</Label>
@@ -130,6 +168,22 @@ export default function SchoolsPage() {
             <SelectItem value="ICSE">ICSE</SelectItem>
             <SelectItem value="IB">IB</SelectItem>
             <SelectItem value="State Board">State Board</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Gender */}
+      <div>
+        <Label className="mb-2">Gender</Label>
+        <Select value={gender} onValueChange={setGender}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Gender" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="Boys">Boys</SelectItem>
+            <SelectItem value="Girls">Girls</SelectItem>
+            <SelectItem value="Co-ed">Co-ed</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -148,6 +202,74 @@ export default function SchoolsPage() {
             <SelectItem value="Both">Both</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* K12 Level */}
+      <div>
+        <Label className="mb-2">Level</Label>
+        <Select value={k12Level} onValueChange={setK12Level}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            <SelectItem value="Primary">Primary (1-5)</SelectItem>
+            <SelectItem value="Middle">Middle (6-8)</SelectItem>
+            <SelectItem value="Secondary">Secondary (9-10)</SelectItem>
+            <SelectItem value="Senior Secondary">Senior Secondary (11-12)</SelectItem>
+            <SelectItem value="K-12">K-12 (All Grades)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Language */}
+      <div>
+        <Label className="mb-2">Language</Label>
+        <Select value={language} onValueChange={setLanguage}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Languages</SelectItem>
+            <SelectItem value="English">English</SelectItem>
+            <SelectItem value="Hindi">Hindi</SelectItem>
+            <SelectItem value="Sanskrit">Sanskrit</SelectItem>
+            <SelectItem value="French">French</SelectItem>
+            <SelectItem value="German">German</SelectItem>
+            <SelectItem value="Spanish">Spanish</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Stream Available */}
+      <div>
+        <Label className="mb-2">Stream Available</Label>
+        <Select value={stream} onValueChange={setStream}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Stream" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Streams</SelectItem>
+            <SelectItem value="Science">Science</SelectItem>
+            <SelectItem value="Commerce">Commerce</SelectItem>
+            <SelectItem value="Arts">Arts/Humanities</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* International School */}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="international"
+          checked={isInternational === true}
+          onCheckedChange={(checked) => setIsInternational(checked ? true : null)}
+        />
+        <label
+          htmlFor="international"
+          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+        >
+          International Schools Only
+        </label>
       </div>
 
       {/* Fees Range */}
