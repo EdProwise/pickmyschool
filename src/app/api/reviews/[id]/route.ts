@@ -115,7 +115,7 @@ export async function PUT(
     // Build update object with only provided fields
     const updateData: any = {
       updatedAt: new Date().toISOString(),
-      approvalStatus: 'pending' // Reset approval status on any edit
+      approvalStatus: 'approved' // Keep approved status - no approval workflow needed
     };
 
     if (rating !== undefined) {
