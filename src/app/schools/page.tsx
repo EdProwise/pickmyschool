@@ -78,8 +78,8 @@ export default function SchoolsPage() {
       if (selectedFacilities.length > 0) params.facilities = selectedFacilities.join(',');
       if (minRating[0] > 0) params.minRating = minRating[0];
       if (gender && gender !== 'all') params.gender = gender;
-      if (language) params.language = language;
-      if (stream) params.stream = stream;
+      if (language && language !== 'all') params.language = language;
+      if (stream && stream !== 'all') params.stream = stream;
       if (k12Level && k12Level !== 'all') params.k12Level = k12Level;
       if (isInternational !== null) params.isInternational = isInternational.toString();
 
