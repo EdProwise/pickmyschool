@@ -39,6 +39,8 @@ export default function StudentDashboard() {
     photos: [] as string[],
   });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [allSchools, setAllSchools] = useState<School[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -57,8 +59,24 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (activeTab === 'reviews' && user) {
       loadMyReviews();
+      if (allSchools.length === 0) {
+        loadAllSchools();
+      }
     }
   }, [activeTab, user]);
+
+  const loadAllSchools = async () => {
+    setSchoolsLoading(true);
+    try {
+      const schoolsData = await getSchools({ limit: 1000 });
+      setAllSchools(schoolsData);
+    } catch (error) {
+      console.error('Failed to load schools:', error);
+      toast.error('Failed to load schools list');
+    } finally {
+      setSchoolsLoading(false);
+    }
+  };
 
   const loadMyReviews = async () => {
     const token = localStorage.getItem('token');
@@ -152,7 +170,7 @@ export default function StudentDashboard() {
         throw new Error(error.error || 'Failed to submit review');
       }
 
-      toast.success(editingReview ? 'Review updated successfully!' : 'Review submitted successfully! It will be visible after approval.');
+      toast.success(editingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
       setShowReviewForm(false);
       setEditingReview(null);
       setReviewForm({
@@ -217,19 +235,6 @@ export default function StudentDashboard() {
       ...prev,
       photos: prev.photos.filter((_, i) => i !== index),
     }));
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-500 text-white">Approved</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-500 text-white">Pending Approval</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-500 text-white">Rejected</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
   };
 
   const loadUserData = async () => {
@@ -773,17 +778,19 @@ export default function StudentDashboard() {
                               onValueChange={(value) => setReviewForm({ ...reviewForm, schoolId: parseInt(value) })}
                             >
                               <SelectTrigger className="mt-2 h-11 bg-white">
-                                <SelectValue placeholder="Choose a school you attended" />
+                                <SelectValue placeholder="Choose a school to review" />
                               </SelectTrigger>
                               <SelectContent>
-                                {savedSchools.length > 0 ? (
-                                  savedSchools.map((school) => (
+                                {schoolsLoading ? (
+                                  <SelectItem value="0" disabled>Loading schools...</SelectItem>
+                                ) : allSchools.length > 0 ? (
+                                  allSchools.map((school) => (
                                     <SelectItem key={school.id} value={school.id.toString()}>
-                                      {school.name}
+                                      {school.name} - {school.city}
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <SelectItem value="0" disabled>No saved schools</SelectItem>
+                                  <SelectItem value="0" disabled>No schools available</SelectItem>
                                 )}
                               </SelectContent>
                             </Select>
@@ -926,10 +933,7 @@ export default function StudentDashboard() {
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="font-semibold text-lg">{review.schoolName || 'School Name'}</h3>
-                                {getStatusBadge(review.approvalStatus)}
-                              </div>
+                              <h3 className="font-semibold text-lg mb-2">{review.schoolName || 'School Name'}</h3>
                               <div className="flex items-center gap-2 mb-3">
                                 {[...Array(5)].map((_, i) => (
                                   <Star
@@ -980,15 +984,6 @@ export default function StudentDashboard() {
                                   className="w-full h-32 object-cover rounded-lg border-2 border-gray-100"
                                 />
                               ))}
-                            </div>
-                          )}
-
-                          {review.approvalStatus === 'pending' && (
-                            <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                              <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={18} />
-                              <p className="text-sm text-yellow-800">
-                                Your review is pending approval. It will be visible on the school's page once approved by the school administration.
-                              </p>
                             </div>
                           )}
 
