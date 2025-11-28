@@ -863,7 +863,8 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       hasHostelStudyRoom: formData.hasHostelStudyRoom,
       hasAcHostel: formData.hasAcHostel,
       hasCafeteria: formData.hasCafeteria,
-      // Intentionally skip facilityImages in PUT to avoid large payload errors
+      // Persist facility images so they reflect on public page
+      facilityImages: formData.facilityImages,
     };
     
     onSave(facilitiesData);
@@ -948,6 +949,16 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 Upload Images for {facilityLabel}
               </Button>
             </div>
+            {/* Thumb previews for this facility */}
+            {formData.facilityImages?.[facilityName] && formData.facilityImages[facilityName]!.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {formData.facilityImages[facilityName]!.map((img, idx) => (
+                  <div key={idx} className="aspect-square rounded-md overflow-hidden border">
+                    <img src={img} alt={`${facilityLabel} ${idx + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
