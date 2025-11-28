@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Filter, SlidersHorizontal, X } from 'lucide-react';
+import { Filter, SlidersHorizontal, X, LocateFixed } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
@@ -41,6 +41,10 @@ export default function SchoolsPage() {
   const [stream, setStream] = useState('all');
   const [k12Level, setK12Level] = useState('');
   const [isInternational, setIsInternational] = useState<boolean | null>(null);
+  // Distance filter
+  const [radiusKm, setRadiusKm] = useState<number[]>([0]);
+  const [coords, setCoords] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   const facilities = [
     'Library',
@@ -58,7 +62,7 @@ export default function SchoolsPage() {
 
   useEffect(() => {
     loadSchools();
-  }, [city, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities, minRating, gender, language, stream, k12Level, isInternational]);
+  }, [city, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities, minRating, gender, language, stream, k12Level, isInternational, radiusKm, coords]);
 
   const loadSchools = async () => {
     setLoading(true);
@@ -82,6 +86,11 @@ export default function SchoolsPage() {
       if (stream && stream !== 'all') params.stream = stream;
       if (k12Level && k12Level !== 'all') params.k12Level = k12Level;
       if (isInternational !== null) params.isInternational = isInternational.toString();
+      if (radiusKm[0] > 0 && coords.lat !== null && coords.lng !== null) {
+        params.lat = coords.lat;
+        params.lng = coords.lng;
+        params.radiusKm = radiusKm[0];
+      }
 
       const data = await getSchools(params);
       setSchools(data);
@@ -100,6 +109,20 @@ export default function SchoolsPage() {
     );
   };
 
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser');
+      return;
+    }
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => setGeoError('Unable to retrieve your location')
+    );
+  };
+
   const clearAllFilters = () => {
     setCity('');
     setBoard('');
@@ -114,6 +137,9 @@ export default function SchoolsPage() {
     setStream('all');
     setK12Level('');
     setIsInternational(null);
+    setRadiusKm([0]);
+    setCoords({ lat: null, lng: null });
+    setGeoError(null);
   };
 
   const FilterPanel = () => (
@@ -153,6 +179,33 @@ export default function SchoolsPage() {
           <span>0★</span>
           <span>5★</span>
         </div>
+      </div>
+
+      {/* Distance */}
+      <div>
+        <Label className="mb-2">Distance (km)</Label>
+        <div className="flex items-center gap-2 mb-2">
+          <Button variant="outline" size="sm" onClick={handleUseMyLocation}>
+            <LocateFixed className="mr-2" size={14} /> Use my location
+          </Button>
+          {coords.lat && coords.lng ? (
+            <span className="text-xs text-green-600">Location set</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Not set</span>
+          )}
+        </div>
+        <Slider
+          value={radiusKm}
+          onValueChange={(v) => setRadiusKm(v)}
+          min={0}
+          max={50}
+          step={1}
+        />
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          <span>0</span>
+          <span>{radiusKm[0]} km</span>
+        </div>
+        {geoError && <p className="text-xs text-red-600 mt-1">{geoError}</p>}
       </div>
 
       {/* Board */}
@@ -370,6 +423,7 @@ export default function SchoolsPage() {
                       <SelectItem value="feesMax">Fees (High to Low)</SelectItem>
                       <SelectItem value="name">Name</SelectItem>
                       <SelectItem value="establishmentYear">Establishment Year</SelectItem>
+                      <SelectItem value="distance">Distance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
