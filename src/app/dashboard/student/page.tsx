@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookMarked, MessageSquare, ClipboardList, User as UserIcon, Heart, TrendingUp, Search, Sparkles, ArrowRight, Clock, CheckCircle2, Target, Zap } from 'lucide-react';
+import { BookMarked, MessageSquare, ClipboardList, User as UserIcon, Heart, TrendingUp, Search, Sparkles, ArrowRight, Clock, CheckCircle2, Target, Zap, Star, Upload, X, Edit, Trash2, AlertCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { getMe, getMyEnquiries, getSchools, type User, type Enquiry, type School } from '@/lib/api';
 import { toast } from 'sonner';
 import { AIChat } from '@/components/AIChat';
@@ -25,6 +27,19 @@ export default function StudentDashboard() {
   const [recommendedSchools, setRecommendedSchools] = useState<School[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Review state
+  const [myReviews, setMyReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReview, setEditingReview] = useState<any>(null);
+  const [reviewForm, setReviewForm] = useState({
+    schoolId: 0,
+    rating: 0,
+    reviewText: '',
+    photos: [] as string[],
+  });
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   // Profile form state
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -37,6 +52,185 @@ export default function StudentDashboard() {
   useEffect(() => {
     loadUserData();
   }, []);
+
+  // Load reviews when switching to reviews tab
+  useEffect(() => {
+    if (activeTab === 'reviews' && user) {
+      loadMyReviews();
+    }
+  }, [activeTab, user]);
+
+  const loadMyReviews = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setReviewsLoading(true);
+    try {
+      const response = await fetch('/api/reviews/my-reviews', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMyReviews(data);
+      } else {
+        toast.error('Failed to load reviews');
+      }
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+      toast.error('Failed to load reviews');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleCreateReview = () => {
+    setShowReviewForm(true);
+    setEditingReview(null);
+    setReviewForm({
+      schoolId: 0,
+      rating: 0,
+      reviewText: '',
+      photos: [],
+    });
+  };
+
+  const handleEditReview = (review: any) => {
+    setEditingReview(review);
+    setShowReviewForm(true);
+    setReviewForm({
+      schoolId: review.schoolId,
+      rating: review.rating,
+      reviewText: review.reviewText,
+      photos: review.photos || [],
+    });
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (reviewForm.rating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+
+    if (!reviewForm.reviewText.trim()) {
+      toast.error('Please write a review');
+      return;
+    }
+
+    if (!editingReview && reviewForm.schoolId === 0) {
+      toast.error('Please select a school');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to submit a review');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const url = editingReview
+        ? `/api/reviews/${editingReview.id}`
+        : '/api/reviews';
+      
+      const method = editingReview ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(reviewForm),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to submit review');
+      }
+
+      toast.success(editingReview ? 'Review updated successfully!' : 'Review submitted successfully! It will be visible after approval.');
+      setShowReviewForm(false);
+      setEditingReview(null);
+      setReviewForm({
+        schoolId: 0,
+        rating: 0,
+        reviewText: '',
+        photos: [],
+      });
+      loadMyReviews();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: number) => {
+    if (!confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`/api/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete review');
+      }
+
+      toast.success('Review deleted successfully');
+      loadMyReviews();
+    } catch (error) {
+      toast.error('Failed to delete review');
+    }
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    // For demo, convert to data URLs (in production, upload to a CDN)
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setReviewForm(prev => ({
+          ...prev,
+          photos: [...prev.photos, result],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    setReviewForm(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-500 text-white">Approved</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500 text-white">Pending Approval</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-500 text-white">Rejected</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
   const loadUserData = async () => {
     const token = localStorage.getItem('token');
@@ -246,7 +440,7 @@ export default function StudentDashboard() {
         {/* Main Content Tabs with Modern Design */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-2 shadow-lg border-0">
-            <TabsList className="w-full bg-transparent grid grid-cols-4 gap-2">
+            <TabsList className="w-full bg-transparent grid grid-cols-5 gap-2">
               <TabsTrigger 
                 value="overview" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
@@ -264,6 +458,12 @@ export default function StudentDashboard() {
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
               >
                 My Enquiries
+              </TabsTrigger>
+              <TabsTrigger 
+                value="reviews"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
+              >
+                My Reviews
               </TabsTrigger>
               <TabsTrigger 
                 value="profile"
@@ -525,6 +725,280 @@ export default function StudentDashboard() {
                               <p className="text-sm text-green-800">{enquiry.notes}</p>
                             </div>
                           )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Reviews Tab */}
+          <TabsContent value="reviews">
+            <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center">
+                      <Star className="text-white" size={20} />
+                    </div>
+                    My Reviews
+                  </CardTitle>
+                  {!showReviewForm && (
+                    <Button
+                      onClick={handleCreateReview}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white"
+                    >
+                      <Star className="mr-2" size={18} />
+                      Write a Review
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showReviewForm && (
+                  <Card className="mb-6 border-2 border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50">
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <Star className="text-yellow-500" size={24} />
+                        {editingReview ? 'Edit Review' : 'Write a New Review'}
+                      </h3>
+                      <form onSubmit={handleSubmitReview} className="space-y-5">
+                        {!editingReview && (
+                          <div>
+                            <Label htmlFor="schoolId" className="text-sm font-semibold">Select School *</Label>
+                            <Select
+                              value={reviewForm.schoolId.toString()}
+                              onValueChange={(value) => setReviewForm({ ...reviewForm, schoolId: parseInt(value) })}
+                            >
+                              <SelectTrigger className="mt-2 h-11 bg-white">
+                                <SelectValue placeholder="Choose a school you attended" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {savedSchools.length > 0 ? (
+                                  savedSchools.map((school) => (
+                                    <SelectItem key={school.id} value={school.id.toString()}>
+                                      {school.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="0" disabled>No saved schools</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        <div>
+                          <Label className="text-sm font-semibold mb-3 block">Rating *</Label>
+                          <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                                className="transition-transform hover:scale-110"
+                              >
+                                <Star
+                                  size={40}
+                                  className={
+                                    star <= reviewForm.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'fill-gray-200 text-gray-200'
+                                  }
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          {reviewForm.rating > 0 && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {reviewForm.rating} star{reviewForm.rating !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <Label htmlFor="reviewText" className="text-sm font-semibold">Your Review *</Label>
+                          <Textarea
+                            id="reviewText"
+                            value={reviewForm.reviewText}
+                            onChange={(e) => setReviewForm({ ...reviewForm, reviewText: e.target.value })}
+                            rows={6}
+                            placeholder="Share your experience with this school... (facilities, teachers, academics, environment, etc.)"
+                            className="mt-2 bg-white resize-none"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-semibold mb-2 block">Photos (Optional)</Label>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handlePhotoUpload}
+                                className="bg-white"
+                                id="photo-upload"
+                              />
+                              <Label
+                                htmlFor="photo-upload"
+                                className="cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                              >
+                                <Upload size={16} />
+                                Upload Photos
+                              </Label>
+                            </div>
+                            {reviewForm.photos.length > 0 && (
+                              <div className="grid grid-cols-3 gap-3">
+                                {reviewForm.photos.map((photo, index) => (
+                                  <div key={index} className="relative group">
+                                    <img
+                                      src={photo}
+                                      alt={`Review photo ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded-lg border-2 border-gray-200"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removePhoto(index)}
+                                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <Button
+                            type="submit"
+                            disabled={submittingReview}
+                            className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 shadow-lg"
+                          >
+                            {submittingReview ? 'Submitting...' : (editingReview ? 'Update Review' : 'Submit Review')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setShowReviewForm(false);
+                              setEditingReview(null);
+                            }}
+                            className="border-2"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {reviewsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading your reviews...</p>
+                  </div>
+                ) : myReviews.length === 0 ? (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center mx-auto mb-6">
+                      <Star className="opacity-50" size={48} />
+                    </div>
+                    <p className="text-xl font-semibold mb-2">No reviews yet</p>
+                    <p className="mb-6">Share your experience by writing your first review</p>
+                    <Button
+                      onClick={handleCreateReview}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white"
+                    >
+                      <Star className="mr-2" size={18} />
+                      Write Your First Review
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {myReviews.map((review) => (
+                      <Card key={review.id} className="border-0 bg-white shadow-md hover:shadow-lg transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="font-semibold text-lg">{review.schoolName || 'School Name'}</h3>
+                                {getStatusBadge(review.approvalStatus)}
+                              </div>
+                              <div className="flex items-center gap-2 mb-3">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    size={20}
+                                    className={
+                                      i < review.rating
+                                        ? 'fill-yellow-400 text-yellow-400'
+                                        : 'fill-gray-200 text-gray-200'
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditReview(review)}
+                                className="hover:bg-cyan-50"
+                              >
+                                <Edit size={16} className="mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteReview(review.id)}
+                                className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                              >
+                                <Trash2 size={16} className="mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+
+                          <p className="text-muted-foreground mb-4 leading-relaxed whitespace-pre-line">
+                            {review.reviewText}
+                          </p>
+
+                          {review.photos && review.photos.length > 0 && (
+                            <div className="grid grid-cols-3 gap-3 mb-4">
+                              {review.photos.map((photo: string, index: number) => (
+                                <img
+                                  key={index}
+                                  src={photo}
+                                  alt={`Review photo ${index + 1}`}
+                                  className="w-full h-32 object-cover rounded-lg border-2 border-gray-100"
+                                />
+                              ))}
+                            </div>
+                          )}
+
+                          {review.approvalStatus === 'pending' && (
+                            <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={18} />
+                              <p className="text-sm text-yellow-800">
+                                Your review is pending approval. It will be visible on the school's page once approved by the school administration.
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-4 pt-4 border-t">
+                            <Clock size={14} />
+                            <span>Submitted on {new Date(review.createdAt).toLocaleDateString()}</span>
+                            {review.updatedAt !== review.createdAt && (
+                              <span>• Updated on {new Date(review.updatedAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
                     ))}

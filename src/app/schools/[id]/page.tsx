@@ -138,6 +138,12 @@ export default function SchoolDetailPage() {
   const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   
+  // Reviews state
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewStats, setReviewStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  
   // Enquiry form state
   const [enquiryForm, setEnquiryForm] = useState({
     studentName: '',
@@ -151,6 +157,14 @@ export default function SchoolDetailPage() {
     loadSchool();
   }, [schoolId]);
 
+  // Load reviews and stats when Reviews tab is active
+  useEffect(() => {
+    if (activeTab === 'reviews' && school) {
+      loadReviews();
+      loadReviewStats();
+    }
+  }, [activeTab, school]);
+
   const loadSchool = async () => {
     try {
       const response = await fetch(`/api/schools?id=${schoolId}`);
@@ -162,6 +176,36 @@ export default function SchoolDetailPage() {
       toast.error('Failed to load school details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReviews = async () => {
+    setReviewsLoading(true);
+    try {
+      const response = await fetch(`/api/reviews?schoolId=${schoolId}&status=approved&limit=50`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data);
+      }
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const loadReviewStats = async () => {
+    setStatsLoading(true);
+    try {
+      const response = await fetch(`/api/schools/${schoolId}/reviews/stats`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviewStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to load review stats:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -817,31 +861,168 @@ export default function SchoolDetailPage() {
                 <TabsContent value="reviews">
                   <Card>
                     <CardContent className="p-6">
-                      <h2 className="text-2xl font-bold mb-4">Reviews & Ratings</h2>
-                      <div className="text-center py-12">
-                        <div className="mb-4">
-                          <div className="text-5xl font-bold mb-2">{school.rating}</div>
-                          <div className="flex justify-center mb-2">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-6 h-6 ${
-                                  i < Math.floor(school.rating)
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <div className="text-muted-foreground">
-                            Based on {school.reviewCount} reviews
+                      <h2 className="text-2xl font-bold mb-6">Reviews & Ratings</h2>
+                      
+                      {/* Review Statistics */}
+                      {statsLoading ? (
+                        <div className="text-center py-8">
+                          <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
+                          <p className="text-muted-foreground">Loading statistics...</p>
+                        </div>
+                      ) : reviewStats ? (
+                        <div className="mb-8">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            {/* Average Rating Card */}
+                            <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+                              <CardContent className="p-6 text-center">
+                                <div className="text-6xl font-bold text-yellow-600 mb-2">
+                                  {reviewStats.averageRating.toFixed(1)}
+                                </div>
+                                <div className="flex justify-center mb-3">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-6 h-6 ${
+                                        i < Math.floor(reviewStats.averageRating)
+                                          ? 'fill-yellow-400 text-yellow-400'
+                                          : i < reviewStats.averageRating
+                                          ? 'fill-yellow-400/50 text-yellow-400'
+                                          : 'fill-gray-200 text-gray-200'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <div className="text-muted-foreground font-semibold">
+                                  Based on {reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? 's' : ''}
+                                </div>
+                              </CardContent>
+                            </Card>
+
+                            {/* Rating Distribution Card */}
+                            <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
+                              <CardContent className="p-6">
+                                <h3 className="font-semibold mb-4 text-center">Rating Distribution</h3>
+                                <div className="space-y-2">
+                                  {[5, 4, 3, 2, 1].map((rating) => {
+                                    const count = reviewStats.ratingDistribution[rating] || 0;
+                                    const percentage = reviewStats.totalReviews > 0
+                                      ? (count / reviewStats.totalReviews) * 100
+                                      : 0;
+                                    return (
+                                      <div key={rating} className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1 w-16">
+                                          <span className="text-sm font-medium">{rating}</span>
+                                          <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                                        </div>
+                                        <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 transition-all duration-500"
+                                            style={{ width: `${percentage}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-sm text-muted-foreground w-12 text-right">
+                                          {count}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CardContent>
+                            </Card>
                           </div>
                         </div>
-                        <Separator className="my-6" />
-                        <p className="text-muted-foreground">
-                          Detailed reviews coming soon. Be the first to review this school!
-                        </p>
-                      </div>
+                      ) : null}
+
+                      <Separator className="my-6" />
+
+                      {/* Reviews List */}
+                      <h3 className="text-xl font-semibold mb-4">Student Reviews</h3>
+                      
+                      {reviewsLoading ? (
+                        <div className="text-center py-12">
+                          <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
+                          <p className="text-muted-foreground">Loading reviews...</p>
+                        </div>
+                      ) : reviews.length === 0 ? (
+                        <div className="text-center py-16 text-muted-foreground">
+                          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
+                            <Star className="opacity-50" size={48} />
+                          </div>
+                          <p className="text-xl font-semibold mb-2">No reviews yet</p>
+                          <p>Be the first to review this school!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {reviews.map((review) => (
+                            <Card key={review.id} className="border-0 bg-white shadow-md hover:shadow-lg transition-shadow">
+                              <CardContent className="p-6">
+                                {/* Reviewer Header */}
+                                <div className="flex items-start justify-between mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                      {review.studentName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-lg">{review.studentName}</h4>
+                                      <div className="flex items-center gap-2">
+                                        {[...Array(5)].map((_, i) => (
+                                          <Star
+                                            key={i}
+                                            size={18}
+                                            className={
+                                              i < review.rating
+                                                ? 'fill-yellow-400 text-yellow-400'
+                                                : 'fill-gray-200 text-gray-200'
+                                            }
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Review Text */}
+                                <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
+                                  {review.reviewText}
+                                </p>
+
+                                {/* Review Photos */}
+                                {review.photos && review.photos.length > 0 && (
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                                    {review.photos.map((photo: string, index: number) => (
+                                      <div
+                                        key={index}
+                                        className="aspect-video rounded-lg overflow-hidden border-2 border-gray-100 hover:border-cyan-300 transition-colors cursor-pointer"
+                                      >
+                                        <img
+                                          src={photo}
+                                          alt={`Review photo ${index + 1}`}
+                                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Helpful Indicator */}
+                                <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                                  <CheckCircle2 size={16} className="text-green-600" />
+                                  <span className="text-sm text-muted-foreground">
+                                    Verified Review
+                                  </span>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

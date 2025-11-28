@@ -8,7 +8,7 @@ import {
   LayoutDashboard, MessageSquare, Info, Contact2, Building,
   Image, DollarSign, Trophy, GraduationCap, Newspaper,
   Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings
+  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +80,13 @@ export default function SchoolDashboard() {
   const [enquiryNotes, setEnquiryNotes] = useState('');
   const [enquiryStatus, setEnquiryStatus] = useState('');
 
+  // Reviews state
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewStats, setReviewStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [reviewFilterStatus, setReviewFilterStatus] = useState('pending');
+
   useEffect(() => {
     loadSchoolData();
   }, []);
@@ -90,6 +97,14 @@ export default function SchoolDashboard() {
       loadSchoolProfile();
     }
   }, [activeSection]);
+
+  // Load reviews when switching to review section
+  useEffect(() => {
+    if (activeSection === 'review' && user?.schoolId) {
+      loadReviews();
+      loadReviewStats();
+    }
+  }, [activeSection, user, reviewFilterStatus]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -258,6 +273,93 @@ export default function SchoolDashboard() {
     converted: enquiries.filter(e => e.status === 'Converted').length,
     contacted: Math.floor(enquiries.length * 0.85),
     applications: Math.floor(enquiries.length * 0.47),
+  };
+
+  const loadReviews = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !user?.schoolId) return;
+
+    setReviewsLoading(true);
+    try {
+      const response = await fetch(
+        `/api/reviews?schoolId=${user.schoolId}&status=${reviewFilterStatus}&limit=100`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data);
+      } else {
+        toast.error('Failed to load reviews');
+      }
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+      toast.error('Failed to load reviews');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const loadReviewStats = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !user?.schoolId) return;
+
+    setStatsLoading(true);
+    try {
+      const response = await fetch(`/api/schools/${user.schoolId}/reviews/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReviewStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to load review stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const handleModerateReview = async (reviewId: number, action: 'approved' | 'rejected') => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`/api/reviews/${reviewId}/moderate`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ approvalStatus: action }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to moderate review');
+      }
+
+      toast.success(`Review ${action === 'approved' ? 'approved' : 'rejected'} successfully`);
+      loadReviews();
+      loadReviewStats();
+    } catch (error) {
+      toast.error('Failed to moderate review');
+    }
+  };
+
+  const getReviewStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-500 text-white">Approved</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500 text-white">Pending</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-500 text-white">Rejected</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
   };
 
   if (loading) {
@@ -815,8 +917,244 @@ export default function SchoolDashboard() {
             />
           )}
 
+          {/* Review Section */}
+          {activeSection === 'review' && (
+            <div className="space-y-6">
+              {/* Review Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {statsLoading ? (
+                  <div className="col-span-3 text-center py-8">
+                    <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading statistics...</p>
+                  </div>
+                ) : reviewStats ? (
+                  <>
+                    <Card className="border-0 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-lg hover:shadow-xl transition-shadow">
+                      <CardContent className="p-6 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                          <Star className="text-white" size={32} />
+                        </div>
+                        <div className="text-5xl font-bold text-yellow-600 mb-2">
+                          {reviewStats.averageRating.toFixed(1)}
+                        </div>
+                        <div className="text-sm text-muted-foreground font-semibold">
+                          Average Rating
+                        </div>
+                        <div className="flex justify-center mt-3">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={16}
+                              className={
+                                i < Math.floor(reviewStats.averageRating)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : i < reviewStats.averageRating
+                                  ? 'fill-yellow-400/50 text-yellow-400'
+                                  : 'fill-gray-200 text-gray-200'
+                              }
+                            />
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-0 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-lg hover:shadow-xl transition-shadow">
+                      <CardContent className="p-6 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                          <MessageSquare className="text-white" size={32} />
+                        </div>
+                        <div className="text-5xl font-bold text-blue-600 mb-2">
+                          {reviewStats.totalReviews}
+                        </div>
+                        <div className="text-sm text-muted-foreground font-semibold">
+                          Total Reviews
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-0 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg hover:shadow-xl transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                          <BarChart3 className="text-white" size={32} />
+                        </div>
+                        <h3 className="font-semibold mb-3 text-center text-sm">Rating Distribution</h3>
+                        <div className="space-y-2">
+                          {[5, 4, 3, 2, 1].map((rating) => {
+                            const count = reviewStats.ratingDistribution[rating] || 0;
+                            const percentage = reviewStats.totalReviews > 0
+                              ? (count / reviewStats.totalReviews) * 100
+                              : 0;
+                            return (
+                              <div key={rating} className="flex items-center gap-2">
+                                <span className="text-xs font-medium w-3">{rating}</span>
+                                <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-400"
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-muted-foreground w-6 text-right">
+                                  {count}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                ) : null}
+              </div>
+
+              {/* Reviews Management */}
+              <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+                <CardHeader>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <Star className="text-white" size={20} />
+                      </div>
+                      Review Management
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Select value={reviewFilterStatus} onValueChange={setReviewFilterStatus}>
+                        <SelectTrigger className="w-40 bg-white">
+                          <Filter size={16} className="mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {reviewsLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
+                      <p className="text-muted-foreground">Loading reviews...</p>
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
+                        <Star className="opacity-50" size={48} />
+                      </div>
+                      <p className="text-xl font-semibold mb-2">No {reviewFilterStatus} reviews</p>
+                      <p>Reviews will appear here once students submit them</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <Card key={review.id} className="border-0 bg-white shadow-md hover:shadow-lg transition-shadow">
+                          <CardContent className="p-6">
+                            {/* Review Header */}
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                  {review.studentName.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-lg">{review.studentName}</h4>
+                                  <div className="flex items-center gap-2">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        size={18}
+                                        className={
+                                          i < review.rating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'fill-gray-200 text-gray-200'
+                                        }
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                {getReviewStatusBadge(review.approvalStatus)}
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(review.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Review Text */}
+                            <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
+                              {review.reviewText}
+                            </p>
+
+                            {/* Review Photos */}
+                            {review.photos && review.photos.length > 0 && (
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                                {review.photos.map((photo: string, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="aspect-video rounded-lg overflow-hidden border-2 border-gray-100"
+                                  >
+                                    <img
+                                      src={photo}
+                                      alt={`Review photo ${index + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            {review.approvalStatus === 'pending' && (
+                              <div className="flex gap-3 pt-4 border-t">
+                                <Button
+                                  onClick={() => handleModerateReview(review.id, 'approved')}
+                                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
+                                >
+                                  <ThumbsUp className="mr-2" size={16} />
+                                  Approve
+                                </Button>
+                                <Button
+                                  onClick={() => handleModerateReview(review.id, 'rejected')}
+                                  variant="outline"
+                                  className="border-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                                >
+                                  <ThumbsDown className="mr-2" size={16} />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+
+                            {review.approvalStatus === 'approved' && (
+                              <div className="flex items-center gap-2 pt-4 border-t">
+                                <CheckCircle2 size={16} className="text-green-600" />
+                                <span className="text-sm text-green-600 font-semibold">
+                                  This review is visible on your school's public page
+                                </span>
+                              </div>
+                            )}
+
+                            {review.approvalStatus === 'rejected' && (
+                              <div className="flex items-center gap-2 pt-4 border-t">
+                                <XCircle size={16} className="text-red-600" />
+                                <span className="text-sm text-red-600 font-semibold">
+                                  This review has been rejected and is not visible publicly
+                                </span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Other sections - Coming Soon */}
-          {!['dashboard', 'enquiry', 'basic-info', 'contact', 'facilities', 'gallery', 'fees', 'settings'].includes(activeSection) && (
+          {!['dashboard', 'enquiry', 'basic-info', 'contact', 'facilities', 'gallery', 'fees', 'settings', 'review'].includes(activeSection) && (
             <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="p-16">
                 <div className="text-center text-muted-foreground">
