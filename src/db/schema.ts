@@ -185,3 +185,15 @@ export const siteSettings = sqliteTable('site_settings', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+// Add reviews table at the end
+export const reviews = sqliteTable('reviews', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id),
+  schoolId: integer('school_id').notNull().references(() => schools.id),
+  rating: integer('rating').notNull(),
+  reviewText: text('review_text').notNull(),
+  photos: text('photos', { mode: 'json' }),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
