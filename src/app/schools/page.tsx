@@ -344,7 +344,7 @@ export default function SchoolsPage() {
           <div className="flex gap-6">
             {/* Desktop Filters */}
             <Card className="hidden lg:block w-80 h-fit sticky top-24">
-              <CardContent className="p-6">
+              <CardContent className="p-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold flex items-center">
                     <Filter className="mr-2" size={20} />
