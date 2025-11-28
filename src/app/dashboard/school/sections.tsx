@@ -1142,6 +1142,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 export function GallerySection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [newAwardText, setNewAwardText] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -1158,49 +1159,21 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       return;
     }
 
-    // First, upload gallery images via dedicated API in small chunks to avoid large PUT payloads
-    try {
-      const token = localStorage.getItem('token');
-      const imgs = formData.galleryImages || [];
-      const urlsToUpload = imgs.filter((u) => typeof u === 'string' && u.trim() !== '');
-      // Upload in chunks of 2 to stay well under body size limits
-      const chunkSize = 2;
-      for (let i = 0; i < urlsToUpload.length; i += chunkSize) {
-        const chunk = urlsToUpload.slice(i, i + chunkSize);
-        const res = await fetch('/api/schools/profile/images', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ imageUrls: chunk }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || 'Failed to upload gallery images');
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to upload one or more images');
-      // Continue to save metadata even if some images failed
-    }
-    
-    // Include metadata only in PUT to keep payload small
+    // Don't upload images here, they're already uploaded via handleGalleryImagesUpload
+    // Just save metadata
     const galleryData: Partial<SchoolProfile> = {
       name: profile.name,
       board: profile.board,
       city: profile.city,
-      virtualTourUrl: formData.virtualTourUrl,
       prospectusUrl: formData.prospectusUrl,
       awards: formData.awards,
       newsletterUrl: formData.newsletterUrl,
-      // Intentionally omit galleryImages from PUT
     };
     
     onSave(galleryData);
   };
 
-  const handleGalleryImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const validFiles = Array.from(files).filter(file => {
@@ -1217,26 +1190,81 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 
       if (validFiles.length === 0) return;
 
-      const readers = validFiles.map(file => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
+      setUploading(true);
+      try {
+        const readers = validFiles.map(file => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
         });
-      });
 
-      Promise.all(readers).then(dataUrls => {
-        const currentImages = formData.galleryImages || [];
-        setFormData({ ...formData, galleryImages: [...currentImages, ...dataUrls] });
+        const dataUrls = await Promise.all(readers);
+
+        // Upload images via dedicated API in chunks
+        const token = localStorage.getItem('token');
+        const chunkSize = 2;
+        for (let i = 0; i < dataUrls.length; i += chunkSize) {
+          const chunk = dataUrls.slice(i, i + chunkSize);
+          const res = await fetch('/api/schools/profile/images', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ imageUrls: chunk }),
+          });
+          
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to upload images');
+          }
+          
+          // Update local formData with response
+          const updatedProfile = await res.json();
+          setFormData(prev => ({
+            ...prev,
+            galleryImages: updatedProfile.galleryImages || []
+          }));
+        }
+        
         toast.success(`${dataUrls.length} image(s) uploaded successfully`);
-      });
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to upload images');
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
-  const handleRemoveGalleryImage = (index: number) => {
+  const handleRemoveGalleryImage = async (index: number) => {
     const currentImages = formData.galleryImages || [];
-    setFormData({ ...formData, galleryImages: currentImages.filter((_, i) => i !== index) });
-    toast.success('Image removed');
+    const imageToRemove = currentImages[index];
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/schools/profile/images', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ imageUrl: imageToRemove }),
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to delete image');
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        galleryImages: currentImages.filter((_, i) => i !== index)
+      }));
+      toast.success('Image removed');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove image');
+    }
   };
 
   const handleAwardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1337,14 +1365,16 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                   multiple
                   onChange={handleGalleryImagesUpload}
                   className="hidden"
+                  disabled={uploading}
                 />
                 <Button
                   type="button"
                   onClick={() => document.getElementById('galleryImages')?.click()}
                   className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-8"
+                  disabled={uploading}
                 >
                   <Upload className="mr-2" size={16} />
-                  Select Images to Upload
+                  {uploading ? 'Uploading...' : 'Select Images to Upload'}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
                   PNG, JPG or WEBP (Max 5MB per image)
@@ -1375,6 +1405,40 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="border-t-2 pt-8" />
+
+          {/* Documents Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <FileText className="text-green-600" size={20} />
+              <Label className="text-base font-semibold">Documents</Label>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="prospectusUrl">School Prospectus URL</Label>
+                <Input
+                  id="prospectusUrl"
+                  value={formData.prospectusUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, prospectusUrl: e.target.value })}
+                  placeholder="https://example.com/prospectus.pdf"
+                />
+                <p className="text-xs text-muted-foreground">Link to downloadable prospectus</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newsletterUrl">Newsletter / Magazine URL</Label>
+                <Input
+                  id="newsletterUrl"
+                  value={formData.newsletterUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, newsletterUrl: e.target.value })}
+                  placeholder="https://example.com/newsletter.pdf"
+                />
+                <p className="text-xs text-muted-foreground">Link to downloadable newsletter or magazine</p>
+              </div>
+            </div>
           </div>
 
           <div className="border-t-2 pt-8" />
@@ -1452,7 +1516,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
           <div className="flex justify-end gap-3 pt-6 border-t-2">
             <Button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploading}
               className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-8"
               size="lg"
             >
@@ -1464,7 +1528,137 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               ) : (
                 <>
                   <Save className="mr-2" size={18} />
-                  Save Gallery
+                  Save Gallery & Documents
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Virtual Tour Section
+export function VirtualTourSection({ profile, profileLoading, saving, onSave }: SectionProps) {
+  const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
+
+  useEffect(() => {
+    if (profile) {
+      setFormData(profile);
+    }
+  }, [profile]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required basic fields first
+    if (!profile?.name || !profile?.city || !profile?.board) {
+      toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first');
+      return;
+    }
+    
+    const virtualTourData: Partial<SchoolProfile> = {
+      name: profile.name,
+      board: profile.board,
+      city: profile.city,
+      virtualTourUrl: formData.virtualTourUrl,
+    };
+    
+    onSave(virtualTourData);
+  };
+
+  if (profileLoading) {
+    return (
+      <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+        <CardContent className="p-8">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-gray-200 rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+            <Video className="text-white" size={20} />
+          </div>
+          Virtual Tour
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-dashed border-purple-300">
+              <div className="space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Video className="text-white" size={28} />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="virtualTourUrl">Virtual Tour Video URL</Label>
+                  <Input
+                    id="virtualTourUrl"
+                    value={formData.virtualTourUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, virtualTourUrl: e.target.value })}
+                    placeholder="https://youtube.com/... or https://vimeo.com/..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Paste a link to your school's virtual tour video (YouTube, Vimeo, or direct video link)
+                  </p>
+                </div>
+
+                {formData.virtualTourUrl && (
+                  <div className="mt-4 p-4 bg-white rounded-lg">
+                    <p className="text-sm font-semibold mb-2">Preview:</p>
+                    <a 
+                      href={formData.virtualTourUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-purple-600 hover:text-purple-700 underline break-all"
+                    >
+                      {formData.virtualTourUrl}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">Tips for a Great Virtual Tour:</h4>
+              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                <li>Upload your virtual tour video to YouTube or Vimeo first</li>
+                <li>Ensure the video showcases classrooms, labs, sports facilities, and campus</li>
+                <li>Include narration or captions explaining key features</li>
+                <li>Keep the video engaging (5-10 minutes is ideal)</li>
+                <li>Make sure the video is set to public or unlisted (not private)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2" size={18} />
+                  Save Virtual Tour
                 </>
               )}
             </Button>
