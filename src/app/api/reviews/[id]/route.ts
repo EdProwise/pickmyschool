@@ -4,7 +4,7 @@ import { reviews } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JwtPayload {
   userId: number;
