@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         rating: rating,
         reviewText: reviewText.trim(),
         photos: photos || [],
-        approvalStatus: 'pending',
+        approvalStatus: 'approved',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
@@ -143,7 +143,6 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const schoolIdParam = searchParams.get('schoolId');
-    const statusParam = searchParams.get('status');
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
 
@@ -160,11 +159,8 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(reviews.schoolId, schoolId));
     }
 
-    if (statusParam) {
-      conditions.push(eq(reviews.approvalStatus, statusParam));
-    } else {
-      conditions.push(eq(reviews.approvalStatus, 'approved'));
-    }
+    // Always show approved reviews for public viewing
+    conditions.push(eq(reviews.approvalStatus, 'approved'));
 
     let reviewsList;
     if (conditions.length > 1) {
