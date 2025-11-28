@@ -781,6 +781,38 @@ export default function SchoolDetailPage() {
                           <p className="text-muted-foreground">{school.sportsFacilities}</p>
                         </>
                       )}
+
+                      {/* Facility Images (from dashboard) */}
+                      {school.facilityImages && Object.keys(school.facilityImages || {}).length > 0 && (
+                        <>
+                          <Separator className="my-6" />
+                          <h3 className="text-xl font-semibold mb-4">Facility Photos</h3>
+                          <div className="space-y-6">
+                            {Object.entries(school.facilityImages || {}).map(([facilityName, images]) => (
+                              Array.isArray(images) && images.length > 0 ? (
+                                <div key={facilityName}>
+                                  <h4 className="font-semibold mb-2">{facilityName}</h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {images.map((img: string, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className="aspect-video rounded-lg overflow-hidden border hover:border-cyan-300 transition-colors cursor-pointer"
+                                        onClick={() => openImagePreview(images as string[], idx)}
+                                      >
+                                        <img
+                                          src={img}
+                                          alt={`${facilityName} ${idx + 1}`}
+                                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
