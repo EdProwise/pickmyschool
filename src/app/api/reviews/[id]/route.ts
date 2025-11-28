@@ -9,6 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 interface JwtPayload {
   userId: number;
   role: string;
+  email: string;
 }
 
 function extractAndVerifyToken(request: NextRequest): JwtPayload | null {
