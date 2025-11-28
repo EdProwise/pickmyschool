@@ -8,7 +8,7 @@ import {
   LayoutDashboard, MessageSquare, Info, Contact2, Building,
   Image, DollarSign, Trophy, GraduationCap, Newspaper,
   Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown
+  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +50,7 @@ const sidebarItems = [
   { id: 'contact', label: 'Contact Information', icon: Contact2 },
   { id: 'facilities', label: 'Facilities & Infrastructure', icon: Building },
   { id: 'gallery', label: 'Gallery & Documents', icon: Image },
+  { id: 'virtualtour', label: 'Virtual Tour', icon: Video },
   { id: 'fees', label: 'Fees Structure', icon: DollarSign },
   { id: 'results', label: 'Results', icon: Trophy },
   { id: 'alumini', label: 'Alumini', icon: Users },
