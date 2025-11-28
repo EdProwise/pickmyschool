@@ -6,7 +6,8 @@ import {
   MapPin, Star, IndianRupee, Phone, Mail, Calendar, Users, 
   CheckCircle2, Heart, Share2, Bookmark, MessageCircle, ArrowLeft,
   Globe, Facebook, Instagram, Linkedin, Youtube, Download, Trophy,
-  Video, FileText, Wifi, Shield, Bus, Laptop, BookOpen, GraduationCap
+  Video, FileText, Wifi, Shield, Bus, Laptop, BookOpen, GraduationCap,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -138,11 +139,14 @@ export default function SchoolDetailPage() {
   const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   
-  // Reviews state
+  // Reviews state with pagination
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewStats, setReviewStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsMetadata, setReviewsMetadata] = useState<any>(null);
+  const REVIEWS_PER_PAGE = 10;
   
   // Enquiry form state
   const [enquiryForm, setEnquiryForm] = useState({
@@ -157,13 +161,15 @@ export default function SchoolDetailPage() {
     loadSchool();
   }, [schoolId]);
 
-  // Load reviews and stats when Reviews tab is active
+  // Load reviews and stats when Reviews tab is active or page changes
   useEffect(() => {
     if (activeTab === 'reviews' && school) {
-      loadReviews();
-      loadReviewStats();
+      loadReviews(reviewsPage);
+      if (!reviewStats) {
+        loadReviewStats();
+      }
     }
-  }, [activeTab, school]);
+  }, [activeTab, school, reviewsPage]);
 
   const loadSchool = async () => {
     try {
@@ -179,13 +185,14 @@ export default function SchoolDetailPage() {
     }
   };
 
-  const loadReviews = async () => {
+  const loadReviews = async (page: number = 1) => {
     setReviewsLoading(true);
     try {
-      const response = await fetch(`/api/reviews?schoolId=${schoolId}&status=approved&limit=50`);
+      const response = await fetch(`/api/schools/${schoolId}/reviews?page=${page}&limit=${REVIEWS_PER_PAGE}`);
       if (response.ok) {
         const data = await response.json();
-        setReviews(data);
+        setReviews(data.reviews || []);
+        setReviewsMetadata(data.metadata || null);
       }
     } catch (error) {
       console.error('Failed to load reviews:', error);
@@ -207,6 +214,11 @@ export default function SchoolDetailPage() {
     } finally {
       setStatsLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setReviewsPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEnquirySubmit = async (e: React.FormEvent) => {
@@ -364,6 +376,10 @@ export default function SchoolDetailPage() {
   const displayLogo = school.logoUrl || school.logo;
   const displayBanner = school.bannerImageUrl || school.bannerImage;
   const displayGallery = school.galleryImages || school.gallery || [];
+  
+  // Use review stats for average rating if available
+  const displayRating = reviewStats?.averageRating || school.rating;
+  const displayReviewCount = reviewStats?.totalReviews || school.reviewCount;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -460,12 +476,14 @@ export default function SchoolDetailPage() {
                     )}
                   </div>
 
-                  {/* Quick Stats */}
+                  {/* Quick Stats - Updated with review stats */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="text-center p-3 bg-gray-50 rounded-lg">
                       <Star className="mx-auto mb-1 text-yellow-400" size={24} />
-                      <div className="font-bold text-lg">{school.rating}</div>
-                      <div className="text-sm text-muted-foreground">Rating</div>
+                      <div className="font-bold text-lg">{displayRating.toFixed(1)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {displayReviewCount} Review{displayReviewCount !== 1 ? 's' : ''}
+                      </div>
                     </div>
                     
                     {school.establishmentYear && (
@@ -857,7 +875,7 @@ export default function SchoolDetailPage() {
                   </Card>
                 </TabsContent>
 
-                {/* Reviews Tab */}
+                {/* Reviews Tab - Enhanced with Pagination */}
                 <TabsContent value="reviews">
                   <Card>
                     <CardContent className="p-6">
@@ -936,7 +954,14 @@ export default function SchoolDetailPage() {
                       <Separator className="my-6" />
 
                       {/* Reviews List */}
-                      <h3 className="text-xl font-semibold mb-4">Student Reviews</h3>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-semibold">Student Reviews</h3>
+                        {reviewsMetadata && reviewsMetadata.total > 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            Showing {((reviewsMetadata.page - 1) * reviewsMetadata.limit) + 1} - {Math.min(reviewsMetadata.page * reviewsMetadata.limit, reviewsMetadata.total)} of {reviewsMetadata.total}
+                          </p>
+                        )}
+                      </div>
                       
                       {reviewsLoading ? (
                         <div className="text-center py-12">
@@ -952,76 +977,130 @@ export default function SchoolDetailPage() {
                           <p>Be the first to review this school!</p>
                         </div>
                       ) : (
-                        <div className="space-y-6">
-                          {reviews.map((review) => (
-                            <Card key={review.id} className="border-0 bg-white shadow-md hover:shadow-lg transition-shadow">
-                              <CardContent className="p-6">
-                                {/* Reviewer Header */}
-                                <div className="flex items-start justify-between mb-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                                      {review.studentName.charAt(0).toUpperCase()}
+                        <>
+                          <div className="space-y-6">
+                            {reviews.map((review) => (
+                              <Card key={review.id} className="border-0 bg-white shadow-md hover:shadow-lg transition-shadow">
+                                <CardContent className="p-6">
+                                  {/* Reviewer Header */}
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                        {review.studentName.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <h4 className="font-semibold text-lg">{review.studentName}</h4>
+                                        <div className="flex items-center gap-2">
+                                          {[...Array(5)].map((_, i) => (
+                                            <Star
+                                              key={i}
+                                              size={18}
+                                              className={
+                                                i < review.rating
+                                                  ? 'fill-yellow-400 text-yellow-400'
+                                                  : 'fill-gray-200 text-gray-200'
+                                              }
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <h4 className="font-semibold text-lg">{review.studentName}</h4>
-                                      <div className="flex items-center gap-2">
-                                        {[...Array(5)].map((_, i) => (
-                                          <Star
-                                            key={i}
-                                            size={18}
-                                            className={
-                                              i < review.rating
-                                                ? 'fill-yellow-400 text-yellow-400'
-                                                : 'fill-gray-200 text-gray-200'
-                                            }
+                                    <div className="text-sm text-muted-foreground">
+                                      {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Review Text */}
+                                  <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
+                                    {review.reviewText}
+                                  </p>
+
+                                  {/* Review Photos */}
+                                  {review.photos && review.photos.length > 0 && (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                                      {review.photos.map((photo: string, index: number) => (
+                                        <div
+                                          key={index}
+                                          className="aspect-video rounded-lg overflow-hidden border-2 border-gray-100 hover:border-cyan-300 transition-colors cursor-pointer"
+                                        >
+                                          <img
+                                            src={photo}
+                                            alt={`Review photo ${index + 1}`}
+                                            className="w-full h-full object-cover hover:scale-105 transition-transform"
                                           />
-                                        ))}
-                                      </div>
+                                        </div>
+                                      ))}
                                     </div>
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {new Date(review.createdAt).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric'
-                                    })}
-                                  </div>
-                                </div>
+                                  )}
 
-                                {/* Review Text */}
-                                <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
-                                  {review.reviewText}
-                                </p>
-
-                                {/* Review Photos */}
-                                {review.photos && review.photos.length > 0 && (
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
-                                    {review.photos.map((photo: string, index: number) => (
-                                      <div
-                                        key={index}
-                                        className="aspect-video rounded-lg overflow-hidden border-2 border-gray-100 hover:border-cyan-300 transition-colors cursor-pointer"
-                                      >
-                                        <img
-                                          src={photo}
-                                          alt={`Review photo ${index + 1}`}
-                                          className="w-full h-full object-cover hover:scale-105 transition-transform"
-                                        />
-                                      </div>
-                                    ))}
+                                  {/* Verified Indicator */}
+                                  <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                                    <CheckCircle2 size={16} className="text-green-600" />
+                                    <span className="text-sm text-muted-foreground">
+                                      Verified Review
+                                    </span>
                                   </div>
-                                )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
 
-                                {/* Helpful Indicator */}
-                                <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                                  <CheckCircle2 size={16} className="text-green-600" />
-                                  <span className="text-sm text-muted-foreground">
-                                    Verified Review
-                                  </span>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
+                          {/* Pagination Controls */}
+                          {reviewsMetadata && reviewsMetadata.totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-8">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePageChange(reviewsPage - 1)}
+                                disabled={reviewsPage === 1}
+                              >
+                                <ChevronLeft size={18} />
+                                Previous
+                              </Button>
+                              
+                              <div className="flex items-center gap-2">
+                                {Array.from({ length: Math.min(5, reviewsMetadata.totalPages) }, (_, i) => {
+                                  let pageNum;
+                                  if (reviewsMetadata.totalPages <= 5) {
+                                    pageNum = i + 1;
+                                  } else if (reviewsPage <= 3) {
+                                    pageNum = i + 1;
+                                  } else if (reviewsPage >= reviewsMetadata.totalPages - 2) {
+                                    pageNum = reviewsMetadata.totalPages - 4 + i;
+                                  } else {
+                                    pageNum = reviewsPage - 2 + i;
+                                  }
+                                  
+                                  return (
+                                    <Button
+                                      key={pageNum}
+                                      variant={reviewsPage === pageNum ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => handlePageChange(pageNum)}
+                                      className={reviewsPage === pageNum ? "bg-cyan-500 hover:bg-cyan-600" : ""}
+                                    >
+                                      {pageNum}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePageChange(reviewsPage + 1)}
+                                disabled={reviewsPage === reviewsMetadata.totalPages}
+                              >
+                                Next
+                                <ChevronRight size={18} />
+                              </Button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </CardContent>
                   </Card>
