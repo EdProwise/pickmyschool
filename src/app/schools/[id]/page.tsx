@@ -7,7 +7,7 @@ import {
   CheckCircle2, Heart, Share2, Bookmark, MessageCircle, ArrowLeft,
   Globe, Facebook, Instagram, Linkedin, Youtube, Download, Trophy,
   Video, FileText, Wifi, Shield, Bus, Laptop, BookOpen, GraduationCap,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -147,6 +147,17 @@ export default function SchoolDetailPage() {
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsMetadata, setReviewsMetadata] = useState<any>(null);
   const REVIEWS_PER_PAGE = 10;
+  
+  // Image preview state
+  const [imagePreview, setImagePreview] = useState<{
+    isOpen: boolean;
+    images: string[];
+    currentIndex: number;
+  }>({
+    isOpen: false,
+    images: [],
+    currentIndex: 0,
+  });
   
   // Enquiry form state
   const [enquiryForm, setEnquiryForm] = useState({
@@ -341,6 +352,31 @@ export default function SchoolDetailPage() {
     return [...new Set(facilities)]; // Remove duplicates
   };
 
+  const openImagePreview = (images: string[], startIndex: number) => {
+    setImagePreview({
+      isOpen: true,
+      images,
+      currentIndex: startIndex,
+    });
+  };
+
+  const closeImagePreview = () => {
+    setImagePreview({
+      isOpen: false,
+      images: [],
+      currentIndex: 0,
+    });
+  };
+
+  const navigateImage = (direction: 'prev' | 'next') => {
+    setImagePreview(prev => {
+      const newIndex = direction === 'prev' 
+        ? (prev.currentIndex - 1 + prev.images.length) % prev.images.length
+        : (prev.currentIndex + 1) % prev.images.length;
+      return { ...prev, currentIndex: newIndex };
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -384,6 +420,57 @@ export default function SchoolDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+
+      {/* Image Preview Modal */}
+      {imagePreview.isOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={closeImagePreview}
+        >
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+            onClick={closeImagePreview}
+          >
+            <X size={32} />
+          </button>
+
+          {imagePreview.images.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 text-white hover:text-gray-300 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateImage('prev');
+                }}
+              >
+                <ChevronLeft size={48} />
+              </button>
+              <button
+                className="absolute right-4 text-white hover:text-gray-300 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateImage('next');
+                }}
+              >
+                <ChevronRight size={48} />
+              </button>
+            </>
+          )}
+
+          <div className="max-w-7xl max-h-[90vh] px-4" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={imagePreview.images[imagePreview.currentIndex]}
+              alt={`Preview ${imagePreview.currentIndex + 1}`}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            {imagePreview.images.length > 1 && (
+              <div className="text-white text-center mt-4">
+                {imagePreview.currentIndex + 1} / {imagePreview.images.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="pt-20">
         {/* Hero Banner */}
@@ -731,7 +818,8 @@ export default function SchoolDetailPage() {
                           {displayGallery.map((image, index) => (
                             <div
                               key={index}
-                              className="aspect-video rounded-lg overflow-hidden"
+                              className="aspect-video rounded-lg overflow-hidden cursor-pointer"
+                              onClick={() => openImagePreview(displayGallery, index)}
                             >
                               <img
                                 src={image}
