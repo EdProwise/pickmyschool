@@ -230,7 +230,7 @@ export default function SchoolsPage() {
             <SelectValue placeholder="Select Language" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Languages</SelectItem>
+            <SelectItem value="all">All Languages</SelectItem>
             <SelectItem value="English">English</SelectItem>
             <SelectItem value="Hindi">Hindi</SelectItem>
             <SelectItem value="Sanskrit">Sanskrit</SelectItem>
@@ -249,7 +249,7 @@ export default function SchoolsPage() {
             <SelectValue placeholder="Select Stream" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Streams</SelectItem>
+            <SelectItem value="all">All Streams</SelectItem>
             <SelectItem value="Science">Science</SelectItem>
             <SelectItem value="Commerce">Commerce</SelectItem>
             <SelectItem value="Arts">Arts/Humanities</SelectItem>
