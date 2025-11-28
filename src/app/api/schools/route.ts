@@ -69,6 +69,12 @@ export async function GET(request: NextRequest) {
     const facilitiesParam = searchParams.get('facilities');
     const featuredParam = searchParams.get('featured');
     const search = searchParams.get('search');
+    const minRating = searchParams.get('minRating');
+    const gender = searchParams.get('gender');
+    const language = searchParams.get('language');
+    const stream = searchParams.get('stream');
+    const k12Level = searchParams.get('k12Level');
+    const isInternational = searchParams.get('isInternational');
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '10'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
     const sortField = searchParams.get('sort') ?? 'rating';
@@ -81,7 +87,7 @@ export async function GET(request: NextRequest) {
       conditions.push(like(schools.city, `%${city}%`));
     }
 
-    if (board) {
+    if (board && board !== 'all') {
       const validBoards = ['CBSE', 'ICSE', 'IB', 'State Board'];
       if (validBoards.includes(board)) {
         conditions.push(eq(schools.board, board));
@@ -102,11 +108,41 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (schoolType) {
+    if (schoolType && schoolType !== 'all') {
       const validTypes = ['Day School', 'Boarding', 'Both'];
       if (validTypes.includes(schoolType)) {
         conditions.push(eq(schools.schoolType, schoolType));
       }
+    }
+
+    if (minRating) {
+      const rating = parseFloat(minRating);
+      if (!isNaN(rating)) {
+        conditions.push(gte(schools.rating, rating));
+      }
+    }
+
+    if (gender && gender !== 'all') {
+      const validGenders = ['Boys', 'Girls', 'Co-ed'];
+      if (validGenders.includes(gender)) {
+        conditions.push(eq(schools.gender, gender));
+      }
+    }
+
+    if (language) {
+      conditions.push(like(schools.languages, `%${language}%`));
+    }
+
+    if (stream) {
+      conditions.push(like(schools.streamsAvailable, `%${stream}%`));
+    }
+
+    if (k12Level && k12Level !== 'all') {
+      conditions.push(eq(schools.k12Level, k12Level));
+    }
+
+    if (isInternational === 'true') {
+      conditions.push(eq(schools.isInternational, true));
     }
 
     if (featuredParam === 'true') {
