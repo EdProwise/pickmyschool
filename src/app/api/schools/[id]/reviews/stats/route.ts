@@ -46,12 +46,7 @@ export async function GET(
         rating: reviews.rating,
       })
       .from(reviews)
-      .where(
-        and(
-          eq(reviews.schoolId, id),
-          eq(reviews.approvalStatus, 'approved')
-        )
-      );
+      .where(and(eq(reviews.schoolId, id), eq(reviews.approvalStatus, 'approved')));
 
     // Calculate total reviews
     const totalReviews = approvedReviews.length;

@@ -166,15 +166,31 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(reviews.approvalStatus, 'approved'));
     }
 
-    const whereCondition = conditions.length > 1 ? and(...conditions) : conditions[0];
-
-    const reviewsList = await db
-      .select()
-      .from(reviews)
-      .where(whereCondition)
-      .orderBy(desc(reviews.createdAt))
-      .limit(limit)
-      .offset(offset);
+    let reviewsList;
+    if (conditions.length > 1) {
+      reviewsList = await db
+        .select()
+        .from(reviews)
+        .where(and(...conditions))
+        .orderBy(desc(reviews.createdAt))
+        .limit(limit)
+        .offset(offset);
+    } else if (conditions.length === 1) {
+      reviewsList = await db
+        .select()
+        .from(reviews)
+        .where(conditions[0])
+        .orderBy(desc(reviews.createdAt))
+        .limit(limit)
+        .offset(offset);
+    } else {
+      reviewsList = await db
+        .select()
+        .from(reviews)
+        .orderBy(desc(reviews.createdAt))
+        .limit(limit)
+        .offset(offset);
+    }
 
     const reviewsWithStudentInfo = await Promise.all(
       reviewsList.map(async (review) => {

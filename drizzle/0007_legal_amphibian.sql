@@ -1,0 +1,1 @@
+ALTER TABLE `reviews` ADD `approval_status` text DEFAULT 'pending' NOT NULL;

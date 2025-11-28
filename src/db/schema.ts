@@ -194,6 +194,7 @@ export const reviews = sqliteTable('reviews', {
   rating: integer('rating').notNull(),
   reviewText: text('review_text').notNull(),
   photos: text('photos', { mode: 'json' }),
+  approvalStatus: text('approval_status').notNull().default('pending'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
