@@ -1114,6 +1114,7 @@ export default function SchoolDetailPage() {
                                         <div
                                           key={index}
                                           className="aspect-video rounded-lg overflow-hidden border-2 border-gray-100 hover:border-cyan-300 transition-colors cursor-pointer"
+                                          onClick={() => openImagePreview(review.photos, index)}
                                         >
                                           <img
                                             src={photo}
