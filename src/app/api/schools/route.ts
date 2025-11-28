@@ -22,6 +22,20 @@ async function verifyToken(request: NextRequest) {
   }
 }
 
+// Haversine distance in KM between two lat/lng pairs
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 6371; // km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -80,8 +94,16 @@ export async function GET(request: NextRequest) {
     const sortField = searchParams.get('sort') ?? 'rating';
     const sortOrder = searchParams.get('order') ?? 'desc';
 
+    // Distance params
+    const latParam = searchParams.get('lat');
+    const lngParam = searchParams.get('lng');
+    const radiusParam = searchParams.get('radiusKm') ?? searchParams.get('radius');
+    const latNum = latParam ? parseFloat(latParam) : null;
+    const lngNum = lngParam ? parseFloat(lngParam) : null;
+    const radiusKm = radiusParam ? parseFloat(radiusParam) : null;
+
     // Build where conditions
-    const conditions = [];
+    const conditions = [] as any[];
 
     if (city) {
       conditions.push(like(schools.city, `%${city}%`));
@@ -166,7 +188,7 @@ export async function GET(request: NextRequest) {
       query = query.where(and(...conditions));
     }
 
-    // Apply sorting
+    // Apply sorting (SQL-level for native columns)
     const sortColumn = {
       'name': schools.name,
       'rating': schools.rating,
@@ -175,10 +197,12 @@ export async function GET(request: NextRequest) {
       'establishmentYear': schools.establishmentYear
     }[sortField] ?? schools.rating;
 
-    if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
-    } else {
-      query = query.orderBy(desc(sortColumn));
+    if (sortField !== 'distance') {
+      if (sortOrder === 'asc') {
+        query = query.orderBy(asc(sortColumn));
+      } else {
+        query = query.orderBy(desc(sortColumn));
+      }
     }
 
     // Apply pagination
@@ -199,7 +223,27 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(filteredResults, { status: 200 });
+    // Distance filtering (in-memory)
+    let finalResults = filteredResults;
+    const hasDistanceParams = latNum !== null && !isNaN(latNum!) && lngNum !== null && !isNaN(lngNum!) && radiusKm !== null && !isNaN(radiusKm!);
+    if (hasDistanceParams) {
+      const within = filteredResults
+        .filter((s: any) => s.latitude !== null && s.longitude !== null && s.latitude !== undefined && s.longitude !== undefined)
+        .map((s: any) => ({
+          school: s,
+          distance: haversineKm(latNum as number, lngNum as number, s.latitude as number, s.longitude as number)
+        }))
+        .filter(item => item.distance <= (radiusKm as number));
+
+      // Sort by distance if requested
+      if (sortField === 'distance') {
+        within.sort((a, b) => a.distance - b.distance);
+      }
+
+      finalResults = within.map(item => item.school);
+    }
+
+    return NextResponse.json(finalResults, { status: 200 });
 
   } catch (error) {
     console.error('GET error:', error);
