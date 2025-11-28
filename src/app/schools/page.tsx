@@ -37,8 +37,8 @@ export default function SchoolsPage() {
   // New filter states
   const [minRating, setMinRating] = useState<number[]>([0]);
   const [gender, setGender] = useState('');
-  const [language, setLanguage] = useState('');
-  const [stream, setStream] = useState('');
+  const [language, setLanguage] = useState('all');
+  const [stream, setStream] = useState('all');
   const [k12Level, setK12Level] = useState('');
   const [isInternational, setIsInternational] = useState<boolean | null>(null);
 
@@ -110,8 +110,8 @@ export default function SchoolsPage() {
     setSelectedFacilities([]);
     setMinRating([0]);
     setGender('');
-    setLanguage('');
-    setStream('');
+    setLanguage('all');
+    setStream('all');
     setK12Level('');
     setIsInternational(null);
   };
