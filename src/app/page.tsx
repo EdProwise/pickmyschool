@@ -113,9 +113,7 @@ export default function HomePage() {
                   </span>
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                  Discover, compare, and connect with over 20,000 schools across India. 
-                  <br className="hidden md:block" />
-                  Your journey to the ideal education starts here.
+                  Discover, compare, and connect with schools near you.
                 </p>
               </div>
 
