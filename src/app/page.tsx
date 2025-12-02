@@ -280,9 +280,6 @@ export default function HomePage() {
                                 )}
                               </div>
                             </div>
-                            <span className="absolute top-0 right-0 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700">
-                              Featured
-                            </span>
                           </div>
 
                           {/* Fees */}
