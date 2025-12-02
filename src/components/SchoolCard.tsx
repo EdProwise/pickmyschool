@@ -31,21 +31,13 @@ export default function SchoolCard({ school }: SchoolCardProps) {
             
             {/* School Name */}
             <Link href={`/schools/${school.id}`} className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-foreground hover:text-[#04d3d3] transition-colors line-clamp-2">
+              <h3 className="text-lg font-bold text-foreground hover:text-[#04d3d3] transition-colors">
                 {school.name}
               </h3>
             </Link>
           </div>
           
           {/* Featured Badge */}
-          {school.featured && (
-            <Badge
-              className="flex-shrink-0"
-              style={{ backgroundColor: '#04d3d3', color: 'white' }}
-            >
-              Featured
-            </Badge>
-          )}
         </div>
 
         {/* Location */}
