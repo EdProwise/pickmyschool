@@ -245,78 +245,81 @@ export default function HomePage() {
                     >
                       <CardContent className="p-5">
                         <div className="relative">
-                          {/* Header: logo + name + featured pill */}
-                          <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200">
-                              {school.logo ? (
-                                <img src={school.logo} alt={school.name} className="w-10 h-10 object-contain" />
-                              ) : (
-                                <span className="text-sm font-bold text-gray-500">
-                                  {school.name?.charAt(0) || 'S'}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-base md:text-lg font-bold text-foreground leading-snug break-words">
-                                {school.name}
-                              </h4>
-                              <div className="mt-1 flex items-center text-xs md:text-sm text-muted-foreground">
-                                <MapPin className="w-4 h-4 mr-1" />
-                                <span>
-                                  {school.city}
-                                  {school.state ? `, ${school.state}` : ''}
-                                </span>
-                              </div>
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                                  {school.board}
-                                </span>
-                                {school.schoolType && (
-                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-                                    {school.schoolType}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 text-xs font-semibold border border-teal-200">
+                            Featured
+                          </span>
+                           {/* Header: logo + name + featured pill */}
+                           <div className="flex items-start gap-3">
+                             <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200">
+                               {school.logo ? (
+                                 <img src={school.logo} alt={school.name} className="w-10 h-10 object-contain" />
+                               ) : (
+                                 <span className="text-sm font-bold text-gray-500">
+                                   {school.name?.charAt(0) || 'S'}
+                                 </span>
+                               )}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <h4 className="text-base md:text-lg font-bold text-foreground leading-snug break-words">
+                                 {school.name}
+                               </h4>
+                               <div className="mt-1 flex items-center text-xs md:text-sm text-muted-foreground">
+                                 <MapPin className="w-4 h-4 mr-1" />
+                                 <span>
+                                   {school.city}
+                                   {school.state ? `, ${school.state}` : ''}
+                                 </span>
+                               </div>
+                               <div className="mt-2 flex flex-wrap gap-1.5">
+                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                   {school.board}
+                                 </span>
+                                 {school.schoolType && (
+                                   <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                                     {school.schoolType}
+                                   </span>
+                                 )}
+                               </div>
+                             </div>
+                           </div>
 
-                          {/* Fees */}
-                          <p className="mt-3 text-sm font-medium text-foreground">
-                            {school.feesMin !== null && school.feesMax !== null
-                              ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')} / year`
-                              : 'Fee info not available'}
-                          </p>
+                           {/* Fees */}
+                           <p className="mt-3 text-sm font-medium text-foreground">
+                             {school.feesMin !== null && school.feesMax !== null
+                               ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')} / year`
+                               : 'Fee info not available'}
+                           </p>
 
-                          {/* Rating */}
-                          <div className="mt-2 flex items-center gap-2">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-semibold text-foreground">
-                              {school.rating.toFixed(1)}
-                            </span>
-                            <span className="text-xs text-muted-foreground">({school.reviewCount} reviews)</span>
-                          </div>
+                           {/* Rating */}
+                           <div className="mt-2 flex items-center gap-2">
+                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                             <span className="text-sm font-semibold text-foreground">
+                               {school.rating.toFixed(1)}
+                             </span>
+                             <span className="text-xs text-muted-foreground">({school.reviewCount} reviews)</span>
+                           </div>
 
-                          {/* Facilities */}
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
-                              <span key={fac} className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">
-                                {fac}
-                              </span>
-                            ))}
-                            {Array.isArray(school.facilities) && school.facilities.length > 3 && (
-                              <span className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">+{school.facilities.length - 3} more</span>
-                            )}
-                          </div>
+                           {/* Facilities */}
+                           <div className="mt-3 flex flex-wrap gap-2">
+                             {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
+                               <span key={fac} className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">
+                                 {fac}
+                               </span>
+                             ))}
+                             {Array.isArray(school.facilities) && school.facilities.length > 3 && (
+                               <span className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">+{school.facilities.length - 3} more</span>
+                             )}
+                           </div>
 
-                          {/* Action */}
-                          <Button 
-                            className="mt-5 w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
-                            onClick={() => router.push(`/schools/${school.id}`)}
-                          >
-                            View Details
-                          </Button>
-                        </div>
-                      </CardContent>
+                           {/* Action */}
+                           <Button 
+                             className="mt-5 w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
+                             onClick={() => router.push(`/schools/${school.id}`)}
+                           >
+                             View Details
+                           </Button>
+                         </div>
+                       </CardContent>
                     </Card>
                   ))}
                 </div>
