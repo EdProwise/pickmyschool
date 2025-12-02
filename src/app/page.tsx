@@ -250,27 +250,23 @@ export default function HomePage() {
                     onClick={() => router.push(`/schools/${school.id}`)}
                   >
                     <CardContent className="p-6">
-                      {/* School Header - Logo & Name on Same Line */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {school.logo && (
-                            <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-white shadow-md flex items-center justify-center overflow-hidden ring-2 ring-cyan-100">
-                              <img
-                                src={school.logo}
-                                alt={school.name}
-                                className="w-12 h-12 object-contain"
-                              />
-                            </div>
-                          )}
-                          <h4 className="text-lg font-bold text-foreground line-clamp-2 group-hover:text-cyan-600 transition-colors">
-                            {school.name}
-                          </h4>
-                        </div>
-                        <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-md flex-shrink-0 ml-2">
-                          <Star className="w-4 h-4 fill-white" />
-                          Featured
-                        </div>
+                      {/* School Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        {school.logo && (
+                          <div className="w-16 h-16 rounded-xl bg-white shadow-md flex items-center justify-center overflow-hidden ring-2 ring-cyan-100">
+                            <img
+                              src={school.logo}
+                              alt={school.name}
+                              className="w-14 h-14 object-contain"
+                            />
+                          </div>
+                        )}
                       </div>
+
+                      {/* School Name */}
+                      <h4 className="text-xl font-bold text-foreground mb-3 group-hover:text-cyan-600 transition-colors">
+                        {school.name}
+                      </h4>
 
                       {/* Rating */}
                       <div className="flex items-center gap-2 mb-4">
