@@ -15,15 +15,29 @@ export default function SchoolCard({ school }: SchoolCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <CardContent className="p-5">
-        {/* Featured Badge */}
-        {school.featured && (
-          <Badge
-            className="mb-3"
-            style={{ backgroundColor: '#04d3d3', color: 'white' }}
-          >
-            Featured
-          </Badge>
-        )}
+        {/* Logo and Featured Badge Section */}
+        <div className="flex items-start justify-between mb-4">
+          {/* School Logo */}
+          {school.logo && (
+            <div className="w-16 h-16 rounded-xl bg-white shadow-md flex items-center justify-center overflow-hidden ring-2 ring-gray-100">
+              <img
+                src={school.logo}
+                alt={`${school.name} logo`}
+                className="w-14 h-14 object-contain"
+              />
+            </div>
+          )}
+          
+          {/* Featured Badge */}
+          {school.featured && (
+            <Badge
+              className="ml-auto"
+              style={{ backgroundColor: '#04d3d3', color: 'white' }}
+            >
+              Featured
+            </Badge>
+          )}
+        </div>
 
         {/* School Name */}
         <Link href={`/schools/${school.id}`}>
