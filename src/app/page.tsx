@@ -94,231 +94,240 @@ export default function HomePage() {
         <div className="absolute bottom-10 left-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
         
         <div className="container mx-auto relative z-10 max-w-7xl">
-          {/* Heading Section - Centered and Premium */}
-          <div className="text-center space-y-6 mb-16">
-            <div className="inline-block">
-              <span className="inline-block px-4 py-2 bg-cyan-50 border border-cyan-200 rounded-full text-sm font-semibold text-cyan-700 mb-4">
-                🎓 India's Premier School Discovery Platform
-              </span>
-            </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              Find Your Child's
-              <br />
-              <span className="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Perfect School
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Discover, compare, and connect with over 20,000 schools across India. 
-              <br className="hidden md:block" />
-              Your journey to the ideal education starts here.
-            </p>
-          </div>
-
-          {/* Premium Search Card - Centered */}
-          <div className="max-w-5xl mx-auto mb-12">
-            <Card className="shadow-2xl border-0 rounded-3xl overflow-hidden bg-white/95 backdrop-blur-xl">
-              <CardContent className="p-8 md:p-10">
-                <div className="flex flex-col gap-6">
-                  {/* Search Filters Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Location Filter */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Location
-                      </label>
-                      <Select value={searchCity} onValueChange={setSearchCity}>
-                        <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
-                          <SelectValue placeholder="Select city" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Delhi">Delhi</SelectItem>
-                          <SelectItem value="Mumbai">Mumbai</SelectItem>
-                          <SelectItem value="Bangalore">Bangalore</SelectItem>
-                          <SelectItem value="Pune">Pune</SelectItem>
-                          <SelectItem value="Chennai">Chennai</SelectItem>
-                          <SelectItem value="Hyderabad">Hyderabad</SelectItem>
-                          <SelectItem value="Kolkata">Kolkata</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Board Filter */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                        Board
-                      </label>
-                      <Select value={searchBoard} onValueChange={setSearchBoard}>
-                        <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
-                          <SelectValue placeholder="Select board" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CBSE">CBSE</SelectItem>
-                          <SelectItem value="ICSE">ICSE</SelectItem>
-                          <SelectItem value="IB">IB</SelectItem>
-                          <SelectItem value="State Board">State Board</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Class Filter */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Class
-                      </label>
-                      <Select value={searchClass} onValueChange={setSearchClass}>
-                        <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
-                          <SelectValue placeholder="Select class" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Nursery">Nursery</SelectItem>
-                          <SelectItem value="KG">KG</SelectItem>
-                          <SelectItem value="1-5">Class 1-5</SelectItem>
-                          <SelectItem value="6-8">Class 6-8</SelectItem>
-                          <SelectItem value="9-10">Class 9-10</SelectItem>
-                          <SelectItem value="11-12">Class 11-12</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Budget Filter */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Budget
-                      </label>
-                      <Select value={searchBudget} onValueChange={setSearchBudget}>
-                        <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
-                          <SelectValue placeholder="Select budget" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="50000">Under ₹50,000</SelectItem>
-                          <SelectItem value="100000">Under ₹1,00,000</SelectItem>
-                          <SelectItem value="150000">Under ₹1,50,000</SelectItem>
-                          <SelectItem value="200000">Under ₹2,00,000</SelectItem>
-                          <SelectItem value="999999">Above ₹2,00,000</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Search Button - Full Width */}
-                  <Button
-                    onClick={handleSearch}
-                    size="lg"
-                    className="h-16 text-lg font-bold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group"
-                  >
-                    <Search className="mr-3 group-hover:scale-110 transition-transform" size={24} />
-                    Search Schools
-                    <svg className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </Button>
+          {/* Split Layout: 75% (left) / 25% (right) on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-stretch">
+            {/* Left: Hero + Search (75%) */}
+            <div className="lg:col-span-3">
+              {/* Heading Section */}
+              <div className="text-center space-y-6 mb-10">
+                <div className="inline-block">
+                  <span className="inline-block px-4 py-2 bg-cyan-50 border border-cyan-200 rounded-full text-sm font-semibold text-cyan-700 mb-4">
+                    🎓 India's Premier School Discovery Platform
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Featured Schools Section */}
-          {!loading && featuredSchools.length >= 2 && (
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                  ✨ Featured Schools
-                </h3>
-                <p className="text-muted-foreground">
-                  Handpicked excellence from across India
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
+                  Find Your Child's
+                  <br />
+                  <span className="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Perfect School
+                  </span>
+                </h1>
+                <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Discover, compare, and connect with over 20,000 schools across India. 
+                  <br className="hidden md:block" />
+                  Your journey to the ideal education starts here.
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {featuredSchools.slice(0, 2).map((school) => (
-                  <Card
-                    key={school.id}
-                    className="group overflow-hidden cursor-pointer border-0 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/30 hover:scale-[1.02]"
-                    onClick={() => router.push(`/schools/${school.id}`)}
-                  >
-                    <CardContent className="p-6">
-                      {/* School Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        {school.logo && (
-                          <div className="w-16 h-16 rounded-xl bg-white shadow-md flex items-center justify-center overflow-hidden ring-2 ring-cyan-100">
-                            <img
-                              src={school.logo}
-                              alt={school.name}
-                              className="w-14 h-14 object-contain"
-                            />
-                          </div>
-                        )}
-                      </div>
 
-                      {/* School Name */}
-                      <h4 className="text-xl font-bold text-foreground mb-3 group-hover:text-cyan-600 transition-colors">
-                        {school.name}
-                      </h4>
-
-                      {/* Rating */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-5 h-5 ${
-                                i < Math.floor(school.rating)
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'fill-gray-200 text-gray-200'
-                              }`}
-                            />
-                          ))}
+              {/* Premium Search Card */}
+              <div className="max-w-5xl mx-auto mb-4">
+                <Card className="shadow-2xl border-0 rounded-3xl overflow-hidden bg-white/95 backdrop-blur-xl">
+                  <CardContent className="p-8 md:p-10">
+                    <div className="flex flex-col gap-6">
+                      {/* Search Filters Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Location Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Location
+                          </label>
+                          <Select value={searchCity} onValueChange={setSearchCity}>
+                            <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select city" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Delhi">Delhi</SelectItem>
+                              <SelectItem value="Mumbai">Mumbai</SelectItem>
+                              <SelectItem value="Bangalore">Bangalore</SelectItem>
+                              <SelectItem value="Pune">Pune</SelectItem>
+                              <SelectItem value="Chennai">Chennai</SelectItem>
+                              <SelectItem value="Hyderabad">Hyderabad</SelectItem>
+                              <SelectItem value="Kolkata">Kolkata</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <span className="text-sm font-semibold text-foreground">
-                          {school.rating.toFixed(1)}
-                        </span>
+                        
+                        {/* Board Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            Board
+                          </label>
+                          <Select value={searchBoard} onValueChange={setSearchBoard}>
+                            <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select board" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CBSE">CBSE</SelectItem>
+                              <SelectItem value="ICSE">ICSE</SelectItem>
+                              <SelectItem value="IB">IB</SelectItem>
+                              <SelectItem value="State Board">State Board</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Class Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Class
+                          </label>
+                          <Select value={searchClass} onValueChange={setSearchClass}>
+                            <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select class" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Nursery">Nursery</SelectItem>
+                              <SelectItem value="KG">KG</SelectItem>
+                              <SelectItem value="1-5">Class 1-5</SelectItem>
+                              <SelectItem value="6-8">Class 6-8</SelectItem>
+                              <SelectItem value="9-10">Class 9-10</SelectItem>
+                              <SelectItem value="11-12">Class 11-12</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Budget Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Budget
+                          </label>
+                          <Select value={searchBudget} onValueChange={setSearchBudget}>
+                            <SelectTrigger className="h-14 px-4 text-base font-medium border-2 border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select budget" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="50000">Under ₹50,000</SelectItem>
+                              <SelectItem value="100000">Under ₹1,00,000</SelectItem>
+                              <SelectItem value="150000">Under ₹1,50,000</SelectItem>
+                              <SelectItem value="200000">Under ₹2,00,000</SelectItem>
+                              <SelectItem value="999999">Above ₹2,00,000</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {school.type && (
-                          <span className="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-lg text-sm font-semibold">
-                            {school.type}
-                          </span>
-                        )}
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold">
-                          {school.board}
-                        </span>
-                        {school.gender && (
-                          <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold">
-                            {school.gender}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Action Button */}
-                      <Button 
-                        className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all group-hover:scale-[1.02]"
+                      {/* Search Button - Full Width */}
+                      <Button
+                        onClick={handleSearch}
+                        size="lg"
+                        className="h-16 text-lg font-bold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group"
                       >
-                        Explore School
-                        <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <Search className="mr-3 group-hover:scale-110 transition-transform" size={24} />
+                        Search Schools
+                        <svg className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          )}
+
+            {/* Right: Featured Schools (25%)) */}
+            <div className="lg:col-span-1 self-center">
+              {!loading && featuredSchools.length >= 2 && (
+                <div className="flex flex-col gap-5">
+                  {featuredSchools.slice(0, 2).map((school) => (
+                    <Card
+                      key={school.id}
+                      className="overflow-hidden border-0 rounded-2xl shadow-xl bg-white hover:shadow-2xl transition-shadow"
+                    >
+                      <CardContent className="p-5">
+                        <div className="relative">
+                          {/* Header: logo + name + featured pill */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200">
+                              {school.logo ? (
+                                <img src={school.logo} alt={school.name} className="w-10 h-10 object-contain" />
+                              ) : (
+                                <span className="text-sm font-bold text-gray-500">
+                                  {school.name?.charAt(0) || 'S'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-base md:text-lg font-bold text-foreground leading-snug break-words">
+                                {school.name}
+                              </h4>
+                              <div className="mt-1 flex items-center text-xs md:text-sm text-muted-foreground">
+                                <MapPin className="w-4 h-4 mr-1" />
+                                <span>
+                                  {school.city}
+                                  {school.state ? `, ${school.state}` : ''}
+                                </span>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                  {school.board}
+                                </span>
+                                {school.schoolType && (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                                    {school.schoolType}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="absolute top-0 right-0 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700">
+                              Featured
+                            </span>
+                          </div>
+
+                          {/* Fees */}
+                          <p className="mt-3 text-sm font-medium text-foreground">
+                            {school.feesMin !== null && school.feesMax !== null
+                              ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')} / year`
+                              : 'Fee info not available'}
+                          </p>
+
+                          {/* Rating */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-semibold text-foreground">
+                              {school.rating.toFixed(1)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">({school.reviewCount} reviews)</span>
+                          </div>
+
+                          {/* Facilities */}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
+                              <span key={fac} className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">
+                                {fac}
+                              </span>
+                            ))}
+                            {Array.isArray(school.facilities) && school.facilities.length > 3 && (
+                              <span className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">+{school.facilities.length - 3} more</span>
+                            )}
+                          </div>
+
+                          {/* Action */}
+                          <Button 
+                            className="mt-5 w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
+                            onClick={() => router.push(`/schools/${school.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
