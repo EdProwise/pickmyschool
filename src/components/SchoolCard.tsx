@@ -15,36 +15,38 @@ export default function SchoolCard({ school }: SchoolCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <CardContent className="p-5">
-        {/* Logo and Featured Badge Section */}
-        <div className="flex items-start justify-between mb-4">
-          {/* School Logo */}
-          {school.logo && (
-            <div className="w-16 h-16 rounded-xl bg-white shadow-md flex items-center justify-center overflow-hidden ring-2 ring-gray-100">
-              <img
-                src={school.logo}
-                alt={`${school.name} logo`}
-                className="w-14 h-14 object-contain"
-              />
-            </div>
-          )}
+        {/* Logo, Name and Featured Badge Section */}
+        <div className="flex items-start justify-between mb-4 gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* School Logo */}
+            {school.logo && (
+              <div className="w-14 h-14 rounded-xl bg-white shadow-md flex items-center justify-center overflow-hidden ring-2 ring-gray-100 flex-shrink-0">
+                <img
+                  src={school.logo}
+                  alt={`${school.name} logo`}
+                  className="w-12 h-12 object-contain"
+                />
+              </div>
+            )}
+            
+            {/* School Name */}
+            <Link href={`/schools/${school.id}`} className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-foreground hover:text-[#04d3d3] transition-colors line-clamp-2">
+                {school.name}
+              </h3>
+            </Link>
+          </div>
           
           {/* Featured Badge */}
           {school.featured && (
             <Badge
-              className="ml-auto"
+              className="flex-shrink-0"
               style={{ backgroundColor: '#04d3d3', color: 'white' }}
             >
               Featured
             </Badge>
           )}
         </div>
-
-        {/* School Name */}
-        <Link href={`/schools/${school.id}`}>
-          <h3 className="text-xl font-bold text-foreground hover:text-[#04d3d3] transition-colors mb-2 line-clamp-2">
-            {school.name}
-          </h3>
-        </Link>
 
         {/* Location */}
         <div className="flex items-center text-muted-foreground mb-3">
