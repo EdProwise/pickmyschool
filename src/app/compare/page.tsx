@@ -36,18 +36,28 @@ export default function CompareSchoolsPage() {
 
   const loadSchoolsByIds = async (ids: number[]) => {
     try {
-      const schools = await Promise.all(
-        ids.slice(0, 4).map(async (id) => {
-          const response = await fetch(`/api/schools?id=${id}`);
-          if (response.ok) {
-            return await response.json();
-          }
-          return null;
-        })
-      );
-      setSelectedSchools(schools.filter(s => s !== null));
+      // Use optimized bulk fetch endpoint
+      const validIds = ids.slice(0, 4).filter(id => !isNaN(id));
+      
+      if (validIds.length === 0) {
+        setSelectedSchools([]);
+        return;
+      }
+
+      const response = await fetch(`/api/schools?ids=${validIds.join(',')}`);
+      
+      if (response.ok) {
+        const schools = await response.json();
+        setSelectedSchools(schools);
+      } else {
+        console.error('Failed to load schools:', response.statusText);
+        toast.error('Failed to load schools');
+        setSelectedSchools([]);
+      }
     } catch (error) {
       console.error('Failed to load schools:', error);
+      toast.error('Failed to load schools');
+      setSelectedSchools([]);
     }
   };
 
