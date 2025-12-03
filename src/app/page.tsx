@@ -374,16 +374,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Schools Section */}
+      {/* Top Rated Schools Section */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Featured Schools
+                Top Rated Schools
               </h2>
               <p className="text-lg text-muted-foreground">
-                Top-rated schools recommended for you
+                Highest rated schools based on parent reviews
               </p>
             </div>
             <Button
