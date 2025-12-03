@@ -577,48 +577,148 @@ export default function HomePage() {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-cyan-50 to-blue-50">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+      <section className="relative py-24 px-4 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50/30 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-10 left-20 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-20 w-96 h-96 bg-cyan-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="inline-block px-5 py-2 bg-gradient-to-r from-cyan-100 to-blue-100 border border-cyan-200 rounded-full text-sm font-bold text-cyan-700">
+                ✨ Your Trusted Partner
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
               Why Choose PickMySchool?
             </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              We make school selection seamless with verified data, smart technology, and personalized support
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#04d3d3' }}>
-                  <BookOpen className="text-white" size={24} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            {/* Card 1: Comprehensive Database */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.05] hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-cyan-400/10 to-cyan-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <BookOpen className="text-white" size={36} />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Comprehensive Database</h3>
-                <p className="text-muted-foreground">
-                  Access detailed information about thousands of schools across India
+                
+                <h3 className="text-2xl font-bold mb-4 text-foreground text-center group-hover:text-cyan-600 transition-colors">
+                  Comprehensive Database
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center">
+                  Access detailed profiles of 1000+ schools across India with complete information on academics, facilities, and fees
                 </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-2 text-cyan-600 font-semibold text-sm">
+                    <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                    1000+ Schools Listed
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 rounded-full bg-blue-500 mx-auto mb-4 flex items-center justify-center">
-                  <Shield className="text-white" size={24} />
+            {/* Card 2: Verified Information */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.05] hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/10 to-blue-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Shield className="text-white" size={36} />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Verified Information</h3>
-                <p className="text-muted-foreground">
-                  All school information is verified and regularly updated
+                
+                <h3 className="text-2xl font-bold mb-4 text-foreground text-center group-hover:text-blue-600 transition-colors">
+                  Verified Information
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center">
+                  All school data is verified and regularly updated to ensure accuracy and help you make informed decisions
                 </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold text-sm">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    100% Verified Data
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 rounded-full bg-green-500 mx-auto mb-4 flex items-center justify-center">
-                  <TrendingUp className="text-white" size={24} />
+            {/* Card 3: Smart Recommendations */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.05] hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-purple-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <TrendingUp className="text-white" size={36} />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Smart Recommendations</h3>
-                <p className="text-muted-foreground">
-                  AI-powered suggestions based on your preferences and requirements
+                
+                <h3 className="text-2xl font-bold mb-4 text-foreground text-center group-hover:text-purple-600 transition-colors">
+                  Smart Recommendations
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center">
+                  AI-powered intelligent suggestions based on your location, budget, preferences, and your child's needs
                 </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-2 text-purple-600 font-semibold text-sm">
+                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                    AI-Powered Matching
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Expert Guidance */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.05] hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-green-400 via-green-500 to-green-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-400/10 to-green-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Users className="text-white" size={36} />
+                </div>
+                
+                <h3 className="text-2xl font-bold mb-4 text-foreground text-center group-hover:text-green-600 transition-colors">
+                  Expert Guidance
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center">
+                  Get personalized support from admission experts throughout your school search and application journey
+                </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-2 text-green-600 font-semibold text-sm">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    24/7 Support Available
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
