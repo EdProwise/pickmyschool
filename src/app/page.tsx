@@ -236,21 +236,25 @@ export default function HomePage() {
 
             {/* Right: Featured Schools (25%)) */}
             <div className="lg:col-span-1 self-center">
-              {!loading && featuredSchools.length >= 2 && (
+              {!loading && featuredSchools.length >= 1 && (
                 <div className="flex flex-col gap-5">
-                  {featuredSchools.slice(0, 2).map((school) => (
+                  {featuredSchools.slice(0, 1).map((school) => (
                     <Card
                       key={school.id}
                       className="overflow-hidden border-0 rounded-2xl shadow-xl bg-white hover:shadow-2xl transition-shadow"
                     >
                       <CardContent className="p-5">
                         <div className="relative">
-                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 text-xs font-semibold border border-teal-200">
-                            Featured
-                          </span>
-                           {/* Header: logo + name + featured pill */}
-                           <div className="flex items-start gap-3">
-                             <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200">
+                          {/* Featured Badge - Top of Card */}
+                          <div className="mb-3">
+                            <span className="inline-block px-3 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-semibold border border-teal-200">
+                              Featured
+                            </span>
+                          </div>
+                          
+                           {/* Header: logo + name */}
+                           <div className="flex items-start gap-3 mb-3">
+                             <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
                                {school.logo ? (
                                  <img src={school.logo} alt={school.name} className="w-10 h-10 object-contain" />
                                ) : (
@@ -263,35 +267,39 @@ export default function HomePage() {
                                <h4 className="text-base md:text-lg font-bold text-foreground leading-snug break-words">
                                  {school.name}
                                </h4>
-                               <div className="mt-1 flex items-center text-xs md:text-sm text-muted-foreground">
-                                 <MapPin className="w-4 h-4 mr-1" />
-                                 <span>
-                                   {school.city}
-                                   {school.state ? `, ${school.state}` : ''}
-                                 </span>
-                               </div>
-                               <div className="mt-2 flex flex-wrap gap-1.5">
-                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                                   {school.board}
-                                 </span>
-                                 {school.schoolType && (
-                                   <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-                                     {school.schoolType}
-                                   </span>
-                                 )}
-                               </div>
                              </div>
                            </div>
 
+                           {/* Location */}
+                           <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-2">
+                             <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                             <span>
+                               {school.city}
+                               {school.state ? `, ${school.state}` : ''}
+                             </span>
+                           </div>
+
+                           {/* Tags */}
+                           <div className="flex flex-wrap gap-1.5 mb-3">
+                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                               {school.board}
+                             </span>
+                             {school.schoolType && (
+                               <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                                 {school.schoolType}
+                               </span>
+                             )}
+                           </div>
+
                            {/* Fees */}
-                           <p className="mt-3 text-sm font-medium text-foreground">
+                           <p className="text-sm font-medium text-foreground mb-2">
                              {school.feesMin !== null && school.feesMax !== null
                                ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')} / year`
                                : 'Fee info not available'}
                            </p>
 
                            {/* Rating */}
-                           <div className="mt-2 flex items-center gap-2">
+                           <div className="flex items-center gap-2 mb-3">
                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                              <span className="text-sm font-semibold text-foreground">
                                {school.rating.toFixed(1)}
@@ -300,7 +308,7 @@ export default function HomePage() {
                            </div>
 
                            {/* Facilities */}
-                           <div className="mt-3 flex flex-wrap gap-2">
+                           <div className="flex flex-wrap gap-2 mb-4">
                              {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
                                <span key={fac} className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">
                                  {fac}
@@ -313,7 +321,7 @@ export default function HomePage() {
 
                            {/* Action */}
                            <Button 
-                             className="mt-5 w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
+                             className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
                              onClick={() => router.push(`/schools/${school.id}`)}
                            >
                              View Details
