@@ -241,93 +241,133 @@ export default function HomePage() {
                   {featuredSchools.slice(0, 1).map((school) => (
                     <Card
                       key={school.id}
-                      className="overflow-hidden border-0 rounded-2xl shadow-xl bg-white hover:shadow-2xl transition-shadow"
+                      className="overflow-hidden border-0 rounded-3xl shadow-2xl bg-white hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 group relative"
                     >
-                      <CardContent className="p-5">
+                      {/* Premium Top Accent Border */}
+                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600" />
+                      
+                      {/* Decorative Corner Accent */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-cyan-400/10 to-purple-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+
+                      <CardContent className="p-6 relative">
                         <div className="relative">
-                          {/* Featured Badge - Top of Card */}
-                          <div className="mb-3">
-                            <span className="inline-block px-3 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-semibold border border-teal-200">
-                              Featured
+                          {/* Premium Featured Badge */}
+                          <div className="mb-4 flex items-center justify-between">
+                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-100 text-yellow-700 text-xs font-bold border-2 border-yellow-300 shadow-md">
+                              <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500 text-yellow-500" />
+                              Top Rated
                             </span>
                           </div>
                           
-                           {/* Header: logo + name */}
-                           <div className="flex items-start gap-3 mb-3">
-                             <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
-                               {school.logo ? (
-                                 <img src={school.logo} alt={school.name} className="w-10 h-10 object-contain" />
-                               ) : (
-                                 <span className="text-sm font-bold text-gray-500">
-                                   {school.name?.charAt(0) || 'S'}
-                                 </span>
-                               )}
-                             </div>
-                             <div className="flex-1 min-w-0">
-                               <h4 className="text-base md:text-lg font-bold text-foreground leading-snug break-words">
-                                 {school.name}
-                               </h4>
-                             </div>
-                           </div>
+                          {/* Premium Logo & Name Container */}
+                          <div className="flex items-start gap-4 mb-4">
+                            {/* Enhanced Logo Frame */}
+                            <div className="relative flex-shrink-0">
+                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-100 via-blue-100 to-purple-100 flex items-center justify-center overflow-hidden ring-2 ring-cyan-300/50 shadow-lg group-hover:ring-cyan-400 group-hover:scale-105 transition-all duration-300">
+                                {school.logo ? (
+                                  <img src={school.logo} alt={school.name} className="w-14 h-14 object-contain" />
+                                ) : (
+                                  <span className="text-lg font-bold bg-gradient-to-br from-cyan-600 to-purple-600 bg-clip-text text-transparent">
+                                    {school.name?.charAt(0) || 'S'}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Decorative dot */}
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-white shadow-md" />
+                            </div>
 
-                           {/* Location */}
-                           <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-2">
-                             <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                             <span>
-                               {school.city}
-                               {school.state ? `, ${school.state}` : ''}
-                             </span>
-                           </div>
+                            {/* School Name */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-lg md:text-xl font-bold text-foreground leading-tight break-words group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-300">
+                                {school.name}
+                              </h4>
+                            </div>
+                          </div>
 
-                           {/* Tags */}
-                           <div className="flex flex-wrap gap-1.5 mb-3">
-                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                               {school.board}
-                             </span>
-                             {school.schoolType && (
-                               <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-                                 {school.schoolType}
-                               </span>
-                             )}
-                           </div>
+                          {/* Premium Location Badge */}
+                          <div className="flex items-center mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200/50 w-fit">
+                            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2 shadow-sm">
+                              <MapPin className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">
+                              {school.city}
+                              {school.state ? `, ${school.state}` : ''}
+                            </span>
+                          </div>
 
-                           {/* Fees */}
-                           <p className="text-sm font-medium text-foreground mb-2">
-                             {school.feesMin !== null && school.feesMax !== null
-                               ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')} / year`
-                               : 'Fee info not available'}
-                           </p>
+                          {/* Premium Tags/Badges */}
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-300/50 shadow-sm">
+                              {school.board}
+                            </span>
+                            {school.schoolType && (
+                              <span className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-xl text-xs font-bold border border-purple-300/50 shadow-sm">
+                                {school.schoolType}
+                              </span>
+                            )}
+                          </div>
 
-                           {/* Rating */}
-                           <div className="flex items-center gap-2 mb-3">
-                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                             <span className="text-sm font-semibold text-foreground">
-                               {school.rating.toFixed(1)}
-                             </span>
-                             <span className="text-xs text-muted-foreground">({school.reviewCount} reviews)</span>
-                           </div>
+                          {/* Premium Fees Display */}
+                          <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <span className="text-xs font-bold text-green-700">Annual Fees</span>
+                            </div>
+                            <p className="text-sm font-bold text-foreground">
+                              {school.feesMin !== null && school.feesMax !== null
+                                ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')}`
+                                : 'Fee info not available'}
+                            </p>
+                          </div>
 
-                           {/* Facilities */}
-                           <div className="flex flex-wrap gap-2 mb-4">
-                             {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
-                               <span key={fac} className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">
-                                 {fac}
-                               </span>
-                             ))}
-                             {Array.isArray(school.facilities) && school.facilities.length > 3 && (
-                               <span className="px-2 py-1 rounded-full bg-gray-100 text-foreground text-xs">+{school.facilities.length - 3} more</span>
-                             )}
-                           </div>
+                          {/* Premium Rating Badge */}
+                          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200/50 w-fit shadow-sm">
+                            <div className="flex items-center gap-1">
+                              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
+                              <span className="text-base font-bold bg-gradient-to-r from-yellow-700 to-orange-700 bg-clip-text text-transparent">
+                                {school.rating.toFixed(1)}
+                              </span>
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              ({school.reviewCount} reviews)
+                            </span>
+                          </div>
 
-                           {/* Action */}
-                           <Button 
-                             className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
-                             onClick={() => router.push(`/schools/${school.id}`)}
-                           >
-                             View Details
-                           </Button>
-                         </div>
-                       </CardContent>
+                          {/* Premium Facilities */}
+                          <div className="flex flex-wrap gap-2 mb-5">
+                            {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
+                              <span key={fac} className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 text-foreground text-xs font-medium border border-gray-200/50 shadow-sm">
+                                {fac}
+                              </span>
+                            ))}
+                            {Array.isArray(school.facilities) && school.facilities.length > 3 && (
+                              <span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-xs font-bold border border-cyan-200/50 shadow-sm">
+                                +{school.facilities.length - 3} more
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Premium Action Button */}
+                          <Button 
+                            className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn relative overflow-hidden"
+                            onClick={() => router.push(`/schools/${school.id}`)}
+                          >
+                            {/* Button shine effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                              View Details
+                              <svg className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                              </svg>
+                            </span>
+                          </Button>
+                        </div>
+                      </CardContent>
                     </Card>
                   ))}
                 </div>
