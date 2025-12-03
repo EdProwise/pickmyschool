@@ -375,25 +375,24 @@ export default function HomePage() {
       </section>
 
       {/* Top Rated Schools Section */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="container mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Top Rated Schools
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                Highest rated schools based on parent reviews
-              </p>
+      <section className="relative py-20 px-4 bg-gradient-to-br from-gray-50 via-white to-cyan-50/30 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-10 right-20 w-96 h-96 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-12">
+            <div className="inline-block mb-4">
+              <span className="inline-block px-5 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-200 rounded-full text-sm font-bold text-yellow-700">
+                ⭐ Parent's Choice
+              </span>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/schools')}
-              className="hidden md:flex"
-            >
-              View All
-              <ChevronRight className="ml-2" size={16} />
-            </Button>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Top Rated Schools
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Highest rated schools based on parent reviews
+            </p>
           </div>
 
           {loading ? (
@@ -417,13 +416,14 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="text-center mt-8 md:hidden">
+          <div className="text-center mt-12">
             <Button
-              variant="outline"
+              size="lg"
               onClick={() => router.push('/schools')}
+              className="h-14 px-8 text-base font-bold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group"
             >
               View All Schools
-              <ChevronRight className="ml-2" size={16} />
+              <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
             </Button>
           </div>
         </div>
