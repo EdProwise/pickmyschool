@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Star, Search, LogOut, Sparkles, Building2, MapPin, GraduationCap } from 'lucide-react';
+import { Shield, Star, Search, LogOut, Sparkles, Building2, MapPin, GraduationCap, MessageSquareQuote, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import type { School } from '@/lib/api';
 
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
                   Super Admin Dashboard
                   <Sparkles className="w-5 h-5" style={{ color: '#04d3d3' }} />
                 </h1>
-                <p className="text-sm text-gray-300">Manage Spotlight Featured School</p>
+                <p className="text-sm text-gray-300">Manage Homepage Content</p>
               </div>
             </div>
             <Button
@@ -155,6 +155,60 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 py-8">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Testimonials Management */}
+          <Card 
+            className="backdrop-blur-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/30 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all cursor-pointer group"
+            onClick={() => router.push('/admin/dashboard/testimonials')}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                      <MessageSquareQuote className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Testimonials</h3>
+                      <p className="text-sm text-gray-200">Parent reviews section</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-200 mb-4">
+                    Create and manage parent testimonials displayed on the homepage
+                  </p>
+                  <div className="flex items-center gap-2 text-yellow-300 font-semibold group-hover:gap-3 transition-all">
+                    <span>Manage Testimonials</span>
+                    <ChevronRight className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Spotlight School Management */}
+          <Card className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-cyan-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
+                      <Star className="w-6 h-6 text-white fill-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Spotlight School</h3>
+                      <p className="text-sm text-gray-200">Featured school</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-200">
+                    Currently managed below - select a school to feature on homepage
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Current Spotlight School */}
         {spotlightSchool && (
           <Card className="mb-8 backdrop-blur-xl bg-white/10 border-white/20 overflow-hidden">
