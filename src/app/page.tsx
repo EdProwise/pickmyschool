@@ -16,7 +16,9 @@ import { getFeaturedSchools, type School } from '@/lib/api';
 export default function HomePage() {
   const router = useRouter();
   const [featuredSchools, setFeaturedSchools] = useState<School[]>([]);
+  const [spotlightSchool, setSpotlightSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
+  const [spotlightLoading, setSpotlightLoading] = useState(true);
   
   // Search state
   const [searchCity, setSearchCity] = useState('');
@@ -36,7 +38,22 @@ export default function HomePage() {
       }
     };
 
+    const loadSpotlightSchool = async () => {
+      try {
+        const response = await fetch('/api/schools/spotlight');
+        if (response.ok) {
+          const data = await response.json();
+          setSpotlightSchool(data.school);
+        }
+      } catch (error) {
+        console.error('Failed to load spotlight school:', error);
+      } finally {
+        setSpotlightLoading(false);
+      }
+    };
+
     loadFeaturedSchools();
+    loadSpotlightSchool();
   }, []);
 
   const handleSearch = () => {
@@ -234,142 +251,143 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right: Featured Schools (25%)) */}
+            {/* Right: Featured School (25%)) */}
             <div className="lg:col-span-1 self-center">
-              {!loading && featuredSchools.length >= 1 && (
+              {!spotlightLoading && spotlightSchool && (
                 <div className="flex flex-col gap-5">
-                  {featuredSchools.slice(0, 1).map((school) => (
-                    <Card
-                      key={school.id}
-                      className="overflow-hidden border-0 rounded-3xl shadow-2xl bg-white hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 group relative"
-                    >
-                      {/* Premium Top Accent Border */}
-                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600" />
-                      
-                      {/* Decorative Corner Accent */}
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-cyan-400/10 to-purple-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+                  <Card
+                    className="overflow-hidden border-0 rounded-3xl shadow-2xl bg-white hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 group relative cursor-pointer"
+                    onClick={() => router.push(`/schools/${spotlightSchool.id}`)}
+                  >
+                    {/* Premium Top Accent Border with animated gradient */}
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 animate-gradient" />
+                    
+                    {/* Decorative Corner Accent */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/10 to-orange-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
 
-                      <CardContent className="p-6 relative">
-                        <div className="relative">
-                          {/* Premium Featured Badge */}
-                          <div className="mb-4 flex items-center justify-between">
-                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-100 text-yellow-700 text-xs font-bold border-2 border-yellow-300 shadow-md">
-                              <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500 text-yellow-500" />
-                              Top Rated
-                            </span>
-                          </div>
-                          
-                          {/* Premium Logo & Name Container */}
-                          <div className="flex items-start gap-4 mb-4">
-                            {/* Enhanced Logo Frame */}
-                            <div className="relative flex-shrink-0">
-                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-100 via-blue-100 to-purple-100 flex items-center justify-center overflow-hidden ring-2 ring-cyan-300/50 shadow-lg group-hover:ring-cyan-400 group-hover:scale-105 transition-all duration-300">
-                                {school.logo ? (
-                                  <img src={school.logo} alt={school.name} className="w-14 h-14 object-contain" />
-                                ) : (
-                                  <span className="text-lg font-bold bg-gradient-to-br from-cyan-600 to-purple-600 bg-clip-text text-transparent">
-                                    {school.name?.charAt(0) || 'S'}
-                                  </span>
-                                )}
-                              </div>
-                              {/* Decorative dot */}
-                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-white shadow-md" />
-                            </div>
-
-                            {/* School Name */}
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-lg md:text-xl font-bold text-foreground leading-tight break-words group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-300">
-                                {school.name}
-                              </h4>
-                            </div>
-                          </div>
-
-                          {/* Premium Location Badge */}
-                          <div className="flex items-center mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200/50 w-fit">
-                            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2 shadow-sm">
-                              <MapPin className="w-3.5 h-3.5 text-white" />
-                            </div>
-                            <span className="text-sm font-semibold text-foreground">
-                              {school.city}
-                              {school.state ? `, ${school.state}` : ''}
-                            </span>
-                          </div>
-
-                          {/* Premium Tags/Badges */}
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            <span className="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-300/50 shadow-sm">
-                              {school.board}
-                            </span>
-                            {school.schoolType && (
-                              <span className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-xl text-xs font-bold border border-purple-300/50 shadow-sm">
-                                {school.schoolType}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Premium Fees Display */}
-                          <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                              <span className="text-xs font-bold text-green-700">Annual Fees</span>
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                              {school.feesMin !== null && school.feesMax !== null
-                                ? `₹${school.feesMin.toLocaleString('en-IN')} – ₹${school.feesMax.toLocaleString('en-IN')}`
-                                : 'Fee info not available'}
-                            </p>
-                          </div>
-
-                          {/* Premium Rating Badge */}
-                          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200/50 w-fit shadow-sm">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
-                              <span className="text-base font-bold bg-gradient-to-r from-yellow-700 to-orange-700 bg-clip-text text-transparent">
-                                {school.rating.toFixed(1)}
-                              </span>
-                            </div>
-                            <span className="text-xs font-medium text-muted-foreground">
-                              ({school.reviewCount} reviews)
-                            </span>
-                          </div>
-
-                          {/* Premium Facilities */}
-                          <div className="flex flex-wrap gap-2 mb-5">
-                            {Array.isArray(school.facilities) && school.facilities.slice(0, 3).map((fac) => (
-                              <span key={fac} className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 text-foreground text-xs font-medium border border-gray-200/50 shadow-sm">
-                                {fac}
-                              </span>
-                            ))}
-                            {Array.isArray(school.facilities) && school.facilities.length > 3 && (
-                              <span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-xs font-bold border border-cyan-200/50 shadow-sm">
-                                +{school.facilities.length - 3} more
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Premium Action Button */}
-                          <Button 
-                            className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn relative overflow-hidden"
-                            onClick={() => router.push(`/schools/${school.id}`)}
-                          >
-                            {/* Button shine effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
-                            <span className="relative z-10 flex items-center justify-center gap-2">
-                              View Details
-                              <svg className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                              </svg>
-                            </span>
-                          </Button>
+                    <CardContent className="p-6 relative">
+                      <div className="relative">
+                        {/* Premium Featured Badge */}
+                        <div className="mb-4 flex items-center justify-between">
+                          <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-100 text-yellow-700 text-xs font-bold border-2 border-yellow-300 shadow-md animate-pulse">
+                            <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500 text-yellow-500" />
+                            Featured School
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        
+                        {/* Premium Logo & Name Container */}
+                        <div className="flex items-start gap-4 mb-4">
+                          {/* Enhanced Logo Frame */}
+                          <div className="relative flex-shrink-0">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-100 via-blue-100 to-purple-100 flex items-center justify-center overflow-hidden ring-2 ring-cyan-300/50 shadow-lg group-hover:ring-cyan-400 group-hover:scale-105 transition-all duration-300">
+                              {spotlightSchool.logo ? (
+                                <img src={spotlightSchool.logo} alt={spotlightSchool.name} className="w-14 h-14 object-contain" />
+                              ) : (
+                                <span className="text-lg font-bold bg-gradient-to-br from-cyan-600 to-purple-600 bg-clip-text text-transparent">
+                                  {spotlightSchool.name?.charAt(0) || 'S'}
+                                </span>
+                              )}
+                            </div>
+                            {/* Decorative dot */}
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-white shadow-md" />
+                          </div>
+
+                          {/* School Name */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-lg md:text-xl font-bold text-foreground leading-tight break-words group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-300">
+                              {spotlightSchool.name}
+                            </h4>
+                          </div>
+                        </div>
+
+                        {/* Premium Location Badge */}
+                        <div className="flex items-center mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200/50 w-fit">
+                          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2 shadow-sm">
+                            <MapPin className="w-3.5 h-3.5 text-white" />
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">
+                            {spotlightSchool.city}
+                            {spotlightSchool.state ? `, ${spotlightSchool.state}` : ''}
+                          </span>
+                        </div>
+
+                        {/* Premium Tags/Badges */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-300/50 shadow-sm">
+                            {spotlightSchool.board}
+                          </span>
+                          {spotlightSchool.schoolType && (
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-xl text-xs font-bold border border-purple-300/50 shadow-sm">
+                              {spotlightSchool.schoolType}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Premium Fees Display */}
+                        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-bold text-green-700">Annual Fees</span>
+                          </div>
+                          <p className="text-sm font-bold text-foreground">
+                            {spotlightSchool.feesMin !== null && spotlightSchool.feesMax !== null
+                              ? `₹${spotlightSchool.feesMin.toLocaleString('en-IN')} – ₹${spotlightSchool.feesMax.toLocaleString('en-IN')}`
+                              : 'Fee info not available'}
+                          </p>
+                        </div>
+
+                        {/* Premium Rating Badge */}
+                        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200/50 w-fit shadow-sm">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
+                            <span className="text-base font-bold bg-gradient-to-r from-yellow-700 to-orange-700 bg-clip-text text-transparent">
+                              {spotlightSchool.rating.toFixed(1)}
+                            </span>
+                          </div>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            ({spotlightSchool.reviewCount} reviews)
+                          </span>
+                        </div>
+
+                        {/* Premium Facilities */}
+                        <div className="flex flex-wrap gap-2 mb-5">
+                          {Array.isArray(spotlightSchool.facilities) && spotlightSchool.facilities.slice(0, 3).map((fac) => (
+                            <span key={fac} className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 text-foreground text-xs font-medium border border-gray-200/50 shadow-sm">
+                              {fac}
+                            </span>
+                          ))}
+                          {Array.isArray(spotlightSchool.facilities) && spotlightSchool.facilities.length > 3 && (
+                            <span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-xs font-bold border border-cyan-200/50 shadow-sm">
+                              +{spotlightSchool.facilities.length - 3} more
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Premium Action Button */}
+                        <Button 
+                          className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn relative overflow-hidden"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/schools/${spotlightSchool.id}`);
+                          }}
+                        >
+                          {/* Button shine effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            View Details
+                            <svg className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          </span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </div>
