@@ -13,12 +13,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { getFeaturedSchools, type School } from '@/lib/api';
 
+interface Testimonial {
+  id: number;
+  parentName: string;
+  location: string;
+  rating: number;
+  testimonialText: string;
+  avatarUrl: string | null;
+  featured: boolean;
+  displayOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [featuredSchools, setFeaturedSchools] = useState<School[]>([]);
   const [spotlightSchool, setSpotlightSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
   
   // Search state
   const [searchCity, setSearchCity] = useState('');
@@ -52,8 +67,23 @@ export default function HomePage() {
       }
     };
 
+    const loadTestimonials = async () => {
+      try {
+        const response = await fetch('/api/testimonials');
+        if (response.ok) {
+          const data = await response.json();
+          setTestimonials(data);
+        }
+      } catch (error) {
+        console.error('Failed to load testimonials:', error);
+      } finally {
+        setTestimonialsLoading(false);
+      }
+    };
+
     loadFeaturedSchools();
     loadSpotlightSchool();
+    loadTestimonials();
   }, []);
 
   const handleSearch = () => {
@@ -74,30 +104,6 @@ export default function HomePage() {
     { name: 'Pune', count: '150+ Schools', image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=800' },
     { name: 'Chennai', count: '140+ Schools', image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800' },
     { name: 'Hyderabad', count: '120+ Schools', image: 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=800' },
-  ];
-
-  const testimonials = [
-    {
-      name: 'Priya Sharma',
-      location: 'Delhi',
-      rating: 5,
-      text: 'PickMySchool made finding the perfect school for my daughter so easy! The detailed information and comparison features are excellent.',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-    },
-    {
-      name: 'Rajesh Kumar',
-      location: 'Mumbai',
-      rating: 5,
-      text: 'Great platform with comprehensive school listings. The AI chat feature helped me narrow down my choices quickly.',
-      avatar: 'https://i.pravatar.cc/150?img=2',
-    },
-    {
-      name: 'Anjali Patel',
-      location: 'Bangalore',
-      rating: 5,
-      text: 'Very helpful in comparing different schools. The enquiry process is straightforward and schools respond quickly.',
-      avatar: 'https://i.pravatar.cc/150?img=3',
-    },
   ];
 
   return (
@@ -725,49 +731,117 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+      {/* What Parents Say Section - Animated with Database Integration */}
+      <section className="relative py-24 px-4 bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-10 right-20 w-96 h-96 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="inline-block px-5 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-200 rounded-full text-sm font-bold text-yellow-700">
+                💬 Parent Testimonials
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
               What Parents Say
             </h2>
-            <p className="text-lg text-muted-foreground">
-              Hear from parents who found their perfect school match
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Hear from parents who found their perfect school match through PickMySchool
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index}>
-                <CardContent className="p-6">
-                  <div className="flex items-center mb-4">
-                    <img
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      className="w-12 h-12 rounded-full mr-3"
-                    />
-                    <div>
-                      <h4 className="font-semibold">{testimonial.name}</h4>
-                      <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+          {testimonialsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="flex items-center mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 mr-3" />
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded mb-2 w-3/4" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex mb-3">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <svg
-                        key={i}
-                        className="w-5 h-5 fill-yellow-400"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    <div className="h-4 bg-gray-200 rounded mb-2" />
+                    <div className="h-4 bg-gray-200 rounded mb-2" />
+                    <div className="h-4 bg-gray-200 rounded w-5/6" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+              {testimonials.map((testimonial, index) => (
+                <Card 
+                  key={testimonial.id}
+                  className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.03] hover:-translate-y-1"
+                  style={{
+                    animation: `slideInFromLeft 0.6s ease-out ${index * 0.15}s both`
+                  }}
+                >
+                  <CardContent className="p-6 relative">
+                    {/* Top Gradient Accent */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400" />
+                    
+                    <div className="flex items-center mb-4">
+                      <div className="relative flex-shrink-0 mr-3">
+                        {testimonial.avatarUrl ? (
+                          <img
+                            src={testimonial.avatarUrl}
+                            alt={testimonial.parentName}
+                            className="w-14 h-14 rounded-full ring-2 ring-cyan-200"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg ring-2 ring-cyan-200">
+                            {testimonial.parentName.charAt(0)}
+                          </div>
+                        )}
+                        {/* Verified Badge */}
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-green-400 to-green-600 border-2 border-white flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-foreground text-lg">
+                          {testimonial.parentName}
+                        </h4>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin size={14} />
+                          <span>{testimonial.location}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Star Rating */}
+                    <div className="flex gap-1 mb-4">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className="w-5 h-5 fill-yellow-400 text-yellow-400"
+                        />
+                      ))}
+                    </div>
+
+                    {/* Testimonial Text */}
+                    <p className="text-muted-foreground italic leading-relaxed line-clamp-6 group-hover:line-clamp-none transition-all">
+                      &quot;{testimonial.testimonialText}&quot;
+                    </p>
+
+                    {/* Decorative Quote Icon */}
+                    <div className="absolute top-16 right-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                      <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                       </svg>
-                    ))}
-                  </div>
-                  <p className="text-muted-foreground italic">&quot;{testimonial.text}&quot;</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -804,6 +878,20 @@ export default function HomePage() {
       <Footer />
       
       <AIChat />
+
+      {/* Add keyframe animation for left-to-right slide */}
+      <style jsx global>{`
+        @keyframes slideInFromLeft {
+          0% {
+            opacity: 0;
+            transform: translateX(-100px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
