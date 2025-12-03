@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, LogOut, Sparkles, Home, School, Building2 } from 'lucide-react';
+import { Menu, X, User, LogOut, Sparkles, Home, School, Building2, GitCompare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -99,6 +99,19 @@ export default function Navbar() {
               <span className="relative z-10 flex items-center gap-2 font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors duration-300">
                 <School size={18} className="transition-transform group-hover:scale-110 duration-300" />
                 <span className="text-sm">Find Schools</span>
+              </span>
+            </Link>
+            <Link
+              href="/compare"
+              className="relative group px-5 py-2.5 rounded-xl overflow-hidden transition-all duration-300"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100" />
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-cyan-400/30 rounded-xl transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-cyan-400/5 to-cyan-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              
+              <span className="relative z-10 flex items-center gap-2 font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors duration-300">
+                <GitCompare size={18} className="transition-transform group-hover:scale-110 duration-300" />
+                <span className="text-sm">Compare Schools</span>
               </span>
             </Link>
             <Link
@@ -212,6 +225,14 @@ export default function Navbar() {
               >
                 <School size={20} className="text-cyan-500" />
                 Find Schools
+              </Link>
+              <Link
+                href="/compare"
+                className="flex items-center gap-3 px-4 py-3 text-foreground hover:text-cyan-600 transition-colors font-medium rounded-xl hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <GitCompare size={20} className="text-cyan-500" />
+                Compare Schools
               </Link>
               <Link
                 href="/for-schools"
