@@ -99,11 +99,11 @@ export async function PUT(
 
     if (parentName !== undefined) updateData.parentName = parentName.trim();
     if (location !== undefined) updateData.location = location.trim();
-    if (rating !== undefined) updateData.rating = rating;
+    if (rating !== undefined) updateData.rating = parseInt(rating);
     if (testimonialText !== undefined) updateData.testimonialText = testimonialText.trim();
-    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl.trim();
-    if (featured !== undefined) updateData.featured = featured;
-    if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl ? avatarUrl.trim() : null;
+    if (featured !== undefined) updateData.featured = Boolean(featured);
+    if (displayOrder !== undefined) updateData.displayOrder = displayOrder ? parseInt(displayOrder) : null;
 
     // Update testimonial
     const updated = await db
