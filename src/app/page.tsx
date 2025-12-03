@@ -374,62 +374,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 px-4 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              How PickMySchool Works
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Finding the right school has never been easier. Follow these simple steps.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#04d3d3' }}>
-                <Search className="text-white" size={28} />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">1. Search</h3>
-              <p className="text-muted-foreground">
-                Search schools by location, board, budget, and facilities
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-500 mx-auto mb-4 flex items-center justify-center">
-                <GraduationCap className="text-white" size={28} />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">2. Compare</h3>
-              <p className="text-muted-foreground">
-                Compare schools based on fees, facilities, ratings, and reviews
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-green-500 mx-auto mb-4 flex items-center justify-center">
-                <Users className="text-white" size={28} />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">3. Connect</h3>
-              <p className="text-muted-foreground">
-                Submit enquiries and connect directly with schools
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-purple-500 mx-auto mb-4 flex items-center justify-center">
-                <Award className="text-white" size={28} />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">4. Enroll</h3>
-              <p className="text-muted-foreground">
-                Get guidance through the admission process
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Featured Schools Section */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="container mx-auto">
@@ -481,6 +425,95 @@ export default function HomePage() {
               View All Schools
               <ChevronRight className="ml-2" size={16} />
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section - Premium Design */}
+      <section className="relative py-24 px-4 bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-10 right-20 w-72 h-72 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="inline-block px-5 py-2 bg-gradient-to-r from-cyan-100 to-blue-100 border border-cyan-200 rounded-full text-sm font-bold text-cyan-700">
+                Simple & Effective Process
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+              How PickMySchool Works
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Finding the right school has never been easier. Follow these simple steps to discover your child's perfect educational journey.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                1
+              </div>
+              <CardContent className="p-8">
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Search className="text-white" size={36} />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Search</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Search schools by location, board, budget, and facilities with our advanced filters
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                2
+              </div>
+              <CardContent className="p-8">
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <GraduationCap className="text-white" size={36} />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Compare</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Compare schools based on fees, facilities, ratings, and authentic parent reviews
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                3
+              </div>
+              <CardContent className="p-8">
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Users className="text-white" size={36} />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Connect</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Submit enquiries and connect directly with schools for personalized assistance
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                4
+              </div>
+              <CardContent className="p-8">
+                <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Award className="text-white" size={36} />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Enroll</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Get expert guidance through the admission process and secure your child's future
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
