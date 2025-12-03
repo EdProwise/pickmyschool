@@ -74,6 +74,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(updatedSchool[0], { status: 200 });
     }
 
+    // Get multiple schools by IDs (for comparison feature)
+    const ids = searchParams.get('ids');
+    if (ids) {
+      const schoolIds = ids.split(',')
+        .map(id => parseInt(id.trim()))
+        .filter(id => !isNaN(id));
+      
+      if (schoolIds.length === 0) {
+        return NextResponse.json({ 
+          error: "Valid IDs are required",
+          code: "INVALID_IDS" 
+        }, { status: 400 });
+      }
+
+      if (schoolIds.length > 10) {
+        return NextResponse.json({ 
+          error: "Maximum 10 schools can be fetched at once",
+          code: "TOO_MANY_IDS" 
+        }, { status: 400 });
+      }
+
+      // Fetch all schools in one query using OR conditions
+      const orConditions = schoolIds.map(id => eq(schools.id, id));
+      const results = await db.select()
+        .from(schools)
+        .where(or(...orConditions));
+
+      // Sort results to match the order of requested IDs
+      const sortedResults = schoolIds.map(id => 
+        results.find(school => school.id === id)
+      ).filter(Boolean); // Remove any null/undefined entries
+
+      return NextResponse.json(sortedResults, { status: 200 });
+    }
+
     // List schools with filters
     const city = searchParams.get('city');
     const board = searchParams.get('board');
