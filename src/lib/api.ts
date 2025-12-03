@@ -114,6 +114,23 @@ export const getSchoolById = async (id: number): Promise<School> => {
   return response.json();
 };
 
+export const getSchoolsByIds = async (ids: number[]): Promise<School[]> => {
+  if (ids.length === 0) {
+    return [];
+  }
+  
+  if (ids.length > 10) {
+    throw new Error('Maximum 10 schools can be fetched at once');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/api/schools?ids=${ids.join(',')}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch schools');
+  }
+  return response.json();
+};
+
 export const getFeaturedSchools = async (limit = 10): Promise<School[]> => {
   const response = await fetch(`${API_BASE_URL}/api/schools/featured?limit=${limit}`);
   if (!response.ok) throw new Error('Failed to fetch featured schools');
