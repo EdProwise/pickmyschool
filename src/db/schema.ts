@@ -186,6 +186,20 @@ export const siteSettings = sqliteTable('site_settings', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// Add testimonials table at the end
+export const testimonials = sqliteTable('testimonials', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  parentName: text('parent_name').notNull(),
+  location: text('location').notNull(),
+  rating: integer('rating').notNull(),
+  testimonialText: text('testimonial_text').notNull(),
+  avatarUrl: text('avatar_url'),
+  featured: integer('featured', { mode: 'boolean' }).default(false),
+  displayOrder: integer('display_order'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 // Add reviews table at the end
 export const reviews = sqliteTable('reviews', {
   id: integer('id').primaryKey({ autoIncrement: true }),
