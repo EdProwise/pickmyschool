@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { schools } from '@/db/schema';
+import { schools, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
@@ -98,13 +98,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find school profile by userId
-    const schoolProfile = await db.select()
+    // Find school profile by userId, then fallback to user's schoolId
+    let profile = await db.select()
       .from(schools)
       .where(eq(schools.userId, payload.userId))
       .limit(1);
 
-    if (schoolProfile.length === 0) {
+    let targetSchoolId: number | null = null;
+
+    if (profile.length === 0) {
+      const userRecord = await db.select()
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
+
+      if (userRecord.length > 0 && userRecord[0].schoolId) {
+        profile = await db.select()
+          .from(schools)
+          .where(eq(schools.id, userRecord[0].schoolId))
+          .limit(1);
+        targetSchoolId = userRecord[0].schoolId;
+
+        // Link the school to this user for future lookups
+        if (profile.length > 0 && !profile[0].userId) {
+          await db.update(schools)
+            .set({ userId: payload.userId })
+            .where(eq(schools.id, userRecord[0].schoolId));
+        }
+      }
+    } else {
+      targetSchoolId = profile[0].id;
+    }
+
+    if (!targetSchoolId || profile.length === 0) {
       return NextResponse.json(
         { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
         { status: 404 }
@@ -112,7 +138,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get existing gallery images (prefer new field, fallback to legacy)
-    const existing = (schoolProfile[0].galleryImages as string[] | null) || (schoolProfile[0].gallery as string[] | null);
+    const existing = (profile[0].galleryImages as string[] | null) || (profile[0].gallery as string[] | null);
     const currentGallery = Array.isArray(existing) ? existing : [];
 
     // Add new images to gallery (avoid duplicates)
@@ -120,14 +146,14 @@ export async function POST(request: NextRequest) {
     for (const u of urlsToAdd) set.add(u);
     const updatedGallery = Array.from(set);
 
-    // Update school profile - write to both galleryImages (current) and gallery (legacy) for compatibility
+    // Update by school id - write to both galleryImages (current) and gallery (legacy)
     const updatedProfile = await db.update(schools)
       .set({
         galleryImages: updatedGallery,
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
-      .where(eq(schools.userId, payload.userId))
+      .where(eq(schools.id, targetSchoolId))
       .returning();
 
     if (updatedProfile.length === 0) {
@@ -189,13 +215,39 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Find school profile by userId
-    const schoolProfile = await db.select()
+    // Find school profile by userId, then fallback to user's schoolId
+    let profile = await db.select()
       .from(schools)
       .where(eq(schools.userId, payload.userId))
       .limit(1);
 
-    if (schoolProfile.length === 0) {
+    let targetSchoolId: number | null = null;
+
+    if (profile.length === 0) {
+      const userRecord = await db.select()
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
+
+      if (userRecord.length > 0 && userRecord[0].schoolId) {
+        profile = await db.select()
+          .from(schools)
+          .where(eq(schools.id, userRecord[0].schoolId))
+          .limit(1);
+        targetSchoolId = userRecord[0].schoolId;
+
+        // Link the school to this user for future lookups
+        if (profile.length > 0 && !profile[0].userId) {
+          await db.update(schools)
+            .set({ userId: payload.userId })
+            .where(eq(schools.id, userRecord[0].schoolId));
+        }
+      }
+    } else {
+      targetSchoolId = profile[0].id;
+    }
+
+    if (!targetSchoolId || profile.length === 0) {
       return NextResponse.json(
         { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
         { status: 404 }
@@ -203,7 +255,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get existing gallery images (prefer new field, fallback to legacy)
-    const existing = (schoolProfile[0].galleryImages as string[] | null) || (schoolProfile[0].gallery as string[] | null);
+    const existing = (profile[0].galleryImages as string[] | null) || (profile[0].gallery as string[] | null);
     const currentGallery = Array.isArray(existing) ? existing : [];
 
     // Check if image exists in gallery
@@ -219,14 +271,14 @@ export async function DELETE(request: NextRequest) {
     // Remove image from gallery
     const updatedGallery = currentGallery.filter((url: string) => url !== imageUrl.trim());
 
-    // Update school profile - write to both fields
+    // Update by school id - write to both fields
     const updatedProfile = await db.update(schools)
       .set({
         galleryImages: updatedGallery,
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
-      .where(eq(schools.userId, payload.userId))
+      .where(eq(schools.id, targetSchoolId))
       .returning();
 
     if (updatedProfile.length === 0) {
