@@ -187,6 +187,8 @@ export default function SchoolDetailPage() {
       const response = await fetch(`/api/schools?id=${schoolId}`);
       if (!response.ok) throw new Error('Failed to fetch school');
       const data = await response.json();
+      console.log('School data loaded on public page:', data);
+      console.log('Facility images on public page:', data.facilityImages);
       setSchool(data);
     } catch (error) {
       console.error('Failed to load school:', error);
