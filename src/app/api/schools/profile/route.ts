@@ -59,10 +59,33 @@ export async function GET(request: NextRequest) {
 
     const { user } = auth;
 
-    const profile = await db.select()
+    // First try to find by userId
+    let profile = await db.select()
       .from(schools)
       .where(eq(schools.userId, user.userId))
       .limit(1);
+
+    // If not found, check if user has a schoolId and fetch by that
+    if (profile.length === 0) {
+      const userRecord = await db.select()
+        .from(users)
+        .where(eq(users.id, user.userId))
+        .limit(1);
+
+      if (userRecord.length > 0 && userRecord[0].schoolId) {
+        profile = await db.select()
+          .from(schools)
+          .where(eq(schools.id, userRecord[0].schoolId))
+          .limit(1);
+        
+        // Update the school row to have the userId
+        if (profile.length > 0) {
+          await db.update(schools)
+            .set({ userId: user.userId })
+            .where(eq(schools.id, userRecord[0].schoolId));
+        }
+      }
+    }
 
     if (profile.length === 0) {
       return NextResponse.json(
@@ -91,11 +114,31 @@ export async function PUT(request: NextRequest) {
     const { user } = auth;
     const body = await request.json();
 
-    // Check if profile exists
-    const existingProfile = await db.select()
+    // Check if profile exists by userId first
+    let existingProfile = await db.select()
       .from(schools)
       .where(eq(schools.userId, user.userId))
       .limit(1);
+
+    // If not found by userId, check user's schoolId
+    let targetSchoolId: number | null = null;
+    if (existingProfile.length === 0) {
+      const userRecord = await db.select()
+        .from(users)
+        .where(eq(users.id, user.userId))
+        .limit(1);
+
+      if (userRecord.length > 0 && userRecord[0].schoolId) {
+        existingProfile = await db.select()
+          .from(schools)
+          .where(eq(schools.id, userRecord[0].schoolId))
+          .limit(1);
+        
+        targetSchoolId = userRecord[0].schoolId;
+      }
+    } else if (existingProfile.length > 0) {
+      targetSchoolId = existingProfile[0].id;
+    }
 
     const isCreating = existingProfile.length === 0;
 
@@ -283,6 +326,7 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
+      console.log('Saving facilityImages:', JSON.stringify(body.facilityImages));
       updateData.facilityImages = body.facilityImages;
     }
 
@@ -299,12 +343,22 @@ export async function PUT(request: NextRequest) {
         .values(updateData)
         .returning();
 
+      // Link user to this school
+      await db.update(users)
+        .set({ schoolId: newProfile[0].id })
+        .where(eq(users.id, user.userId));
+
       return NextResponse.json(newProfile[0], { status: 200 });
     } else {
-      // Update existing profile
+      // Ensure userId is set
+      if (!updateData.userId) {
+        updateData.userId = user.userId;
+      }
+
+      // Update existing profile by schoolId
       const updatedProfile = await db.update(schools)
         .set(updateData)
-        .where(eq(schools.userId, user.userId))
+        .where(eq(schools.id, targetSchoolId!))
         .returning();
 
       if (updatedProfile.length === 0) {
@@ -313,6 +367,8 @@ export async function PUT(request: NextRequest) {
           { status: 404 }
         );
       }
+
+      console.log('Updated school profile:', updatedProfile[0].id, 'facilityImages:', updatedProfile[0].facilityImages ? 'present' : 'null');
 
       return NextResponse.json(updatedProfile[0], { status: 200 });
     }
