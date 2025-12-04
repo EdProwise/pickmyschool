@@ -863,10 +863,11 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       hasHostelStudyRoom: formData.hasHostelStudyRoom,
       hasAcHostel: formData.hasAcHostel,
       hasCafeteria: formData.hasCafeteria,
-      // Persist facility images so they reflect on public page
-      facilityImages: formData.facilityImages,
+      // CRITICAL: Ensure facility images are included in the save
+      facilityImages: formData.facilityImages || {},
     };
     
+    console.log('Saving facilities with images:', facilitiesData.facilityImages);
     onSave(facilitiesData);
   };
 
