@@ -114,6 +114,18 @@ export async function PUT(request: NextRequest) {
     const { user } = auth;
     const body = await request.json();
 
+    // Helper parsers to avoid NaN updates
+    const toIntOrNull = (val: unknown) => {
+      if (val === null || val === undefined || val === '') return null;
+      const n = parseInt(String(val), 10);
+      return Number.isFinite(n) ? n : null;
+    };
+    const toFloatOrNull = (val: unknown) => {
+      if (val === null || val === undefined || val === '') return null;
+      const n = parseFloat(String(val));
+      return Number.isFinite(n) ? n : null;
+    };
+
     // Check if profile exists by userId first
     let existingProfile = await db.select()
       .from(schools)
@@ -162,7 +174,10 @@ export async function PUT(request: NextRequest) {
 
     // Basic Info - comprehensive fields
     if (body.name !== undefined) updateData.name = String(body.name).trim();
-    if (body.establishmentYear !== undefined) updateData.establishmentYear = parseInt(body.establishmentYear);
+    if (body.establishmentYear !== undefined) {
+      const v = toIntOrNull(body.establishmentYear);
+      updateData.establishmentYear = v;
+    }
     if (body.schoolType !== undefined) updateData.schoolType = String(body.schoolType).trim();
     if (body.k12Level !== undefined) updateData.k12Level = String(body.k12Level).trim();
     if (body.board !== undefined) updateData.board = String(body.board).trim();
@@ -171,7 +186,10 @@ export async function PUT(request: NextRequest) {
     if (body.streamsAvailable !== undefined) updateData.streamsAvailable = String(body.streamsAvailable).trim();
     if (body.languages !== undefined) updateData.languages = String(body.languages).trim();
     if (body.totalStudents !== undefined) updateData.totalStudents = String(body.totalStudents).trim();
-    if (body.totalTeachers !== undefined) updateData.totalTeachers = parseInt(body.totalTeachers);
+    if (body.totalTeachers !== undefined) {
+      const v = toIntOrNull(body.totalTeachers);
+      updateData.totalTeachers = v;
+    }
     if (body.logoUrl !== undefined) updateData.logoUrl = String(body.logoUrl).trim();
     if (body.aboutSchool !== undefined) updateData.aboutSchool = String(body.aboutSchool).trim();
     if (body.bannerImageUrl !== undefined) updateData.bannerImageUrl = String(body.bannerImageUrl).trim();
@@ -195,7 +213,10 @@ export async function PUT(request: NextRequest) {
     if (body.classroomType !== undefined) updateData.classroomType = String(body.classroomType).trim();
     if (body.hasLibrary !== undefined) updateData.hasLibrary = Boolean(body.hasLibrary);
     if (body.hasComputerLab !== undefined) updateData.hasComputerLab = Boolean(body.hasComputerLab);
-    if (body.computerCount !== undefined) updateData.computerCount = parseInt(body.computerCount);
+    if (body.computerCount !== undefined) {
+      const v = toIntOrNull(body.computerCount);
+      updateData.computerCount = v;
+    }
     if (body.hasPhysicsLab !== undefined) updateData.hasPhysicsLab = Boolean(body.hasPhysicsLab);
     if (body.hasChemistryLab !== undefined) updateData.hasChemistryLab = Boolean(body.hasChemistryLab);
     if (body.hasBiologyLab !== undefined) updateData.hasBiologyLab = Boolean(body.hasBiologyLab);
@@ -259,14 +280,35 @@ export async function PUT(request: NextRequest) {
     if (body.description !== undefined) updateData.description = String(body.description).trim();
     if (body.contactEmail !== undefined) updateData.contactEmail = String(body.contactEmail).trim().toLowerCase();
     if (body.contactPhone !== undefined) updateData.contactPhone = String(body.contactPhone).trim();
-    if (body.feesMin !== undefined) updateData.feesMin = parseInt(body.feesMin);
-    if (body.feesMax !== undefined) updateData.feesMax = parseInt(body.feesMax);
-    if (body.rating !== undefined) updateData.rating = parseFloat(body.rating);
-    if (body.reviewCount !== undefined) updateData.reviewCount = parseInt(body.reviewCount);
-    if (body.profileViews !== undefined) updateData.profileViews = parseInt(body.profileViews);
+    if (body.feesMin !== undefined) {
+      const v = toIntOrNull(body.feesMin);
+      updateData.feesMin = v;
+    }
+    if (body.feesMax !== undefined) {
+      const v = toIntOrNull(body.feesMax);
+      updateData.feesMax = v;
+    }
+    if (body.rating !== undefined) {
+      const v = toFloatOrNull(body.rating);
+      updateData.rating = v;
+    }
+    if (body.reviewCount !== undefined) {
+      const v = toIntOrNull(body.reviewCount);
+      updateData.reviewCount = v;
+    }
+    if (body.profileViews !== undefined) {
+      const v = toIntOrNull(body.profileViews);
+      updateData.profileViews = v;
+    }
     if (body.featured !== undefined) updateData.featured = Boolean(body.featured);
-    if (body.latitude !== undefined) updateData.latitude = parseFloat(body.latitude);
-    if (body.longitude !== undefined) updateData.longitude = parseFloat(body.longitude);
+    if (body.latitude !== undefined) {
+      const v = toFloatOrNull(body.latitude);
+      updateData.latitude = v;
+    }
+    if (body.longitude !== undefined) {
+      const v = toFloatOrNull(body.longitude);
+      updateData.longitude = v;
+    }
     
     // JSON fields
     if (body.galleryImages !== undefined) {
@@ -290,7 +332,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (body.feesStructure !== undefined) {
-      if (typeof body.feesStructure !== 'object') {
+      if (typeof body.feesStructure !== 'object' || Array.isArray(body.feesStructure)) {
         return NextResponse.json(
           { error: 'feesStructure must be an object', code: 'VALIDATION_ERROR' },
           { status: 400 }
@@ -320,7 +362,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (body.facilityImages !== undefined) {
-      if (typeof body.facilityImages !== 'object') {
+      if (typeof body.facilityImages !== 'object' || Array.isArray(body.facilityImages)) {
         return NextResponse.json(
           { error: 'facilityImages must be an object', code: 'VALIDATION_ERROR' },
           { status: 400 }
@@ -334,10 +376,10 @@ export async function PUT(request: NextRequest) {
       // Create new profile
       updateData.userId = user.userId;
       updateData.createdAt = new Date().toISOString();
-      updateData.rating = updateData.rating || 0;
-      updateData.reviewCount = updateData.reviewCount || 0;
-      updateData.profileViews = updateData.profileViews || 0;
-      updateData.featured = updateData.featured || false;
+      updateData.rating = updateData.rating ?? 0;
+      updateData.reviewCount = updateData.reviewCount ?? 0;
+      updateData.profileViews = updateData.profileViews ?? 0;
+      updateData.featured = updateData.featured ?? false;
 
       const newProfile = await db.insert(schools)
         .values(updateData)
@@ -355,10 +397,28 @@ export async function PUT(request: NextRequest) {
         updateData.userId = user.userId;
       }
 
+      if (!targetSchoolId) {
+        return NextResponse.json(
+          { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
+          { status: 404 }
+        );
+      }
+
+      // Filter out fields that don't exist in the current DB (handles older DBs without new columns)
+      const currentRow = existingProfile[0] || {};
+      const allowedCols = new Set(Object.keys(currentRow as Record<string, any>));
+      const filteredUpdateData = Object.fromEntries(
+        Object.entries(updateData).filter(([k]) => allowedCols.has(k))
+      );
+      const pruned = Object.keys(updateData).filter((k) => !allowedCols.has(k));
+      if (pruned.length) {
+        console.warn('Pruned unsupported columns from update:', pruned);
+      }
+
       // Update existing profile by schoolId
       const updatedProfile = await db.update(schools)
-        .set(updateData)
-        .where(eq(schools.id, targetSchoolId!))
+        .set(filteredUpdateData)
+        .where(eq(schools.id, targetSchoolId))
         .returning();
 
       if (updatedProfile.length === 0) {
