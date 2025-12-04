@@ -804,7 +804,11 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 
   useEffect(() => {
     if (profile) {
-      setFormData(profile);
+      // Ensure facilityImages is always an object, never null
+      setFormData({
+        ...profile,
+        facilityImages: profile.facilityImages || {}
+      });
     }
   }, [profile]);
 
