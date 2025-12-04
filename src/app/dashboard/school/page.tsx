@@ -208,7 +208,12 @@ export default function SchoolDashboard() {
 
       const updatedProfile = await response.json();
       setProfile(updatedProfile);
+      console.log('Profile saved successfully:', updatedProfile);
+      console.log('Facility images in saved profile:', updatedProfile.facilityImages);
       toast.success('Profile updated successfully');
+      
+      // Reload profile to ensure fresh data
+      await loadSchoolProfile();
     } catch (error: any) {
       console.error('Failed to save profile:', error);
       toast.error(error.message || 'Failed to save profile');
