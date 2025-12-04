@@ -167,6 +167,23 @@
     background-size: 200% 200%;
     animation: gradient-shift 3s ease infinite;
   }
+
+  /* Testimonials left-to-right auto scroll */
+  @keyframes pms-scroll-right {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  .testimonials-scroll {
+    animation: pms-scroll-right 40s linear infinite;
+    will-change: transform;
+  }
+  .testimonials-scroll:hover {
+    animation-play-state: paused;
+  }
 }
 
 /* Hide Next.js error overlay portal */

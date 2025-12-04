@@ -72,7 +72,7 @@ export default function HomePage() {
         const response = await fetch('/api/testimonials');
         if (response.ok) {
           const data = await response.json();
-          setTestimonials(data);
+          setTestimonials(Array.isArray(data) ? data.slice(0, 6) : []);
         }
       } catch (error) {
         console.error('Failed to load testimonials:', error);
@@ -781,79 +781,13 @@ export default function HomePage() {
               <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white via-cyan-50/50 to-transparent z-10 pointer-events-none" />
               <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white via-cyan-50/50 to-transparent z-10 pointer-events-none" />
               
-              {/* Auto-scrolling container */}
+              {/* Auto-scrolling container - single row, left-to-right */}
               <div className="overflow-hidden">
                 <div className="testimonials-scroll flex gap-8">
-                  {/* First set of testimonials */}
-                  {testimonials.map((testimonial) => (
+                  {/* Only top 6 testimonials, single set */}
+                  {testimonials.slice(0, 6).map((testimonial) => (
                     <Card 
-                      key={`first-${testimonial.id}`}
-                      className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.03] hover:-translate-y-1 flex-shrink-0 w-[400px]"
-                    >
-                      <CardContent className="p-6 relative">
-                        {/* Top Gradient Accent */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400" />
-                        
-                        <div className="flex items-center mb-4">
-                          <div className="relative flex-shrink-0 mr-3">
-                            {testimonial.avatarUrl ? (
-                              <img
-                                src={testimonial.avatarUrl}
-                                alt={testimonial.parentName}
-                                className="w-14 h-14 rounded-full ring-2 ring-cyan-200"
-                              />
-                            ) : (
-                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg ring-2 ring-cyan-200">
-                                {testimonial.parentName.charAt(0)}
-                              </div>
-                            )}
-                            {/* Verified Badge */}
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-green-400 to-green-600 border-2 border-white flex items-center justify-center">
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-bold text-foreground text-lg">
-                              {testimonial.parentName}
-                            </h4>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <MapPin size={14} />
-                              <span>{testimonial.location}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Star Rating */}
-                        <div className="flex gap-1 mb-4">
-                          {[...Array(testimonial.rating)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                            />
-                          ))}
-                        </div>
-
-                        {/* Testimonial Text */}
-                        <p className="text-muted-foreground italic leading-relaxed line-clamp-6">
-                          &quot;{testimonial.testimonialText}&quot;
-                        </p>
-
-                        {/* Decorative Quote Icon */}
-                        <div className="absolute top-16 right-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                          </svg>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  
-                  {/* Duplicate set for seamless loop */}
-                  {testimonials.map((testimonial) => (
-                    <Card 
-                      key={`second-${testimonial.id}`}
+                      key={testimonial.id}
                       className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.03] hover:-translate-y-1 flex-shrink-0 w-[400px]"
                     >
                       <CardContent className="p-6 relative">
@@ -956,25 +890,8 @@ export default function HomePage() {
       
       <AIChat />
 
-      {/* Add keyframe animation for left-to-right slide */}
-      <style jsx global>{`
-        @keyframes scrollLeft {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
-        .testimonials-scroll {
-          animation: scrollLeft 40s linear infinite;
-        }
-
-        .testimonials-scroll:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
+      {/* remove styled-jsx (moved to globals.css) */}
+      {/* ... no inline styles ... */}
     </div>
   );
 }

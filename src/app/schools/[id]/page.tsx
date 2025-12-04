@@ -70,6 +70,8 @@ interface School {
   hasRoboticsLab?: boolean;
   hasStemLab?: boolean;
   hasAuditorium?: boolean;
+  
+  // Sports & Fitness
   hasPlayground?: boolean;
   sportsFacilities?: string;
   hasSwimmingPool?: boolean;
@@ -78,29 +80,37 @@ interface School {
   hasMartialArts?: boolean;
   hasMusicDance?: boolean;
   hasHorseRiding?: boolean;
+  
+  // Technology & Digital
   hasSmartBoard?: boolean;
   hasWifi?: boolean;
   hasCctv?: boolean;
   hasElearning?: boolean;
   hasAcClassrooms?: boolean;
   hasAiTools?: boolean;
+  
+  // Transport
   hasTransport?: boolean;
   hasGpsBuses?: boolean;
   hasCctvBuses?: boolean;
   hasBusCaretaker?: boolean;
+  
+  // Health & Safety
   hasMedicalRoom?: boolean;
   hasDoctorNurse?: boolean;
   hasFireSafety?: boolean;
   hasCleanWater?: boolean;
   hasSecurityGuards?: boolean;
   hasAirPurifier?: boolean;
+  
+  // Boarding
   hasHostel?: boolean;
   hasMess?: boolean;
   hasHostelStudyRoom?: boolean;
   hasAcHostel?: boolean;
-  hasCafeteria?: boolean;
   
-  // Media & Documents
+  // Others
+  hasCafeteria?: boolean;
   galleryImages?: string[];
   virtualTourUrl?: string;
   prospectusUrl?: string;
@@ -189,7 +199,38 @@ export default function SchoolDetailPage() {
       const data = await response.json();
       console.log('School data loaded on public page:', data);
       console.log('Facility images on public page:', data.facilityImages);
-      setSchool(data);
+
+      // Normalize facilityImages to ensure it's an object of string arrays
+      let normalizedFacilityImages: Record<string, string[]> | undefined = undefined;
+      if (data.facilityImages !== null && data.facilityImages !== undefined) {
+        try {
+          const raw = typeof data.facilityImages === 'string' ? JSON.parse(data.facilityImages) : data.facilityImages;
+          if (raw && typeof raw === 'object') {
+            const out: Record<string, string[]> = {};
+            Object.entries(raw as Record<string, any>).forEach(([k, v]) => {
+              if (Array.isArray(v)) {
+                // If array of strings or objects with url
+                const urls = v
+                  .map((item) => {
+                    if (typeof item === 'string') return item;
+                    if (item && typeof item === 'object' && typeof item.url === 'string') return item.url;
+                    return null;
+                  })
+                  .filter(Boolean) as string[];
+                if (urls.length > 0) out[k] = urls;
+              }
+            });
+            normalizedFacilityImages = out;
+          }
+        } catch (e) {
+          console.warn('Failed to parse facilityImages JSON');
+        }
+      }
+
+      setSchool({
+        ...data,
+        ...(normalizedFacilityImages ? { facilityImages: normalizedFacilityImages } : {}),
+      });
     } catch (error) {
       console.error('Failed to load school:', error);
       toast.error('Failed to load school details');
