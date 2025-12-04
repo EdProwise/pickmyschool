@@ -169,6 +169,8 @@ export default function SchoolDashboard() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Profile loaded from API:', data);
+        console.log('Facility images in loaded profile:', data.facilityImages);
         setProfile(data);
       } else if (response.status === 404) {
         // Profile doesn't exist yet, initialize with default values
@@ -176,6 +178,7 @@ export default function SchoolDashboard() {
           name: '',
           board: '',
           city: '',
+          facilityImages: {},
         });
       }
     } catch (error) {
