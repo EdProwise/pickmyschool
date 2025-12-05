@@ -180,10 +180,10 @@ export async function POST(request: NextRequest) {
     // Merge new URLs with existing using Set for deduplication
     const mergedVideos = Array.from(new Set([...existingVideos, ...urlsToAdd]));
 
-    // Update school - store as array (Drizzle will handle JSON conversion)
+    // Update school - manually stringify for SQLite compatibility
     await db.update(schools)
       .set({
-        virtualTourVideos: mergedVideos,
+        virtualTourVideos: JSON.stringify(mergedVideos),
         updatedAt: new Date().toISOString()
       })
       .where(eq(schools.id, targetSchoolId));
