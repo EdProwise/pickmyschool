@@ -269,7 +269,8 @@ export async function PUT(
           { status: 400 }
         );
       }
-      updateData.virtualTourVideos = body.virtualTourVideos;
+      // Ensure proper JSON stringification for SQLite
+      updateData.virtualTourVideos = JSON.stringify(body.virtualTourVideos);
     }
 
     if (isCreating) {
