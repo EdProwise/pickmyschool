@@ -282,22 +282,31 @@ export async function PUT(
         );
       }
 
-      const newSchool = await db.insert(schools)
-        .values(updateData)
-        .returning();
+      // Insert and then fetch (avoid RETURNING *)
+      await db.insert(schools)
+        .values(updateData);
+
+      const created = await db.select()
+        .from(schools)
+        .where(eq(schools.id, schoolId))
+        .limit(1);
 
       return NextResponse.json({
-        school: newSchool[0],
+        school: created[0],
         message: "School created successfully"
       }, { status: 201 });
     } else {
-      // Update existing school
-      const updatedSchool = await db.update(schools)
+      // Update existing school and then fetch (avoid RETURNING *)
+      await db.update(schools)
         .set(updateData)
-        .where(eq(schools.id, schoolId))
-        .returning();
+        .where(eq(schools.id, schoolId));
 
-      if (updatedSchool.length === 0) {
+      const refreshed = await db.select()
+        .from(schools)
+        .where(eq(schools.id, schoolId))
+        .limit(1);
+
+      if (refreshed.length === 0) {
         return NextResponse.json(
           { error: 'School not found', code: 'SCHOOL_NOT_FOUND' },
           { status: 404 }
@@ -305,7 +314,7 @@ export async function PUT(
       }
 
       return NextResponse.json({
-        school: updatedSchool[0],
+        school: refreshed[0],
         message: "School updated successfully"
       }, { status: 200 });
     }
