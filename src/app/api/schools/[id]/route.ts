@@ -262,6 +262,16 @@ export async function PUT(
       updateData.facilityImages = body.facilityImages;
     }
 
+    if (body.virtualTourVideos !== undefined) {
+      if (!Array.isArray(body.virtualTourVideos)) {
+        return NextResponse.json(
+          { error: 'virtualTourVideos must be an array', code: 'VALIDATION_ERROR' },
+          { status: 400 }
+        );
+      }
+      updateData.virtualTourVideos = body.virtualTourVideos;
+    }
+
     if (isCreating) {
       // Create new school with specific ID
       updateData.id = schoolId;
