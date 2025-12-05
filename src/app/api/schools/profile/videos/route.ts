@@ -210,8 +210,24 @@ export async function DELETE(request: NextRequest) {
     }
     const { targetSchoolId } = authResult;
 
-    // Parse request body
-    const body = await request.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      const text = await request.text();
+      if (!text || text.trim() === '') {
+        return NextResponse.json({
+          error: 'Request body is required',
+          code: 'MISSING_BODY'
+        }, { status: 400 });
+      }
+      body = JSON.parse(text);
+    } catch (error) {
+      return NextResponse.json({
+        error: 'Invalid JSON in request body',
+        code: 'INVALID_JSON'
+      }, { status: 400 });
+    }
+
     const { videoUrl } = body;
 
     // Validation: videoUrl required
