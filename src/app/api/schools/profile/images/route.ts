@@ -147,14 +147,19 @@ export async function POST(request: NextRequest) {
     const updatedGallery = Array.from(set);
 
     // Update by school id - write to both galleryImages (current) and gallery (legacy)
-    const updatedProfile = await db.update(schools)
+    await db.update(schools)
       .set({
         galleryImages: updatedGallery,
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
+      .where(eq(schools.id, targetSchoolId));
+
+    // Read back the updated row instead of using RETURNING
+    const updatedProfile = await db.select()
+      .from(schools)
       .where(eq(schools.id, targetSchoolId))
-      .returning();
+      .limit(1);
 
     if (updatedProfile.length === 0) {
       return NextResponse.json(
@@ -272,14 +277,19 @@ export async function DELETE(request: NextRequest) {
     const updatedGallery = currentGallery.filter((url: string) => url !== imageUrl.trim());
 
     // Update by school id - write to both fields
-    const updatedProfile = await db.update(schools)
+    await db.update(schools)
       .set({
         galleryImages: updatedGallery,
         gallery: updatedGallery,
         updatedAt: new Date().toISOString()
       })
+      .where(eq(schools.id, targetSchoolId));
+
+    // Read back the updated row instead of using RETURNING
+    const updatedProfile = await db.select()
+      .from(schools)
       .where(eq(schools.id, targetSchoolId))
-      .returning();
+      .limit(1);
 
     if (updatedProfile.length === 0) {
       return NextResponse.json(
