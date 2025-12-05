@@ -113,6 +113,7 @@ interface School {
   hasCafeteria?: boolean;
   galleryImages?: string[];
   virtualTourUrl?: string;
+  virtualTourVideos?: string[]; // NEW: multiple videos support
   prospectusUrl?: string;
   awards?: string[];
   newsletterUrl?: string;
@@ -227,9 +228,29 @@ export default function SchoolDetailPage() {
         }
       }
 
+      // Normalize virtualTourVideos to a string[] and keep backward compatibility with virtualTourUrl
+      let normalizedVirtualTourVideos: string[] | undefined = undefined;
+      try {
+        const rawV = data.virtualTourVideos;
+        if (Array.isArray(rawV)) {
+          normalizedVirtualTourVideos = rawV.filter((u) => typeof u === 'string' && u.trim() !== '');
+        } else if (typeof rawV === 'string') {
+          const parsed = JSON.parse(rawV);
+          if (Array.isArray(parsed)) {
+            normalizedVirtualTourVideos = parsed.filter((u) => typeof u === 'string' && u.trim() !== '');
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse virtualTourVideos JSON');
+      }
+      if ((!normalizedVirtualTourVideos || normalizedVirtualTourVideos.length === 0) && typeof data.virtualTourUrl === 'string' && data.virtualTourUrl.trim() !== '') {
+        normalizedVirtualTourVideos = [data.virtualTourUrl.trim()];
+      }
+
       setSchool({
         ...data,
         ...(normalizedFacilityImages ? { facilityImages: normalizedFacilityImages } : {}),
+        ...(normalizedVirtualTourVideos ? { virtualTourVideos: normalizedVirtualTourVideos } : {}),
       });
     } catch (error) {
       console.error('Failed to load school:', error);
@@ -867,24 +888,49 @@ export default function SchoolDetailPage() {
                       <h2 className="text-2xl font-bold mb-4">School Gallery & Documents</h2>
                       
                       {/* Virtual Tour */}
-                      {school.virtualTourUrl && (
+                      {(school.virtualTourVideos && school.virtualTourVideos.length > 0) ? (
                         <div className="mb-8">
                           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                             <Video className="text-purple-600" size={20} />
                             Virtual Tour
                           </h3>
-                          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                            <a 
-                              href={school.virtualTourUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold"
-                            >
-                              <Video size={24} />
-                              View Virtual Tour
-                            </a>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {school.virtualTourVideos.map((v, idx) => (
+                              <div key={idx} className="aspect-video bg-black rounded-lg overflow-hidden">
+                                {/(youtube\\.com|youtu\\.be|vimeo\\.com)/i.test(v) ? (
+                                  <iframe
+                                    src={v}
+                                    className="w-full h-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                  />
+                                ) : (
+                                  <video src={v} className="w-full h-full" controls />
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
+                      ) : (
+                        school.virtualTourUrl && (
+                          <div className="mb-8">
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                              <Video className="text-purple-600" size={20} />
+                              Virtual Tour
+                            </h3>
+                            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                              <a 
+                                href={school.virtualTourUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold"
+                              >
+                                <Video size={24} />
+                                View Virtual Tour
+                              </a>
+                            </div>
+                          </div>
+                        )
                       )}
 
                       {/* Gallery Images */}
@@ -979,7 +1025,24 @@ export default function SchoolDetailPage() {
                     <CardContent className="p-6">
                       <h2 className="text-2xl font-bold mb-4">Virtual Tour</h2>
                       
-                      {school.virtualTourUrl ? (
+                      {school.virtualTourVideos && school.virtualTourVideos.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {school.virtualTourVideos.map((v, idx) => (
+                            <div key={idx} className="aspect-video bg-black rounded-lg overflow-hidden">
+                              {/(youtube\\.com|youtu\\.be|vimeo\\.com)/i.test(v) ? (
+                                <iframe
+                                  src={v}
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              ) : (
+                                <video src={v} className="w-full h-full" controls />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : school.virtualTourUrl ? (
                         <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
                           <a 
                             href={school.virtualTourUrl} 
