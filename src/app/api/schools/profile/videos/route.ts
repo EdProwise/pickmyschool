@@ -296,10 +296,10 @@ export async function DELETE(request: NextRequest) {
     // Filter out the videoUrl
     const updatedVideos = existingVideos.filter(url => url !== trimmedVideoUrl);
 
-    // Update school - manually stringify for SQLite compatibility
+    // Update school - let Drizzle handle JSON stringification (schema has mode: 'json')
     await db.update(schools)
       .set({
-        virtualTourVideos: JSON.stringify(updatedVideos),
+        virtualTourVideos: updatedVideos,
         updatedAt: new Date().toISOString()
       })
       .where(eq(schools.id, targetSchoolId));
