@@ -269,8 +269,8 @@ export async function PUT(
           { status: 400 }
         );
       }
-      // Ensure proper JSON stringification for SQLite
-      updateData.virtualTourVideos = JSON.stringify(body.virtualTourVideos);
+      // Let Drizzle handle JSON stringification automatically (schema has mode: 'json')
+      updateData.virtualTourVideos = body.virtualTourVideos;
     }
 
     if (isCreating) {
