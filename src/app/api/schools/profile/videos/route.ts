@@ -161,26 +161,29 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // Get existing virtualTourVideos
+    // Get existing virtualTourVideos - handle as array directly from Drizzle
     let existingVideos: string[] = [];
-    if (existingSchool[0].virtualTourVideos) {
-      try {
-        const parsed = typeof existingSchool[0].virtualTourVideos === 'string'
-          ? JSON.parse(existingSchool[0].virtualTourVideos)
-          : existingSchool[0].virtualTourVideos;
-        existingVideos = Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        existingVideos = [];
+    const raw = existingSchool[0].virtualTourVideos;
+    if (raw) {
+      if (Array.isArray(raw)) {
+        existingVideos = raw;
+      } else if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw);
+          existingVideos = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          existingVideos = [];
+        }
       }
     }
 
     // Merge new URLs with existing using Set for deduplication
     const mergedVideos = Array.from(new Set([...existingVideos, ...urlsToAdd]));
 
-    // Update school
+    // Update school - store as array (Drizzle will handle JSON conversion)
     await db.update(schools)
       .set({
-        virtualTourVideos: JSON.stringify(mergedVideos),
+        virtualTourVideos: mergedVideos,
         updatedAt: new Date().toISOString()
       })
       .where(eq(schools.id, targetSchoolId));
@@ -266,16 +269,19 @@ export async function DELETE(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // Get existing virtualTourVideos
+    // Get existing virtualTourVideos - handle as array directly from Drizzle
     let existingVideos: string[] = [];
-    if (existingSchool[0].virtualTourVideos) {
-      try {
-        const parsed = typeof existingSchool[0].virtualTourVideos === 'string'
-          ? JSON.parse(existingSchool[0].virtualTourVideos)
-          : existingSchool[0].virtualTourVideos;
-        existingVideos = Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        existingVideos = [];
+    const raw = existingSchool[0].virtualTourVideos;
+    if (raw) {
+      if (Array.isArray(raw)) {
+        existingVideos = raw;
+      } else if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw);
+          existingVideos = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          existingVideos = [];
+        }
       }
     }
 
@@ -290,10 +296,10 @@ export async function DELETE(request: NextRequest) {
     // Filter out the videoUrl
     const updatedVideos = existingVideos.filter(url => url !== trimmedVideoUrl);
 
-    // Update school
+    // Update school - store as array (Drizzle will handle JSON conversion)
     await db.update(schools)
       .set({
-        virtualTourVideos: JSON.stringify(updatedVideos),
+        virtualTourVideos: updatedVideos,
         updatedAt: new Date().toISOString()
       })
       .where(eq(schools.id, targetSchoolId));
