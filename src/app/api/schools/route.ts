@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
         }, { status: 400 });
       }
 
+      // For single school, select all columns
       const school = await db.select()
         .from(schools)
         .where(eq(schools.id, schoolId))
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // Fetch all schools in one query using OR conditions
+      // Fetch all schools in one query using OR conditions (all columns for comparison)
       const orConditions = schoolIds.map(id => eq(schools.id, id));
       const results = await db.select()
         .from(schools)
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(sortedResults, { status: 200 });
     }
 
-    // List schools with filters
+    // List schools with filters - SELECT ONLY ESSENTIAL COLUMNS to prevent memory issues
     const city = searchParams.get('city');
     const board = searchParams.get('board');
     const feesMinParam = searchParams.get('feesMin');
@@ -216,8 +217,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build query
-    let query = db.select().from(schools);
+    // Build query - SELECT ONLY ESSENTIAL COLUMNS FOR LISTING
+    let query = db.select({
+      id: schools.id,
+      name: schools.name,
+      logo: schools.logo,
+      bannerImage: schools.bannerImage,
+      address: schools.address,
+      city: schools.city,
+      state: schools.state,
+      pincode: schools.pincode,
+      board: schools.board,
+      medium: schools.medium,
+      classesOffered: schools.classesOffered,
+      establishmentYear: schools.establishmentYear,
+      studentTeacherRatio: schools.studentTeacherRatio,
+      schoolType: schools.schoolType,
+      feesMin: schools.feesMin,
+      feesMax: schools.feesMax,
+      facilities: schools.facilities,
+      description: schools.description,
+      contactEmail: schools.contactEmail,
+      contactPhone: schools.contactPhone,
+      rating: schools.rating,
+      reviewCount: schools.reviewCount,
+      profileViews: schools.profileViews,
+      featured: schools.featured,
+      latitude: schools.latitude,
+      longitude: schools.longitude,
+      createdAt: schools.createdAt,
+      updatedAt: schools.updatedAt,
+      // Add null placeholders for gallery to maintain type compatibility
+      gallery: sql<string[] | null>`NULL`.as('gallery')
+    }).from(schools);
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
