@@ -308,9 +308,26 @@ export async function PUT(
       }, { status: 201 });
     } else {
       // Update existing school and then fetch (avoid RETURNING *)
-      await db.update(schools)
-        .set(updateData)
-        .where(eq(schools.id, schoolId));
+      try {
+        await db.update(schools)
+          .set(updateData)
+          .where(eq(schools.id, schoolId));
+      } catch (err: any) {
+        const msg = String(err?.message || err);
+        // Fallback for older DBs that don't have virtual_tour_videos column
+        if (msg.includes('no such column') && msg.includes('virtual_tour_videos')) {
+          const fallbackUpdate: any = { updatedAt: updateData.updatedAt };
+          if (Array.isArray(updateData.virtualTourVideos) && updateData.virtualTourVideos.length > 0) {
+            fallbackUpdate.virtualTourUrl = String(updateData.virtualTourVideos[0]);
+          }
+          // Remove the problematic column
+          await db.update(schools)
+            .set(fallbackUpdate)
+            .where(eq(schools.id, schoolId));
+        } else {
+          throw err;
+        }
+      }
 
       const refreshed = await db.select()
         .from(schools)
