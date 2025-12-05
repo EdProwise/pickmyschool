@@ -263,14 +263,20 @@ export async function PUT(
     }
 
     if (body.virtualTourVideos !== undefined) {
-      if (!Array.isArray(body.virtualTourVideos)) {
+      // Accept both a single string and an array, coerce to array
+      let vids: string[] = [];
+      if (Array.isArray(body.virtualTourVideos)) {
+        vids = body.virtualTourVideos.filter((u: any) => typeof u === 'string' && u.trim() !== '').map((u: string) => u.trim());
+      } else if (typeof body.virtualTourVideos === 'string') {
+        const s = body.virtualTourVideos.trim();
+        if (s) vids = [s];
+      } else {
         return NextResponse.json(
-          { error: 'virtualTourVideos must be an array', code: 'VALIDATION_ERROR' },
+          { error: 'virtualTourVideos must be a string or an array of strings', code: 'VALIDATION_ERROR' },
           { status: 400 }
         );
       }
-      // Let Drizzle handle JSON stringification automatically (schema has mode: 'json')
-      updateData.virtualTourVideos = body.virtualTourVideos;
+      updateData.virtualTourVideos = vids;
     }
 
     if (isCreating) {
