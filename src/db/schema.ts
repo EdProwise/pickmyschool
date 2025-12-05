@@ -108,6 +108,7 @@ export const schools = sqliteTable('schools', {
   hasCafeteria: integer('has_cafeteria', { mode: 'boolean' }).default(false),
   galleryImages: text('gallery_images', { mode: 'json' }),
   virtualTourUrl: text('virtual_tour_url'),
+  virtualTourVideos: text('virtual_tour_videos', { mode: 'json' }),
   prospectusUrl: text('prospectus_url'),
   awards: text('awards', { mode: 'json' }),
   newsletterUrl: text('newsletter_url'),
