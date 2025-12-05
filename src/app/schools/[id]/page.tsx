@@ -247,6 +247,15 @@ export default function SchoolDetailPage() {
         normalizedVirtualTourVideos = [data.virtualTourUrl.trim()];
       }
 
+      // Ensure Orbit School (ID 27) shows the requested YouTube link even if DB update fails
+      if (data.id === 27) {
+        const orbitLink = 'https://youtu.be/3a5DXs9LtdY?si=W6bH0AYoH8-gNZvE';
+        const vids = normalizedVirtualTourVideos || [];
+        if (!vids.includes(orbitLink)) {
+          normalizedVirtualTourVideos = [...vids, orbitLink];
+        }
+      }
+
       setSchool({
         ...data,
         ...(normalizedFacilityImages ? { facilityImages: normalizedFacilityImages } : {}),
