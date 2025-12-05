@@ -1335,6 +1335,35 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
     return { text: award, image: '' };
   };
 
+  // NEW: Upload handler for prospectus/newsletter (PDF or image)
+  const handleDocumentUpload = (
+    key: 'prospectusUrl' | 'newsletterUrl',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isSupported = file.type === 'application/pdf' || file.type.startsWith('image/');
+    if (!isSupported) {
+      toast.error('Only PDF or image files are allowed');
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error('File size should be less than 10MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setFormData(prev => ({ ...prev, [key]: dataUrl }));
+      toast.success(`${key === 'prospectusUrl' ? 'Prospectus' : 'Newsletter'} attached`);
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (profileLoading) {
     return (
       <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
@@ -1432,27 +1461,97 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               <Label className="text-base font-semibold">Documents</Label>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="prospectusUrl">School Prospectus URL</Label>
-                <Input
-                  id="prospectusUrl"
-                  value={formData.prospectusUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, prospectusUrl: e.target.value })}
-                  placeholder="https://example.com/prospectus.pdf"
-                />
-                <p className="text-xs text-muted-foreground">Link to downloadable prospectus</p>
+            <div className="space-y-6">
+              {/* Prospectus Upload */}
+              <div className="space-y-3">
+                <Label>School Prospectus (PDF/Image)</Label>
+                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-dashed border-green-200">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="prospectusFile"
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => handleDocumentUpload('prospectusUrl', e)}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => document.getElementById('prospectusFile')?.click()}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Upload className="mr-2" size={16} />
+                      {formData.prospectusUrl ? 'Replace File' : 'Upload File'}
+                    </Button>
+                    {formData.prospectusUrl && (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={formData.prospectusUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-700 hover:underline font-medium flex items-center gap-1"
+                        >
+                          <Download size={16} /> View
+                        </a>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setFormData(prev => ({ ...prev, prospectusUrl: '' }))}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {!formData.prospectusUrl && (
+                    <p className="text-xs text-muted-foreground mt-2">Accepts PDF or image files (Max 10MB)</p>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="newsletterUrl">Newsletter / Magazine URL</Label>
-                <Input
-                  id="newsletterUrl"
-                  value={formData.newsletterUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, newsletterUrl: e.target.value })}
-                  placeholder="https://example.com/newsletter.pdf"
-                />
-                <p className="text-xs text-muted-foreground">Link to downloadable newsletter or magazine</p>
+              {/* Newsletter Upload */}
+              <div className="space-y-3">
+                <Label>Newsletter / Magazine (PDF/Image)</Label>
+                <div className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border-2 border-dashed border-indigo-200">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="newsletterFile"
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => handleDocumentUpload('newsletterUrl', e)}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => document.getElementById('newsletterFile')?.click()}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      <Upload className="mr-2" size={16} />
+                      {formData.newsletterUrl ? 'Replace File' : 'Upload File'}
+                    </Button>
+                    {formData.newsletterUrl && (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={formData.newsletterUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-700 hover:underline font-medium flex items-center gap-1"
+                        >
+                          <Download size={16} /> View
+                        </a>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setFormData(prev => ({ ...prev, newsletterUrl: '' }))}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {!formData.newsletterUrl && (
+                    <p className="text-xs text-muted-foreground mt-2">Accepts PDF or image files (Max 10MB)</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
