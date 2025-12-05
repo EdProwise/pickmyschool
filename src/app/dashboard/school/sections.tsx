@@ -106,6 +106,7 @@ interface SchoolProfile {
   hasCafeteria?: boolean;
   galleryImages?: string[];
   virtualTourUrl?: string;
+  virtualTourVideos?: string[]; // NEW
   prospectusUrl?: string;
   awards?: string[];
   newsletterUrl?: string;
@@ -1657,6 +1658,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 // Virtual Tour Section
 export function VirtualTourSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -1677,10 +1679,98 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
       name: profile.name,
       board: profile.board,
       city: profile.city,
-      virtualTourUrl: formData.virtualTourUrl,
+      virtualTourVideos: formData.virtualTourVideos || [],
     };
     
     onSave(virtualTourData);
+  };
+
+  // Upload multiple videos as data URLs using the new API
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const validFiles = Array.from(files).filter((file) => {
+      if (!file.type.startsWith('video/')) {
+        toast.error(`${file.name} is not a video file`);
+        return false;
+      }
+      // Limit 20MB per video to keep payloads reasonable
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} exceeds 20MB limit`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    setUploading(true);
+    try {
+      const readers = validFiles.map((file) => new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      }));
+
+      const dataUrls = await Promise.all(readers);
+
+      // Upload via API in chunks to reduce payload size per request
+      const token = localStorage.getItem('token');
+      const chunkSize = 2;
+      for (let i = 0; i < dataUrls.length; i += chunkSize) {
+        const chunk = dataUrls.slice(i, i + chunkSize);
+        const res = await fetch('/api/schools/profile/videos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ videoUrls: chunk }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to upload videos');
+        }
+
+        const updated = await res.json();
+        setFormData((prev) => ({ ...prev, virtualTourVideos: (updated.virtualTourVideos as string[]) || [] }));
+      }
+
+      toast.success(`${dataUrls.length} video(s) uploaded successfully`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload videos');
+    } finally {
+      setUploading(false);
+      // reset input value to allow re-uploading same files if needed
+      (e.target as HTMLInputElement).value = '';
+    }
+  };
+
+  const handleRemoveVideo = async (url: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/schools/profile/videos', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ videoUrl: url }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to delete video');
+      }
+
+      const updated = await res.json();
+      setFormData((prev) => ({ ...prev, virtualTourVideos: (updated.virtualTourVideos as string[]) || [] }));
+      toast.success('Video removed');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove video');
+    }
   };
 
   if (profileLoading) {
@@ -1711,50 +1801,73 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-dashed border-purple-300">
-              <div className="space-y-4">
-                <div className="flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                    <Video className="text-white" size={28} />
-                  </div>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                  <Video className="text-white" size={28} />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="virtualTourUrl">Virtual Tour Video URL</Label>
-                  <Input
-                    id="virtualTourUrl"
-                    value={formData.virtualTourUrl || ''}
-                    onChange={(e) => setFormData({ ...formData, virtualTourUrl: e.target.value })}
-                    placeholder="https://youtube.com/... or https://vimeo.com/..."
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Paste a link to your school's virtual tour video (YouTube, Vimeo, or direct video link)
-                  </p>
-                </div>
-
-                {formData.virtualTourUrl && (
-                  <div className="mt-4 p-4 bg-white rounded-lg">
-                    <p className="text-sm font-semibold mb-2">Preview:</p>
-                    <a 
-                      href={formData.virtualTourUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-purple-600 hover:text-purple-700 underline break-all"
-                    >
-                      {formData.virtualTourUrl}
-                    </a>
-                  </div>
-                )}
+                <Input
+                  id="virtualTourVideos"
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+                <Button
+                  type="button"
+                  onClick={() => document.getElementById('virtualTourVideos')?.click()}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                  disabled={uploading}
+                >
+                  <Upload className="mr-2" size={16} />
+                  {uploading ? 'Uploading...' : 'Upload Virtual Tour Videos'}
+                </Button>
+                <p className="text-xs text-muted-foreground">MP4/MOV/WEBM (Max 20MB per file)</p>
               </div>
+
+              {/* Preview uploaded videos */}
+              {formData.virtualTourVideos && formData.virtualTourVideos.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground">{formData.virtualTourVideos.length} video(s) added</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {formData.virtualTourVideos.map((v, idx) => (
+                      <div key={idx} className="relative group">
+                        <div className="aspect-video rounded-lg overflow-hidden border bg-black">
+                          {/* Try to render iframe for YouTube/Vimeo links; otherwise use video tag */}
+                          {/(youtube\.com|youtu\.be|vimeo\.com)/i.test(v) ? (
+                            <iframe
+                              src={v}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <video src={v} className="w-full h-full" controls />
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveVideo(v)}
+                          className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-2">Tips for a Great Virtual Tour:</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Upload your virtual tour video to YouTube or Vimeo first</li>
-                <li>Ensure the video showcases classrooms, labs, sports facilities, and campus</li>
+                <li>Showcase classrooms, labs, sports facilities, and campus</li>
                 <li>Include narration or captions explaining key features</li>
-                <li>Keep the video engaging (5-10 minutes is ideal)</li>
-                <li>Make sure the video is set to public or unlisted (not private)</li>
+                <li>Keep each video engaging (1-3 minutes per clip works well)</li>
               </ul>
             </div>
           </div>
@@ -1762,7 +1875,7 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploading}
               className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
             >
               {saving ? (
