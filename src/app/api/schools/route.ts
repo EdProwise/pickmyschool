@@ -61,18 +61,17 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'School not found' }, { status: 404 });
       }
 
-      // Increment profile views
+      // Increment profile views - fix the SQL syntax
+      const currentViews = school[0].profileViews || 0;
       await db.update(schools)
-        .set({ profileViews: sql`${schools.profileViews} + 1` })
+        .set({ profileViews: currentViews + 1 })
         .where(eq(schools.id, schoolId));
 
-      // Fetch updated school with incremented views
-      const updatedSchool = await db.select()
-        .from(schools)
-        .where(eq(schools.id, schoolId))
-        .limit(1);
-
-      return NextResponse.json(updatedSchool[0], { status: 200 });
+      // Return school with incremented views
+      return NextResponse.json({
+        ...school[0],
+        profileViews: currentViews + 1
+      }, { status: 200 });
     }
 
     // Get multiple schools by IDs (for comparison feature)
