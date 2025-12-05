@@ -64,6 +64,13 @@
       "when": 1764744557760,
       "tag": "0008_glorious_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1764956117101,
+      "tag": "0009_fuzzy_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

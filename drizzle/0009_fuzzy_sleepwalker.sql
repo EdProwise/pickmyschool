@@ -1,0 +1,1 @@
+ALTER TABLE `schools` ADD `virtual_tour_videos` text;
