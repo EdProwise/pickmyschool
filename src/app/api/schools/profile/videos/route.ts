@@ -181,20 +181,41 @@ export async function POST(request: NextRequest) {
     const mergedVideos = Array.from(new Set([...existingVideos, ...urlsToAdd]));
 
     // Update school - let Drizzle handle JSON stringification (schema has mode: 'json')
-    await db.update(schools)
-      .set({
-        virtualTourVideos: mergedVideos,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(schools.id, targetSchoolId));
+    try {
+      await db.update(schools)
+        .set({
+          virtualTourVideos: mergedVideos,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(schools.id, targetSchoolId));
+    } catch (err: any) {
+      // Fallback for older DBs without virtual_tour_videos column
+      console.warn('Falling back to virtualTourUrl due to error updating virtualTourVideos:', String(err?.message || err));
+      await db.update(schools)
+        .set({
+          virtualTourUrl: mergedVideos[0] || '',
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(schools.id, targetSchoolId));
+    }
 
-    // Fetch updated school
+    // Fetch updated school and ensure response always includes virtualTourVideos array
     const updatedSchool = await db.select()
       .from(schools)
       .where(eq(schools.id, targetSchoolId))
       .limit(1);
 
-    return NextResponse.json(updatedSchool[0], { status: 201 });
+    const row = updatedSchool[0];
+    const response = {
+      ...row,
+      virtualTourVideos: Array.isArray(row.virtualTourVideos)
+        ? row.virtualTourVideos
+        : (typeof row.virtualTourVideos === 'string'
+            ? (() => { try { const p = JSON.parse(row.virtualTourVideos as any); return Array.isArray(p) ? p : []; } catch { return []; } })()
+            : (row.virtualTourUrl ? [row.virtualTourUrl] : []))
+    } as any;
+
+    return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
     return NextResponse.json({
@@ -285,33 +306,66 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Check if videoUrl exists in array
-    if (!existingVideos.includes(trimmedVideoUrl)) {
-      return NextResponse.json({
-        error: 'Video URL not found in virtual tour videos',
-        code: 'VIDEO_NOT_FOUND'
-      }, { status: 404 });
+    // If videos array exists, remove from array
+    if (existingVideos.length > 0) {
+      if (!existingVideos.includes(trimmedVideoUrl)) {
+        return NextResponse.json({
+          error: 'Video URL not found in virtual tour videos',
+          code: 'VIDEO_NOT_FOUND'
+        }, { status: 404 });
+      }
+
+      const updatedVideos = existingVideos.filter(url => url !== trimmedVideoUrl);
+
+      try {
+        await db.update(schools)
+          .set({
+            virtualTourVideos: updatedVideos,
+            updatedAt: new Date().toISOString()
+          })
+          .where(eq(schools.id, targetSchoolId));
+      } catch (err: any) {
+        // Fallback for older DBs without virtual_tour_videos column
+        console.warn('Falling back to virtualTourUrl delete due to error updating virtualTourVideos:', String(err?.message || err));
+        // If the single URL matches, clear it
+        if (existingSchool[0].virtualTourUrl === trimmedVideoUrl) {
+          await db.update(schools)
+            .set({ virtualTourUrl: '', updatedAt: new Date().toISOString() })
+            .where(eq(schools.id, targetSchoolId));
+        }
+      }
+    } else {
+      // Otherwise, try to clear virtualTourUrl if it matches
+      if (existingSchool[0].virtualTourUrl === trimmedVideoUrl) {
+        await db.update(schools)
+          .set({ virtualTourUrl: '', updatedAt: new Date().toISOString() })
+          .where(eq(schools.id, targetSchoolId));
+      } else {
+        return NextResponse.json({
+          error: 'Video URL not found',
+          code: 'VIDEO_NOT_FOUND'
+        }, { status: 404 });
+      }
     }
 
-    // Filter out the videoUrl
-    const updatedVideos = existingVideos.filter(url => url !== trimmedVideoUrl);
-
-    // Update school - let Drizzle handle JSON stringification (schema has mode: 'json')
-    await db.update(schools)
-      .set({
-        virtualTourVideos: updatedVideos,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(schools.id, targetSchoolId));
-
-    // Fetch updated school
+    // Fetch updated school and ensure response always includes virtualTourVideos array
     const updatedSchool = await db.select()
       .from(schools)
       .where(eq(schools.id, targetSchoolId))
       .limit(1);
 
+    const row = updatedSchool[0];
+    const response = {
+      ...row,
+      virtualTourVideos: Array.isArray(row.virtualTourVideos)
+        ? row.virtualTourVideos
+        : (typeof row.virtualTourVideos === 'string'
+            ? (() => { try { const p = JSON.parse(row.virtualTourVideos as any); return Array.isArray(p) ? p : []; } catch { return []; } })()
+            : (row.virtualTourUrl ? [row.virtualTourUrl] : []))
+    } as any;
+
     return NextResponse.json({
-      ...updatedSchool[0],
+      ...response,
       message: 'Video deleted successfully'
     }, { status: 200 });
   } catch (error) {
