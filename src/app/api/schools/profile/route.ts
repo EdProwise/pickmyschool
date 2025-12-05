@@ -381,16 +381,23 @@ export async function PUT(request: NextRequest) {
       updateData.profileViews = updateData.profileViews ?? 0;
       updateData.featured = updateData.featured ?? false;
 
-      const newProfile = await db.insert(schools)
+      // Only return id to avoid RETURNING * on older schemas
+      const inserted = await db.insert(schools)
         .values(updateData)
-        .returning();
+        .returning({ id: schools.id });
 
       // Link user to this school
       await db.update(users)
-        .set({ schoolId: newProfile[0].id })
+        .set({ schoolId: inserted[0].id })
         .where(eq(users.id, user.userId));
 
-      return NextResponse.json(newProfile[0], { status: 200 });
+      // Fetch created profile
+      const createdProfile = await db.select()
+        .from(schools)
+        .where(eq(schools.id, inserted[0].id))
+        .limit(1);
+
+      return NextResponse.json(createdProfile[0], { status: 200 });
     } else {
       // Ensure userId is set
       if (!updateData.userId) {
@@ -415,22 +422,27 @@ export async function PUT(request: NextRequest) {
         console.warn('Pruned unsupported columns from update:', pruned);
       }
 
-      // Update existing profile by schoolId
-      const updatedProfile = await db.update(schools)
+      // Update existing profile by schoolId (avoid RETURNING *)
+      await db.update(schools)
         .set(filteredUpdateData)
-        .where(eq(schools.id, targetSchoolId))
-        .returning();
+        .where(eq(schools.id, targetSchoolId));
 
-      if (updatedProfile.length === 0) {
+      // Read back the updated row
+      const refreshed = await db.select()
+        .from(schools)
+        .where(eq(schools.id, targetSchoolId))
+        .limit(1);
+
+      if (refreshed.length === 0) {
         return NextResponse.json(
           { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
           { status: 404 }
         );
       }
 
-      console.log('Updated school profile:', updatedProfile[0].id, 'facilityImages:', updatedProfile[0].facilityImages ? 'present' : 'null');
+      console.log('Updated school profile:', refreshed[0].id, 'facilityImages:', refreshed[0].facilityImages ? 'present' : 'null');
 
-      return NextResponse.json(updatedProfile[0], { status: 200 });
+      return NextResponse.json(refreshed[0], { status: 200 });
     }
   } catch (error: any) {
     console.error('PUT error:', error);
