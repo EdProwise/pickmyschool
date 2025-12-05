@@ -441,6 +441,41 @@ export default function SchoolDetailPage() {
     });
   };
 
+  // Normalize common video links to embed player URLs
+  const toEmbedUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      const host = u.hostname.toLowerCase();
+      // YouTube - already embed
+      if (host.includes('youtube.com') && u.pathname.startsWith('/embed/')) return url;
+      // youtu.be short link
+      if (host.includes('youtu.be')) {
+        const id = u.pathname.split('/').filter(Boolean)[0];
+        return id ? `https://www.youtube.com/embed/${id}` : url;
+      }
+      // youtube.com/watch or /live
+      if (host.includes('youtube.com')) {
+        if (u.pathname.startsWith('/watch')) {
+          const id = u.searchParams.get('v');
+          return id ? `https://www.youtube.com/embed/${id}` : url;
+        }
+        if (u.pathname.startsWith('/live/')) {
+          const id = u.pathname.split('/').filter(Boolean)[1];
+          return id ? `https://www.youtube.com/embed/${id}` : url;
+        }
+      }
+      // Vimeo normal link
+      if (host.includes('vimeo.com') && !host.includes('player.vimeo.com')) {
+        const parts = u.pathname.split('/').filter(Boolean);
+        const id = parts[0];
+        return id ? `https://player.vimeo.com/video/${id}` : url;
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -899,7 +934,7 @@ export default function SchoolDetailPage() {
                               <div key={idx} className="aspect-video bg-black rounded-lg overflow-hidden">
                                 {/(youtube\\.com|youtu\\.be|vimeo\\.com)/i.test(v) ? (
                                   <iframe
-                                    src={v}
+                                    src={toEmbedUrl(v)}
                                     className="w-full h-full"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
@@ -1031,7 +1066,7 @@ export default function SchoolDetailPage() {
                             <div key={idx} className="aspect-video bg-black rounded-lg overflow-hidden">
                               {/(youtube\\.com|youtu\\.be|vimeo\\.com)/i.test(v) ? (
                                 <iframe
-                                  src={v}
+                                  src={toEmbedUrl(v)}
                                   className="w-full h-full"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
