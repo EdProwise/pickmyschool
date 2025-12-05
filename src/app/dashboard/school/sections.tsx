@@ -1659,6 +1659,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 export function VirtualTourSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [uploading, setUploading] = useState(false);
+  const [newVideoUrl, setNewVideoUrl] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -1685,66 +1686,47 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
     onSave(virtualTourData);
   };
 
-  // Upload multiple videos as data URLs using the new API
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // Add video URL via API
+  const handleAddVideoUrl = async () => {
+    const url = newVideoUrl.trim();
+    if (!url) {
+      toast.error('Please enter a video URL');
+      return;
+    }
 
-    const validFiles = Array.from(files).filter((file) => {
-      if (!file.type.startsWith('video/')) {
-        toast.error(`${file.name} is not a video file`);
-        return false;
-      }
-      // Limit 20MB per video to keep payloads reasonable
-      if (file.size > 20 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 20MB limit`);
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length === 0) return;
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch (e) {
+      toast.error('Please enter a valid URL');
+      return;
+    }
 
     setUploading(true);
     try {
-      const readers = validFiles.map((file) => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      }));
-
-      const dataUrls = await Promise.all(readers);
-
-      // Upload via API in chunks to reduce payload size per request
       const token = localStorage.getItem('token');
-      const chunkSize = 2;
-      for (let i = 0; i < dataUrls.length; i += chunkSize) {
-        const chunk = dataUrls.slice(i, i + chunkSize);
-        const res = await fetch('/api/schools/profile/videos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ videoUrls: chunk }),
-        });
+      const res = await fetch('/api/schools/profile/videos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ videoUrl: url }),
+      });
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || 'Failed to upload videos');
-        }
-
-        const updated = await res.json();
-        setFormData((prev) => ({ ...prev, virtualTourVideos: (updated.virtualTourVideos as string[]) || [] }));
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to add video');
       }
 
-      toast.success(`${dataUrls.length} video(s) uploaded successfully`);
+      const updated = await res.json();
+      setFormData((prev) => ({ ...prev, virtualTourVideos: (updated.virtualTourVideos as string[]) || [] }));
+      setNewVideoUrl('');
+      toast.success('Video added successfully');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to upload videos');
+      toast.error(err.message || 'Failed to add video');
     } finally {
       setUploading(false);
-      // reset input value to allow re-uploading same files if needed
-      (e.target as HTMLInputElement).value = '';
     }
   };
 
@@ -1805,25 +1787,41 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
                   <Video className="text-white" size={28} />
                 </div>
-                <Input
-                  id="virtualTourVideos"
-                  type="file"
-                  accept="video/*"
-                  multiple
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
-                <Button
-                  type="button"
-                  onClick={() => document.getElementById('virtualTourVideos')?.click()}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
-                  disabled={uploading}
-                >
-                  <Upload className="mr-2" size={16} />
-                  {uploading ? 'Uploading...' : 'Upload Virtual Tour Videos'}
-                </Button>
-                <p className="text-xs text-muted-foreground">MP4/MOV/WEBM (Max 20MB per file)</p>
+                
+                <div className="w-full max-w-2xl space-y-3">
+                  <Label htmlFor="videoUrl">Add Video URL</Label>
+                  <div className="flex gap-3">
+                    <div className="flex-1 relative">
+                      <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+                      <Input
+                        id="videoUrl"
+                        type="url"
+                        value={newVideoUrl}
+                        onChange={(e) => setNewVideoUrl(e.target.value)}
+                        placeholder="https://youtube.com/... or https://youtu.be/... or direct video URL"
+                        className="pl-10"
+                        disabled={uploading}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddVideoUrl();
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddVideoUrl}
+                      className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                      disabled={uploading || !newVideoUrl.trim()}
+                    >
+                      {uploading ? 'Adding...' : 'Add Video'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Paste YouTube, Vimeo, or direct video URL (e.g., https://www.youtube.com/embed/...)
+                  </p>
+                </div>
               </div>
 
               {/* Preview uploaded videos */}
@@ -1863,11 +1861,12 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-900 mb-2">Tips for a Great Virtual Tour:</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">How to add videos:</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Showcase classrooms, labs, sports facilities, and campus</li>
-                <li>Include narration or captions explaining key features</li>
-                <li>Keep each video engaging (1-3 minutes per clip works well)</li>
+                <li><strong>YouTube:</strong> Get the embed URL (e.g., https://www.youtube.com/embed/VIDEO_ID)</li>
+                <li><strong>Vimeo:</strong> Use the player URL (e.g., https://player.vimeo.com/video/VIDEO_ID)</li>
+                <li><strong>Direct video:</strong> Host your video online and paste the direct URL</li>
+                <li>Showcase classrooms, labs, sports facilities, and campus highlights</li>
               </ul>
             </div>
           </div>
