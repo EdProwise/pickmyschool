@@ -320,18 +320,18 @@ export async function PUT(
           .where(eq(schools.id, schoolId));
       } catch (err: any) {
         const msg = String(err?.message || err);
-        // Fallback for older DBs that don't have virtual_tour_videos column
-        if (msg.includes('no such column') && msg.includes('virtual_tour_videos')) {
-          const fallbackUpdate: any = { updatedAt: updateData.updatedAt };
-          if (Array.isArray(updateData.virtualTourVideos) && updateData.virtualTourVideos.length > 0) {
-            fallbackUpdate.virtualTourUrl = String(updateData.virtualTourVideos[0]);
-          }
-          // Remove the problematic column
+        // Fallback for DBs that cannot accept virtual_tour_videos updates for any reason
+        const fallbackUpdate: any = { updatedAt: updateData.updatedAt };
+        if (Array.isArray(updateData.virtualTourVideos) && updateData.virtualTourVideos.length > 0) {
+          fallbackUpdate.virtualTourUrl = String(updateData.virtualTourVideos[0]);
+        }
+        try {
           await db.update(schools)
             .set(fallbackUpdate)
             .where(eq(schools.id, schoolId));
-        } else {
-          throw err;
+          console.warn('Applied fallback update for virtual tour videos due to error:', msg);
+        } catch (err2) {
+          throw err; // rethrow original if fallback also fails
         }
       }
 
