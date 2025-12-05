@@ -372,6 +372,16 @@ export async function PUT(request: NextRequest) {
       updateData.facilityImages = body.facilityImages;
     }
 
+    if (body.virtualTourVideos !== undefined) {
+      if (!Array.isArray(body.virtualTourVideos)) {
+        return NextResponse.json(
+          { error: 'virtualTourVideos must be an array', code: 'VALIDATION_ERROR' },
+          { status: 400 }
+        );
+      }
+      updateData.virtualTourVideos = body.virtualTourVideos;
+    }
+
     if (isCreating) {
       // Create new profile
       updateData.userId = user.userId;
