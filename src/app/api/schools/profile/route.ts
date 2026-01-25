@@ -90,6 +90,9 @@ export async function GET(request: NextRequest) {
       mongoId: school._id.toString()
     };
 
+    console.log('GET /api/schools/profile - returning whatsappWebhookUrl:', school.whatsappWebhookUrl);
+    console.log('GET /api/schools/profile - returning whatsappApiKey:', school.whatsappApiKey ? '[REDACTED]' : undefined);
+
     return NextResponse.json(schoolData, { status: 200 });
   } catch (error: any) {
     console.error('GET error:', error);
@@ -290,6 +293,13 @@ export async function PUT(request: NextRequest) {
     // WhatsApp API settings
     if (body.whatsappWebhookUrl !== undefined) updateData.whatsappWebhookUrl = toStringOrNull(body.whatsappWebhookUrl);
     if (body.whatsappApiKey !== undefined) updateData.whatsappApiKey = toStringOrNull(body.whatsappApiKey);
+
+    console.log('PUT /api/schools/profile - WhatsApp fields being updated:', {
+      whatsappWebhookUrl: updateData.whatsappWebhookUrl,
+      whatsappApiKey: updateData.whatsappApiKey ? '[REDACTED]' : undefined,
+      targetSchoolNumericId,
+      isCreating
+    });
 
     if (isCreating) {
       updateData.userId = user.userId;

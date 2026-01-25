@@ -227,9 +227,12 @@ export async function createSchool(data: any) {
 export async function updateSchool(id: number, data: any) {
   await connectToDatabase();
   
+  console.log('updateSchool called with id:', id, 'data keys:', Object.keys(data));
+  
   const existingSchool = await School.findOne({ id });
   
   if (!existingSchool) {
+    console.log('updateSchool: School not found, creating new one');
     data.id = id;
     data.createdAt = new Date().toISOString();
     data.updatedAt = new Date().toISOString();
@@ -240,11 +243,15 @@ export async function updateSchool(id: number, data: any) {
   
   data.updatedAt = new Date().toISOString();
   
+  console.log('updateSchool: Updating school with $set:', JSON.stringify(data).substring(0, 500));
+  
   const updated = await School.findOneAndUpdate(
     { id }, 
     { $set: data },
     { new: true }
   ).lean();
+  
+  console.log('updateSchool: Updated result whatsappWebhookUrl:', updated?.whatsappWebhookUrl);
   
   if (!updated) {
     return getSchool(id);
@@ -252,7 +259,7 @@ export async function updateSchool(id: number, data: any) {
   
   return {
     ...updated,
-    id: updated.id,
+    id: Number(updated.id),
   };
 }
 

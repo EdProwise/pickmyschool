@@ -10,23 +10,24 @@ import { toast } from 'sonner';
 
 interface WhatsappAPISectionProps {
   profile?: any;
+  onRefresh?: () => Promise<void>;
 }
 
-export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile }) => {
+export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile, onRefresh }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   
-  const [webhookUrl, setWebhookUrl] = useState(profile?.whatsappWebhookUrl || 'https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry');
-  const [apiKey, setApiKey] = useState(profile?.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4');
+  const [webhookUrl, setWebhookUrl] = useState(profile?.whatsappWebhookUrl || '');
+  const [apiKey, setApiKey] = useState(profile?.whatsappApiKey || '');
   
   const [editWebhookUrl, setEditWebhookUrl] = useState(webhookUrl);
   const [editApiKey, setEditApiKey] = useState(apiKey);
 
   useEffect(() => {
     if (profile) {
-      const newWebhookUrl = profile.whatsappWebhookUrl || 'https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry';
-      const newApiKey = profile.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
+      const newWebhookUrl = profile.whatsappWebhookUrl || '';
+      const newApiKey = profile.whatsappApiKey || '';
       setWebhookUrl(newWebhookUrl);
       setApiKey(newApiKey);
       setEditWebhookUrl(newWebhookUrl);
@@ -84,10 +85,14 @@ export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile 
             throw new Error(data.error || 'Failed to save settings');
           }
 
-          setWebhookUrl(editWebhookUrl.trim());
-          setApiKey(editApiKey.trim());
-          setIsEditing(false);
-          toast.success('WhatsApp API settings saved successfully');
+            setWebhookUrl(editWebhookUrl.trim());
+            setApiKey(editApiKey.trim());
+            setIsEditing(false);
+            toast.success('WhatsApp API settings saved successfully');
+            
+            if (onRefresh) {
+              await onRefresh();
+            }
         } catch (error: any) {
           console.error('Save error:', error);
           toast.error(error.message || 'Failed to save settings');
