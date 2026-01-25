@@ -1210,8 +1210,8 @@ export default function SchoolDashboard() {
           {activeSection === 'enquiry' && renderEnquirySection()}
           
           {activeSection === 'whatsapp-api' && (
-            <WhatsappAPISection />
-          )}
+              <WhatsappAPISection profile={profile} />
+            )}
 
             {activeSection === 'enquiry-settings' && (
               <EnquirySettingsSection schoolId={profile?.id || null} />

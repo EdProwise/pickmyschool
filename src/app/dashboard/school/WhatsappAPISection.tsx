@@ -1,20 +1,95 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, CheckCircle2, Copy, ExternalLink, ShieldCheck } from 'lucide-react';
+import { MessageSquare, CheckCircle2, Copy, ExternalLink, ShieldCheck, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const WhatsappAPISection: React.FC = () => {
-  const webhookUrl = 'https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry';
-  const apiKey = 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
+interface WhatsappAPISectionProps {
+  profile?: any;
+}
+
+export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  
+  const [webhookUrl, setWebhookUrl] = useState(profile?.whatsappWebhookUrl || 'https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry');
+  const [apiKey, setApiKey] = useState(profile?.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4');
+  
+  const [editWebhookUrl, setEditWebhookUrl] = useState(webhookUrl);
+  const [editApiKey, setEditApiKey] = useState(apiKey);
+
+  useEffect(() => {
+    if (profile) {
+      const newWebhookUrl = profile.whatsappWebhookUrl || 'https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry';
+      const newApiKey = profile.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
+      setWebhookUrl(newWebhookUrl);
+      setApiKey(newApiKey);
+      setEditWebhookUrl(newWebhookUrl);
+      setEditApiKey(newApiKey);
+    }
+  }, [profile]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
+  };
+
+  const handleEdit = () => {
+    setEditWebhookUrl(webhookUrl);
+    setEditApiKey(apiKey);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setEditWebhookUrl(webhookUrl);
+    setEditApiKey(apiKey);
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    if (!editWebhookUrl.trim()) {
+      toast.error('Webhook URL is required');
+      return;
+    }
+    if (!editApiKey.trim()) {
+      toast.error('API Key is required');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          whatsappWebhookUrl: editWebhookUrl,
+          whatsappApiKey: editApiKey,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      setWebhookUrl(editWebhookUrl);
+      setApiKey(editApiKey);
+      setIsEditing(false);
+      toast.success('WhatsApp API settings saved successfully');
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -49,7 +124,7 @@ export const WhatsappAPISection: React.FC = () => {
               </p>
             </div>
             <Button variant="outline" className="w-full mt-4" asChild>
-              <a href="https://edprowisebooster.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+              <a href="https://edprowisebooster.edprowise.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                 View in EdproWise Booster <ExternalLink size={14} />
               </a>
             </Button>
@@ -59,9 +134,44 @@ export const WhatsappAPISection: React.FC = () => {
         {/* Configuration Card */}
         <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              API Configuration
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                API Configuration
+              </CardTitle>
+              {!isEditing ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEdit}
+                  className="flex items-center gap-2"
+                >
+                  <Edit size={16} />
+                  Edit
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={saving}
+                    className="flex items-center gap-2"
+                  >
+                    <X size={16} />
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  >
+                    <Save size={16} />
+                    {saving ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -71,17 +181,21 @@ export const WhatsappAPISection: React.FC = () => {
               </label>
               <div className="flex gap-2">
                 <Input 
-                  value={webhookUrl} 
-                  readOnly 
-                  className="bg-gray-50/50 border-gray-200 font-mono text-xs"
+                  value={isEditing ? editWebhookUrl : webhookUrl} 
+                  onChange={(e) => setEditWebhookUrl(e.target.value)}
+                  readOnly={!isEditing}
+                  className={`bg-gray-50/50 border-gray-200 font-mono text-xs ${isEditing ? 'bg-white border-cyan-300 focus:border-cyan-500' : ''}`}
+                  placeholder="Enter webhook URL"
                 />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => copyToClipboard(webhookUrl, 'Webhook URL')}
-                >
-                  <Copy size={16} />
-                </Button>
+                {!isEditing && (
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => copyToClipboard(webhookUrl, 'Webhook URL')}
+                  >
+                    <Copy size={16} />
+                  </Button>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">
                 This URL receives data from PickMySchool and triggers Whatsapp notifications in EdproWise Booster.
@@ -94,19 +208,35 @@ export const WhatsappAPISection: React.FC = () => {
                 <ShieldCheck size={14} className="text-cyan-600" />
               </label>
               <div className="flex gap-2">
-                <Input 
-                  value={apiKey} 
-                  type="password"
-                  readOnly 
-                  className="bg-gray-50/50 border-gray-200 font-mono text-xs"
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => copyToClipboard(apiKey, 'API Key')}
-                >
-                  <Copy size={16} />
-                </Button>
+                <div className="relative flex-1">
+                  <Input 
+                    value={isEditing ? editApiKey : apiKey} 
+                    onChange={(e) => setEditApiKey(e.target.value)}
+                    type={isEditing || showApiKey ? 'text' : 'password'}
+                    readOnly={!isEditing}
+                    className={`bg-gray-50/50 border-gray-200 font-mono text-xs pr-10 ${isEditing ? 'bg-white border-cyan-300 focus:border-cyan-500' : ''}`}
+                    placeholder="Enter API key"
+                  />
+                  {!isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </Button>
+                  )}
+                </div>
+                {!isEditing && (
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => copyToClipboard(apiKey, 'API Key')}
+                  >
+                    <Copy size={16} />
+                  </Button>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Meta-approved Cloud API Key for secure communication between platforms.

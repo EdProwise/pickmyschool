@@ -287,6 +287,10 @@ export async function PUT(request: NextRequest) {
     if (body.facilityImages !== undefined) updateData.facilityImages = body.facilityImages;
     if (body.virtualTourVideos !== undefined) updateData.virtualTourVideos = Array.isArray(body.virtualTourVideos) ? body.virtualTourVideos : [];
 
+    // WhatsApp API settings
+    if (body.whatsappWebhookUrl !== undefined) updateData.whatsappWebhookUrl = toStringOrNull(body.whatsappWebhookUrl);
+    if (body.whatsappApiKey !== undefined) updateData.whatsappApiKey = toStringOrNull(body.whatsappApiKey);
+
     if (isCreating) {
       updateData.userId = user.userId;
       const createdProfile = await createSchool(updateData);

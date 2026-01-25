@@ -129,6 +129,8 @@ export interface ISchool extends Document {
   isPublic: boolean;
   latitude?: number;
   longitude?: number;
+  whatsappWebhookUrl?: string;
+  whatsappApiKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -232,6 +234,8 @@ const SchoolSchema = new Schema<ISchool>({
   isPublic: { type: Boolean, default: true },
   latitude: Number,
   longitude: Number,
+  whatsappWebhookUrl: String,
+  whatsappApiKey: String,
 }, { timestamps: true });
 
 SchoolSchema.index({ city: 1 });
