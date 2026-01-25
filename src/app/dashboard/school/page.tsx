@@ -121,12 +121,13 @@ export default function SchoolDashboard() {
     }
   }, [profile?.id]);
 
-  useEffect(() => {
-    // Load profile when switching to profile-related sections
-    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings', 'review'].includes(activeSection) && !profile) {
-      loadSchoolProfile();
-    }
-  }, [activeSection, profile]);
+    useEffect(() => {
+      // Load profile when switching to profile-related sections
+      if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings', 'review', 'whatsapp-api'].includes(activeSection) && !profile) {
+        loadSchoolProfile();
+      }
+    }, [activeSection, profile]);
+
 
   // Load reviews when switching to review section
   useEffect(() => {

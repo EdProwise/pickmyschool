@@ -65,18 +65,6 @@ export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile 
         try {
           const token = localStorage.getItem('token');
           
-          const profileResponse = await fetch('/api/schools/profile', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          if (!profileResponse.ok) {
-            throw new Error('Failed to fetch profile');
-          }
-          
-          const currentProfile = await profileResponse.json();
-          
           const response = await fetch('/api/schools/profile', {
             method: 'PUT',
             headers: {
@@ -84,7 +72,6 @@ export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile 
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              ...currentProfile,
               whatsappWebhookUrl: editWebhookUrl.trim(),
               whatsappApiKey: editApiKey.trim(),
             }),
