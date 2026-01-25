@@ -10,14 +10,28 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     
     const { searchParams } = new URL(request.url);
-    const schoolId = searchParams.get('schoolId');
+    const schoolIdParam = searchParams.get('schoolId');
     const year = searchParams.get('year');
     
-    if (!schoolId) {
+    if (!schoolIdParam) {
       return NextResponse.json({ error: 'School ID is required' }, { status: 400 });
     }
 
-    const query: any = { schoolId: parseInt(schoolId) };
+    let numericSchoolId: number;
+    
+    // Check if it's a numeric ID or an ObjectId
+    if (/^\d+$/.test(schoolIdParam)) {
+      numericSchoolId = parseInt(schoolIdParam);
+    } else {
+      // It might be an ObjectId, resolve it to numeric ID
+      const school = await School.findById(schoolIdParam);
+      if (!school) {
+        return NextResponse.json({ error: 'School not found' }, { status: 404 });
+      }
+      numericSchoolId = school.id;
+    }
+
+    const query: any = { schoolId: numericSchoolId };
     if (year) {
       query.year = parseInt(year);
     }

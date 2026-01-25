@@ -1439,22 +1439,22 @@ export default function SchoolDashboard() {
 
           {/* Results Section */}
           {activeSection === 'results' && (
-            <ResultsSection schoolId={user?.schoolId || 0} />
+            <ResultsSection schoolId={profile?.id || 0} />
           )}
 
           {/* Alumni Section */}
           {activeSection === 'alumini' && (
-            <AlumniSection schoolId={user?.schoolId || 0} />
+            <AlumniSection schoolId={profile?.id || 0} />
           )}
 
           {/* News Section */}
           {activeSection === 'news' && (
-            <NewsSection schoolId={user?.schoolId || 0} />
+            <NewsSection schoolId={profile?.id || 0} />
           )}
 
           {/* Analytics Section */}
           {activeSection === 'analytics' && (
-            <AnalyticsSection schoolId={user?.schoolId || 0} />
+            <AnalyticsSection schoolId={profile?.id || 0} />
           )}
 
           {/* Other sections - Coming Soon */}
