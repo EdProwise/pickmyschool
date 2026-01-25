@@ -50,22 +50,29 @@ export function EnquirySettingsSection({ schoolId: propSchoolId }: EnquirySettin
     isActive: true,
   });
   
-  const [schoolId, setSchoolId] = useState<number | string | null>(propSchoolId || null);
+    const [schoolId, setSchoolId] = useState<number | string | null>(propSchoolId || null);
 
-  useEffect(() => {
-    loadSettings();
-    
-    if (propSchoolId) {
-      setSchoolId(propSchoolId);
-    } else {
-      // Fallback: Get schoolId from user in localStorage
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        setSchoolId(user.schoolId);
+    useEffect(() => {
+      loadSettings();
+      
+      if (propSchoolId) {
+        setSchoolId(propSchoolId);
+      } else {
+        // Fallback: Get schoolId from user in localStorage
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          // Only set if it's a number, or if we have no other choice
+          // But ideally we want the numeric ID
+          if (user.numericId) {
+            setSchoolId(user.numericId);
+          } else if (user.schoolId && !isNaN(Number(user.schoolId))) {
+            setSchoolId(Number(user.schoolId));
+          }
+        }
       }
-    }
-  }, [propSchoolId]);
+    }, [propSchoolId]);
+
 
   const loadSettings = async () => {
     const token = localStorage.getItem('token');

@@ -15,15 +15,29 @@ export function SchoolPagePreview({ schoolId }: SchoolPagePreviewProps) {
   const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
+    const [previewKey, setPreviewKey] = useState(0);
+    const [idToUse, setIdToUse] = useState<number | string | null>(schoolId);
 
-  useEffect(() => {
-    if (schoolId) {
-      loadVisibilityStatus();
-    }
-  }, [schoolId]);
+    useEffect(() => {
+      if (schoolId) {
+        setIdToUse(schoolId);
+        loadVisibilityStatus();
+      } else {
+        // Fallback: Check localStorage
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.numericId) {
+            setIdToUse(user.numericId);
+          } else if (user.schoolId && !isNaN(Number(user.schoolId))) {
+            setIdToUse(Number(user.schoolId));
+          }
+        }
+      }
+    }, [schoolId]);
 
-  const loadVisibilityStatus = async () => {
+    const loadVisibilityStatus = async () => {
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/schools/visibility', {
@@ -75,12 +89,12 @@ export function SchoolPagePreview({ schoolId }: SchoolPagePreviewProps) {
   };
 
   const openInNewTab = () => {
-    if (schoolId) {
-      window.open(`/schools/${schoolId}`, '_blank');
+    if (idToUse) {
+      window.open(`/schools/${idToUse}`, '_blank');
     }
   };
 
-  if (!schoolId) {
+  if (!idToUse) {
     return (
       <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm">
         <CardContent className="p-12 text-center">
@@ -193,7 +207,7 @@ export function SchoolPagePreview({ schoolId }: SchoolPagePreviewProps) {
               <div className="w-3 h-3 rounded-full bg-green-500" />
             </div>
             <div className="flex-1 px-4 py-2 bg-white rounded-lg text-sm text-muted-foreground font-mono">
-              {typeof window !== 'undefined' && `${window.location.origin}/schools/${schoolId}`}
+              {typeof window !== 'undefined' && `${window.location.origin}/schools/${idToUse}`}
             </div>
           </div>
         </CardHeader>
@@ -201,7 +215,7 @@ export function SchoolPagePreview({ schoolId }: SchoolPagePreviewProps) {
           <div className="relative" style={{ paddingBottom: '75vh' }}>
             <iframe
               key={previewKey}
-              src={`/schools/${schoolId}`}
+              src={`/schools/${idToUse}`}
               className="absolute inset-0 w-full h-full border-0"
               title="School Page Preview"
             />

@@ -82,7 +82,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ...school, id: school.id }, { status: 200 });
+    // Explicitly cast to plain object and ensure numeric id is preserved
+    // Mongoose lean() might still have an 'id' virtual or property naming collision
+    const schoolData = {
+      ...school,
+      id: Number(school.id), // Ensure it's the numeric ID field from schema
+      mongoId: school._id.toString()
+    };
+
+    return NextResponse.json(schoolData, { status: 200 });
   } catch (error: any) {
     console.error('GET error:', error);
     return NextResponse.json(
@@ -286,10 +294,18 @@ export async function PUT(request: NextRequest) {
       // Update user record with schoolId
       await User.findByIdAndUpdate(user.userId, { schoolId: createdProfile._id });
 
-      return NextResponse.json({ ...createdProfile, id: createdProfile.id }, { status: 200 });
+      return NextResponse.json({ 
+        ...createdProfile, 
+        id: Number(createdProfile.id),
+        mongoId: createdProfile._id.toString()
+      }, { status: 200 });
     } else {
       const updated = await updateSchool(targetSchoolNumericId!, updateData);
-      return NextResponse.json({ ...updated, id: updated.id }, { status: 200 });
+      return NextResponse.json({ 
+        ...updated, 
+        id: Number(updated.id),
+        mongoId: updated._id.toString()
+      }, { status: 200 });
     }
   } catch (error: any) {
     console.error('PUT error:', error);
