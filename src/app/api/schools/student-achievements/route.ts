@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { StudentAchievement, User } from '@/lib/models';
+import { StudentAchievement, User, School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -79,16 +79,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
     const numericSchoolId = (userWithSchool.schoolId as any).id;
-
-    const body = await request.json();
-    const { year, studentName, marks, classLevel, section, achievement, images } = body;
-
-    if (!year || !studentName || !classLevel || !achievement) {
-      return NextResponse.json(
-        { error: 'Year, student name, class, and achievement are required' },
-        { status: 400 }
-      );
-    }
 
     const newAchievement = await StudentAchievement.create({
       schoolId: numericSchoolId,
