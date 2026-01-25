@@ -9,8 +9,9 @@ async function check() {
   if (school) {
     console.log('School name:', school.name);
     console.log('School id:', school.id);
-    console.log('whatsappWebhookUrl:', school.whatsappWebhookUrl);
-    console.log('whatsappApiKey:', school.whatsappApiKey);
+    console.log('whatsappWebhookUrl:', JSON.stringify(school.whatsappWebhookUrl));
+    console.log('whatsappApiKey:', JSON.stringify(school.whatsappApiKey));
+    console.log('typeof whatsappWebhookUrl:', typeof school.whatsappWebhookUrl);
   } else {
     console.log('School not found');
   }
