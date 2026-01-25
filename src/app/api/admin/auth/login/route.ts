@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { superAdmin } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { SuperAdmin } from '@/lib/models';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 export async function POST(request: NextRequest) {
   try {
+    await connectToDatabase();
+    
     const body = await request.json();
     const { email, password } = body;
 
-    // Validation: Check if email and password are provided
     if (!email) {
       return NextResponse.json(
         { 
@@ -31,17 +31,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize email: trim and lowercase
     const sanitizedEmail = email.trim().toLowerCase();
 
-    // Database operation: Query super_admin table by email
-    const adminResult = await db.select()
-      .from(superAdmin)
-      .where(eq(superAdmin.email, sanitizedEmail))
-      .limit(1);
+    const admin = await SuperAdmin.findOne({ email: sanitizedEmail });
 
-    // Check if super admin exists
-    if (adminResult.length === 0) {
+    if (!admin) {
       return NextResponse.json(
         { 
           error: 'Invalid credentials',
@@ -51,9 +45,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const admin = adminResult[0];
-
-    // Compare password with hashed password
     const isPasswordValid = await bcrypt.compare(password, admin.password);
 
     if (!isPasswordValid) {
@@ -66,10 +57,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       {
-        adminId: admin.id,
+        adminId: admin._id,
         email: admin.email,
         role: 'super_admin'
       },
@@ -77,13 +67,11 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     );
 
-    // Prepare response without password
-    const { password: _, ...adminWithoutPassword } = admin;
+    const { password: _, ...adminWithoutPassword } = admin.toObject();
 
-    // Success response
     return NextResponse.json(
       {
-        admin: adminWithoutPassword,
+        admin: { ...adminWithoutPassword, id: admin._id },
         token,
         message: 'Login successful'
       },

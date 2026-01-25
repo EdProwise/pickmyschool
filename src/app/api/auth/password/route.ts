@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { User } from '@/lib/models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export async function PUT(req: NextRequest) {
   try {
@@ -22,10 +21,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    await connectToDatabase();
+
     const body = await req.json();
     const { currentPassword, newPassword } = body;
 
-    // Validate input
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
         { error: 'Current password and new password are required' },
@@ -40,18 +40,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Get user
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, decoded.userId))
-      .limit(1);
+    const user = await User.findById(decoded.userId);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     
     if (!isPasswordValid) {
@@ -61,14 +55,9 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
-    await db
-      .update(users)
-      .set({ password: hashedPassword })
-      .where(eq(users.id, decoded.userId));
+    await User.findByIdAndUpdate(decoded.userId, { $set: { password: hashedPassword } });
 
     return NextResponse.json({ message: 'Password changed successfully' });
   } catch (error) {

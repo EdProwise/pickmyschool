@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { siteSettings, schools } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { SiteSettings } from '@/lib/models';
+import { getSchool } from '@/lib/schoolsHelper';
 import jwt from 'jsonwebtoken';
 
 interface JWTPayload {
-  adminId: number;
+  adminId: string;
   role: string;
   email: string;
 }
@@ -48,29 +48,25 @@ export async function GET(request: NextRequest) {
       }, { status });
     }
 
-    const settingsRecords = await db.select()
-      .from(siteSettings)
-      .limit(1);
+    await connectToDatabase();
 
-    if (settingsRecords.length === 0) {
+    const settings = await SiteSettings.findOne().lean();
+
+    if (!settings) {
       return NextResponse.json({ 
         settings: null 
       }, { status: 200 });
     }
 
-    const settings = settingsRecords[0];
-
     if (settings.spotlightSchoolId) {
-      const schoolRecords = await db.select()
-        .from(schools)
-        .where(eq(schools.id, settings.spotlightSchoolId))
-        .limit(1);
+      const school = await getSchool(settings.spotlightSchoolId);
 
-      if (schoolRecords.length > 0) {
+      if (school) {
         return NextResponse.json({ 
           settings: {
             ...settings,
-            school: schoolRecords[0]
+            id: settings._id,
+            school
           }
         }, { status: 200 });
       }
@@ -79,6 +75,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       settings: {
         ...settings,
+        id: settings._id,
         school: null
       }
     }, { status: 200 });
@@ -103,6 +100,8 @@ export async function PUT(request: NextRequest) {
       }, { status });
     }
 
+    await connectToDatabase();
+
     const body = await request.json();
     const { schoolId } = body;
 
@@ -113,44 +112,33 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const schoolRecords = await db.select()
-      .from(schools)
-      .where(eq(schools.id, schoolId))
-      .limit(1);
+    const school = await getSchool(schoolId);
 
-    if (schoolRecords.length === 0) {
+    if (!school) {
       return NextResponse.json({ 
         error: 'School not found',
         code: 'SCHOOL_NOT_FOUND' 
       }, { status: 404 });
     }
 
-    const existingSettings = await db.select()
-      .from(siteSettings)
-      .limit(1);
+    const existingSettings = await SiteSettings.findOne();
 
     let updatedSettings;
 
-    if (existingSettings.length > 0) {
-      updatedSettings = await db.update(siteSettings)
-        .set({
-          spotlightSchoolId: schoolId,
-          updatedAt: new Date().toISOString()
-        })
-        .where(eq(siteSettings.id, existingSettings[0].id))
-        .returning();
+    if (existingSettings) {
+      updatedSettings = await SiteSettings.findByIdAndUpdate(
+        existingSettings._id,
+        { $set: { spotlightSchoolId: schoolId } },
+        { new: true }
+      );
     } else {
-      updatedSettings = await db.insert(siteSettings)
-        .values({
-          spotlightSchoolId: schoolId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        })
-        .returning();
+      updatedSettings = await SiteSettings.create({
+        spotlightSchoolId: schoolId,
+      });
     }
 
     return NextResponse.json({ 
-      settings: updatedSettings[0],
+      settings: { ...updatedSettings!.toObject(), id: updatedSettings!._id },
       message: 'Spotlight school updated successfully'
     }, { status: 200 });
 

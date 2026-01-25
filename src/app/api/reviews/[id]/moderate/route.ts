@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { reviews, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Review, User } from '@/lib/models';
+import { updateSchoolStats } from '@/lib/schoolsHelper';
 import jwt from 'jsonwebtoken';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Extract and verify JWT token
+    await connectToDatabase();
+    
+    const { id: reviewId } = await params;
+
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -31,7 +34,6 @@ export async function PUT(
       );
     }
 
-    // Validate user role
     if (decoded.role !== 'school') {
       return NextResponse.json(
         { error: 'Only school admins can moderate reviews', code: 'FORBIDDEN' },
@@ -39,48 +41,24 @@ export async function PUT(
       );
     }
 
-    // Validate review ID
-    const reviewId = params.id;
-    if (!reviewId || isNaN(parseInt(reviewId))) {
-      return NextResponse.json(
-        { error: 'Valid review ID is required', code: 'INVALID_ID' },
-        { status: 400 }
-      );
-    }
+    const review = await Review.findById(reviewId);
 
-    // Query review by ID
-    const reviewResult = await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.id, parseInt(reviewId)))
-      .limit(1);
-
-    if (reviewResult.length === 0) {
+    if (!review) {
       return NextResponse.json(
         { error: 'Review not found', code: 'REVIEW_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const review = reviewResult[0];
+    const user = await User.findById(decoded.userId);
 
-    // Get user's schoolId from users table
-    const userResult = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, decoded.userId))
-      .limit(1);
-
-    if (userResult.length === 0 || !userResult[0].schoolId) {
+    if (!user || !user.schoolId) {
       return NextResponse.json(
         { error: 'User not found or no school association', code: 'USER_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const user = userResult[0];
-
-    // Verify review.schoolId matches user's schoolId
     if (review.schoolId !== user.schoolId) {
       return NextResponse.json(
         { 
@@ -91,11 +69,9 @@ export async function PUT(
       );
     }
 
-    // Parse and validate request body
     const body = await request.json();
     const { approvalStatus } = body;
 
-    // Validate approvalStatus
     const validStatuses = ['approved', 'rejected'];
     if (!approvalStatus || !validStatuses.includes(approvalStatus)) {
       return NextResponse.json(
@@ -107,19 +83,17 @@ export async function PUT(
       );
     }
 
-    // Update review
-    const updatedReview = await db
-      .update(reviews)
-      .set({
-        approvalStatus,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(reviews.id, parseInt(reviewId)))
-      .returning();
+    const updatedReview = await Review.findByIdAndUpdate(
+      reviewId,
+      { $set: { approvalStatus } },
+      { new: true }
+    );
+
+    await updateSchoolStats(review.schoolId);
 
     return NextResponse.json(
       {
-        review: updatedReview[0],
+        review: { ...updatedReview!.toObject(), id: updatedReview!._id },
         message: 'Review moderation status updated',
       },
       { status: 200 }

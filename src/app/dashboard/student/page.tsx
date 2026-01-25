@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookMarked, MessageSquare, ClipboardList, User as UserIcon, Heart, TrendingUp, Search, Sparkles, ArrowRight, Clock, CheckCircle2, Target, Zap, Star, Upload, X, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { BookMarked, MessageSquare, ClipboardList, User as UserIcon, Heart, TrendingUp, Search, Sparkles, ArrowRight, Clock, CheckCircle2, Target, Zap, Star, Upload, X, Edit, Trash2, AlertCircle, GraduationCap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
@@ -14,9 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { getMe, getMyEnquiries, getSchools, type User, type Enquiry, type School } from '@/lib/api';
+import { getMe, getMyEnquiries, getSchools, getSchoolsByIds, getRecommendedSchools, type User, type Enquiry, type School } from '@/lib/api';
 import { toast } from 'sonner';
-import { AIChat } from '@/components/AIChat';
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -55,15 +54,7 @@ export default function StudentDashboard() {
     loadUserData();
   }, []);
 
-  // Load reviews when switching to reviews tab
-  useEffect(() => {
-    if (activeTab === 'reviews' && user) {
-      loadMyReviews();
-      if (allSchools.length === 0) {
-        loadAllSchools();
-      }
-    }
-  }, [activeTab, user]);
+
 
   const loadAllSchools = async () => {
     setSchoolsLoading(true);
@@ -165,10 +156,20 @@ export default function StudentDashboard() {
         body: JSON.stringify(reviewForm),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to submit review');
-      }
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          let errorMessage = 'Failed to submit review';
+          
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } else {
+            const textError = await response.text();
+            errorMessage = textError || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
+        }
 
       toast.success(editingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
       setShowReviewForm(false);
@@ -250,7 +251,7 @@ export default function StudentDashboard() {
       
       if (userData.role !== 'student') {
         toast.error('Access denied. Students only.');
-        router.push('/');
+        router.push('/login');
         return;
       }
 
@@ -267,19 +268,35 @@ export default function StudentDashboard() {
       const enquiriesData = await getMyEnquiries(token);
       setEnquiries(enquiriesData);
 
-      // Load saved schools
-      if (userData.savedSchools && userData.savedSchools.length > 0) {
-        const schoolsData = await getSchools({ limit: 100 });
-        const saved = schoolsData.filter(s => userData.savedSchools.includes(s.id));
-        setSavedSchools(saved);
+      // Load saved schools using the proper API endpoint
+      const savedSchoolIds = userData.savedSchools || [];
+      if (savedSchoolIds.length > 0) {
+        try {
+          // Fetch in batches of 10 if more than 10 saved schools
+          const allSavedSchools: School[] = [];
+          for (let i = 0; i < savedSchoolIds.length; i += 10) {
+            const batch = savedSchoolIds.slice(i, i + 10);
+            const batchSchools = await getSchoolsByIds(batch);
+            allSavedSchools.push(...batchSchools);
+          }
+          setSavedSchools(allSavedSchools);
+        } catch (error) {
+          console.error('Failed to load saved schools:', error);
+          toast.error('Failed to load saved schools');
+        }
       }
 
       // Load recommended schools (based on user's city and preferences)
-      const recommended = await getSchools({
-        city: userData.city || undefined,
-        limit: 4,
-      });
-      setRecommendedSchools(recommended);
+      try {
+        const { recommendations } = await getRecommendedSchools(token, 4);
+        setRecommendedSchools(recommendations);
+      } catch (error) {
+        console.error('Failed to load recommendations:', error);
+      }
+
+      // Load reviews for stats
+      loadMyReviews();
+      loadAllSchools();
     } catch (error) {
       console.error('Failed to load user data:', error);
       toast.error('Failed to load dashboard data');
@@ -332,10 +349,8 @@ export default function StudentDashboard() {
     return null;
   }
 
-  const inProgressCount = enquiries.filter(e => e.status === 'In Progress').length;
-  const conversionRate = enquiries.length > 0 
-    ? Math.round((enquiries.filter(e => e.status === 'Converted').length / enquiries.length) * 100)
-    : 0;
+  const totalReviews = myReviews.length;
+  const schoolsRatedCount = new Set(myReviews.map(r => r.schoolId)).size;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
@@ -345,139 +360,140 @@ export default function StudentDashboard() {
         {/* Welcome Header with Glassmorphic Card */}
         <div className="mb-8 relative">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-purple-400/20 rounded-3xl blur-3xl" />
-          <Card className="relative border-0 bg-white/70 backdrop-blur-xl shadow-2xl">
-            <CardContent className="p-8">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
-                      <Sparkles className="text-white" size={28} />
-                    </div>
-                    <div>
-                      <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Welcome back, {user.name}!
-                      </h1>
-                      <p className="text-lg text-muted-foreground mt-1">
-                        Your school search journey continues here
-                      </p>
+            <Card className="relative border-0 bg-white/70 backdrop-blur-xl shadow-2xl">
+              <CardContent className="p-4 sm:p-8">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                        <Sparkles className="text-white" size={20} />
+                      </div>
+                      <div>
+                        <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          Welcome back, {user.name}!
+                        </h1>
+                        <p className="text-sm sm:text-lg text-muted-foreground mt-1">
+                          Your school search journey continues
+                        </p>
+                      </div>
                     </div>
                   </div>
+                  <Button 
+                    className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    onClick={() => router.push('/schools')}
+                  >
+                    <Search className="mr-2" size={18} />
+                    Explore Schools
+                  </Button>
                 </div>
-                <Button 
-                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => router.push('/schools')}
-                >
-                  <Search className="mr-2" size={18} />
-                  Explore Schools
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Modern Stats Grid - Bento Box Style */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Saved Schools Card */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <BookMarked size={28} />
-                </div>
-                <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
-              </div>
-              <p className="text-white/80 text-sm mb-2 font-medium">Saved Schools</p>
-              <p className="text-5xl font-bold mb-1">{savedSchools.length}</p>
-              <p className="text-white/70 text-xs">Ready to compare</p>
-            </CardContent>
-          </Card>
-
-          {/* Total Enquiries Card */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <ClipboardList size={28} />
-                </div>
-                <Target className="opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
-              </div>
-              <p className="text-white/80 text-sm mb-2 font-medium">Total Enquiries</p>
-              <p className="text-5xl font-bold mb-1">{enquiries.length}</p>
-              <p className="text-white/70 text-xs">Applications sent</p>
-            </CardContent>
-          </Card>
-
-          {/* In Progress Card */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Clock size={28} />
-                </div>
-                <Zap className="opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
-              </div>
-              <p className="text-white/80 text-sm mb-2 font-medium">In Progress</p>
-              <p className="text-5xl font-bold mb-1">{inProgressCount}</p>
-              <p className="text-white/70 text-xs">Active applications</p>
-            </CardContent>
-          </Card>
-
-          {/* Conversion Rate Card */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
-            <CardContent className="p-6 relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <CheckCircle2 size={28} />
-                </div>
-                <TrendingUp className="opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
-              </div>
-              <p className="text-white/80 text-sm mb-2 font-medium">Success Rate</p>
-              <p className="text-5xl font-bold mb-1">{conversionRate}%</p>
-              <p className="text-white/70 text-xs">Conversion ratio</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs with Modern Design */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-2 shadow-lg border-0">
-            <TabsList className="w-full bg-transparent grid grid-cols-5 gap-2">
-              <TabsTrigger 
-                value="overview" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger 
-                value="saved"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
-              >
-                Saved Schools
-              </TabsTrigger>
-              <TabsTrigger 
-                value="enquiries"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
-              >
-                My Enquiries
-              </TabsTrigger>
-              <TabsTrigger 
-                value="reviews"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
-              >
-                My Reviews
-              </TabsTrigger>
-              <TabsTrigger 
-                value="profile"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl transition-all duration-300"
-              >
-                My Profile
-              </TabsTrigger>
-            </TabsList>
+              </CardContent>
+            </Card>
           </div>
+  
+          {/* Modern Stats Grid - Bento Box Style */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
+            {/* Saved Schools Card */}
+            <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+              <CardContent className="p-4 sm:p-6 relative">
+                <div className="flex items-start justify-between mb-2 sm:mb-4">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <BookMarked className="w-5 h-5 sm:w-7 sm:h-7" />
+                  </div>
+                  <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" size={20} />
+                </div>
+                <p className="text-white/80 text-[10px] sm:text-sm mb-1 sm:mb-2 font-medium uppercase tracking-wider">Saved</p>
+                <p className="text-3xl sm:text-5xl font-bold mb-0.5 sm:mb-1">{savedSchools.length}</p>
+                <p className="text-white/70 text-[9px] sm:text-xs">Ready to compare</p>
+              </CardContent>
+            </Card>
+  
+            {/* Total Enquiries Card */}
+            <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+              <CardContent className="p-4 sm:p-6 relative">
+                <div className="flex items-start justify-between mb-2 sm:mb-4">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <ClipboardList className="w-5 h-5 sm:w-7 sm:h-7" />
+                  </div>
+                  <Target className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" size={20} />
+                </div>
+                <p className="text-white/80 text-[10px] sm:text-sm mb-1 sm:mb-2 font-medium uppercase tracking-wider">Enquiries</p>
+                <p className="text-3xl sm:text-5xl font-bold mb-0.5 sm:mb-1">{enquiries.length}</p>
+                <p className="text-white/70 text-[9px] sm:text-xs">Applications sent</p>
+              </CardContent>
+            </Card>
+  
+            {/* No. of Reviews Card */}
+            <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+              <CardContent className="p-4 sm:p-6 relative">
+                <div className="flex items-start justify-between mb-2 sm:mb-4">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 sm:w-7 sm:h-7" />
+                  </div>
+                  <Star className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" size={20} />
+                </div>
+                <p className="text-white/80 text-[10px] sm:text-sm mb-1 sm:mb-2 font-medium uppercase tracking-wider">Reviews</p>
+                <p className="text-3xl sm:text-5xl font-bold mb-0.5 sm:mb-1">{totalReviews}</p>
+                <p className="text-white/70 text-[9px] sm:text-xs">Shared experiences</p>
+              </CardContent>
+            </Card>
+  
+            {/* No. of School Rated Card */}
+            <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+              <CardContent className="p-4 sm:p-6 relative">
+                <div className="flex items-start justify-between mb-2 sm:mb-4">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <GraduationCap className="w-5 h-5 sm:w-7 sm:h-7" />
+                  </div>
+                  <TrendingUp className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" size={20} />
+                </div>
+                <p className="text-white/80 text-[10px] sm:text-sm mb-1 sm:mb-2 font-medium uppercase tracking-wider">Rated</p>
+                <p className="text-3xl sm:text-5xl font-bold mb-0.5 sm:mb-1">{schoolsRatedCount}</p>
+                <p className="text-white/70 text-[9px] sm:text-xs">Schools evaluated</p>
+              </CardContent>
+            </Card>
+          </div>
+  
+          {/* Main Content Tabs with Modern Design */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-1.5 sm:p-2 shadow-lg border-0">
+              <TabsList className="w-full bg-transparent flex flex-wrap sm:grid sm:grid-cols-5 gap-1.5 sm:gap-2 h-auto">
+                <TabsTrigger 
+                  value="overview" 
+                  className="flex-1 min-w-[80px] text-[10px] sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg sm:rounded-xl transition-all duration-300 py-2 sm:py-3"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="saved"
+                  className="flex-1 min-w-[80px] text-[10px] sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg sm:rounded-xl transition-all duration-300 py-2 sm:py-3"
+                >
+                  Saved
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="enquiries"
+                  className="flex-1 min-w-[80px] text-[10px] sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg sm:rounded-xl transition-all duration-300 py-2 sm:py-3"
+                >
+                  Enquiries
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="reviews"
+                  className="flex-1 min-w-[80px] text-[10px] sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg sm:rounded-xl transition-all duration-300 py-2 sm:py-3"
+                >
+                  Reviews
+                </TabsTrigger>
+                <Button 
+                  onClick={() => router.push('/dashboard/student/profile')}
+                  className="flex-1 min-w-[80px] text-[10px] sm:text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg sm:rounded-xl transition-all duration-300 h-8 sm:h-10"
+                >
+                  Profile
+                </Button>
+              </TabsList>
+            </div>
+
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -528,7 +544,7 @@ export default function StudentDashboard() {
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <p className="font-semibold">School ID: {enquiry.schoolId}</p>
+                              <p className="font-semibold">{enquiry.school?.name || `School ID: ${enquiry.schoolId}`}</p>
                               <p className="text-sm text-muted-foreground">
                                 For: {enquiry.studentName} - {enquiry.studentClass}
                               </p>
@@ -579,7 +595,7 @@ export default function StudentDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {recommendedSchools.map((school) => (
+                      {recommendedSchools.map((school: any) => (
                         <div
                           key={school.id}
                           className="p-4 border border-gray-100 rounded-xl bg-white/50 hover:shadow-md transition-all duration-300 hover:scale-[1.02] cursor-pointer group"
@@ -601,9 +617,18 @@ export default function StudentDashboard() {
                                 <span>{school.board}</span>
                               </p>
                               {school.feesMin && school.feesMax && (
-                                <p className="text-sm font-semibold text-cyan-600">
+                                <p className="text-sm font-semibold text-cyan-600 mb-2">
                                   ₹{(school.feesMin / 1000).toFixed(0)}K - ₹{(school.feesMax / 1000).toFixed(0)}K/year
                                 </p>
+                              )}
+                              {school.recommendationReasons && school.recommendationReasons.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {school.recommendationReasons.slice(0, 2).map((reason: string, idx: number) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs bg-purple-100 text-purple-700 border-0">
+                                      {reason}
+                                    </Badge>
+                                  ))}
+                                </div>
                               )}
                             </div>
                             <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity text-cyan-600" size={20} />
@@ -688,7 +713,7 @@ export default function StudentDashboard() {
                           <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-3">
-                                <h3 className="font-semibold text-lg">School ID: {enquiry.schoolId}</h3>
+                                <h3 className="font-semibold text-lg">{enquiry.school?.name || `School ID: ${enquiry.schoolId}`}</h3>
                                 <Badge className={`${getStatusColor(enquiry.status)} text-white`}>
                                   {enquiry.status}
                                 </Badge>
@@ -1098,8 +1123,6 @@ export default function StudentDashboard() {
       </div>
 
       <Footer />
-      
-      <AIChat />
     </div>
   );
 }

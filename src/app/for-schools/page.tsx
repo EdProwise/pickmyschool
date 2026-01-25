@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { 
   Users, TrendingUp, Award, Target, CheckCircle2, 
   BarChart3, Mail, Phone, Building2, Megaphone
@@ -16,10 +17,44 @@ import { toast } from 'sonner';
 
 export default function ForSchoolsPage() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.success('Thank you! We will contact you soon.');
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      schoolName: formData.get('schoolName') as string,
+      contactPerson: formData.get('contactPerson') as string,
+      email: formData.get('email') as string,
+      phone: formData.get('phone') as string,
+      city: formData.get('city') as string,
+      message: formData.get('message') as string,
+      subject: 'School Partnership Enquiry',
+    };
+
+    try {
+      const response = await fetch('/api/contact-submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit enquiry');
+      }
+
+      toast.success('Thank you! We will contact you soon.');
+      e.currentTarget.reset();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error('Failed to submit enquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const benefits = [
@@ -141,17 +176,47 @@ export default function ForSchoolsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
+              const gradients = [
+                'from-violet-500 via-purple-500 to-fuchsia-500',
+                'from-cyan-500 via-teal-500 to-emerald-500',
+                'from-orange-500 via-rose-500 to-pink-500',
+                'from-blue-500 via-indigo-500 to-purple-500',
+                'from-amber-500 via-yellow-500 to-lime-500',
+                'from-red-500 via-pink-500 to-rose-500',
+              ];
+              const iconBgs = [
+                'bg-gradient-to-br from-violet-100 to-fuchsia-100',
+                'bg-gradient-to-br from-cyan-100 to-emerald-100',
+                'bg-gradient-to-br from-orange-100 to-pink-100',
+                'bg-gradient-to-br from-blue-100 to-purple-100',
+                'bg-gradient-to-br from-amber-100 to-lime-100',
+                'bg-gradient-to-br from-red-100 to-rose-100',
+              ];
+              const iconColors = [
+                '#8b5cf6',
+                '#14b8a6',
+                '#f97316',
+                '#6366f1',
+                '#eab308',
+                '#f43f5e',
+              ];
               return (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
+                <Card 
+                  key={index} 
+                  className="group relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${gradients[index]} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${gradients[index]}`} />
+                  <CardContent className="p-8 relative">
                     <div
-                      className="w-12 h-12 rounded-full mb-4 flex items-center justify-center"
-                      style={{ backgroundColor: '#04d3d320' }}
+                      className={`w-16 h-16 rounded-2xl mb-5 flex items-center justify-center ${iconBgs[index]} shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                     >
-                      <Icon style={{ color: '#04d3d3' }} size={24} />
+                      <Icon style={{ color: iconColors[index] }} size={32} strokeWidth={2.5} />
                     </div>
-                    <h3 className="text-xl font-semibold mb-3">{benefit.title}</h3>
-                    <p className="text-muted-foreground">{benefit.description}</p>
+                    <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent from-gray-900 to-gray-600 group-hover:from-gray-700 group-hover:to-gray-900 transition-all duration-300">
+                      {benefit.title}
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed text-base">{benefit.description}</p>
                   </CardContent>
                 </Card>
               );
@@ -217,7 +282,7 @@ export default function ForSchoolsPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-cyan-50 to-blue-50">
+      {/* <section className="py-16 px-4 bg-gradient-to-br from-cyan-50 to-blue-50">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -270,17 +335,17 @@ export default function ForSchoolsPage() {
                 className={plan.popular ? 'border-2' : ''}
                 style={plan.popular ? { borderColor: '#04d3d3' } : {}}
               >
+                {plan.popular && (
+                  <div className="mb-4">
+                    <span
+                      className="inline-block px-3 py-1 rounded-full text-sm font-semibold text-white"
+                      style={{ backgroundColor: '#04d3d3' }}
+                    >
+                      Most Popular
+                    </span>
+                  </div>
+                )}
                 <CardContent className="p-6">
-                  {plan.popular && (
-                    <div className="mb-4">
-                      <span
-                        className="inline-block px-3 py-1 rounded-full text-sm font-semibold text-white"
-                        style={{ backgroundColor: '#04d3d3' }}
-                      >
-                        Most Popular
-                      </span>
-                    </div>
-                  )}
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <p className="text-3xl font-bold mb-6" style={{ color: '#04d3d3' }}>
                     {plan.price}
@@ -314,7 +379,7 @@ export default function ForSchoolsPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Contact Section */}
       <section id="contact" className="py-16 px-4 bg-white">
@@ -335,34 +400,35 @@ export default function ForSchoolsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="schoolName">School Name *</Label>
-                      <Input id="schoolName" required />
+                      <Input id="schoolName" name="schoolName" required />
                     </div>
                     <div>
                       <Label htmlFor="contactPerson">Contact Person *</Label>
-                      <Input id="contactPerson" required />
+                      <Input id="contactPerson" name="contactPerson" required />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="email">Email *</Label>
-                      <Input id="email" type="email" required />
+                      <Input id="email" name="email" type="email" required />
                     </div>
                     <div>
                       <Label htmlFor="phone">Phone *</Label>
-                      <Input id="phone" type="tel" required />
+                      <Input id="phone" name="phone" type="tel" required />
                     </div>
                   </div>
 
                   <div>
                     <Label htmlFor="city">City *</Label>
-                    <Input id="city" required />
+                    <Input id="city" name="city" required />
                   </div>
 
                   <div>
                     <Label htmlFor="message">Message</Label>
                     <Textarea
                       id="message"
+                      name="message"
                       rows={4}
                       placeholder="Tell us about your school and how we can help..."
                     />
@@ -373,8 +439,9 @@ export default function ForSchoolsPage() {
                     className="w-full"
                     size="lg"
                     style={{ backgroundColor: '#04d3d3', color: 'white' }}
+                    disabled={isSubmitting}
                   >
-                    Submit Enquiry
+                    {isSubmitting ? 'Submitting...' : 'Submit Enquiry'}
                   </Button>
                 </form>
 
@@ -390,7 +457,7 @@ export default function ForSchoolsPage() {
                       <div>
                         <p className="text-sm font-medium">Email</p>
                         <p className="text-sm text-muted-foreground">
-                          schools@pickmyschool.com
+                          info@edprowise.com
                         </p>
                       </div>
                     </div>
@@ -404,7 +471,7 @@ export default function ForSchoolsPage() {
                       <div>
                         <p className="text-sm font-medium">Phone</p>
                         <p className="text-sm text-muted-foreground">
-                          +91 98765 43210
+                          +91 99585 28306
                         </p>
                       </div>
                     </div>

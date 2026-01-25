@@ -1,25 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { schools } from '@/db/schema';
-import { desc } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { School } from '@/lib/models';
 
 export async function GET(request: NextRequest) {
   try {
+    await connectToDatabase();
+    
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '10'), 20);
+    const limit = parseInt(searchParams.get('limit') || '8');
 
-    // Get top-rated schools sorted by rating
-    const topRatedSchools = await db.select()
-      .from(schools)
-      .orderBy(desc(schools.rating))
-      .limit(limit);
+    const featuredSchools = await School.find({ featured: true })
+      .sort({ rating: -1 })
+      .limit(limit)
+      .lean();
 
-    return NextResponse.json(topRatedSchools, { status: 200 });
+    const formattedSchools = featuredSchools.map(school => ({
+      ...school,
+      id: school.id,
+    }));
+
+    return NextResponse.json(formattedSchools, { status: 200 });
   } catch (error) {
-    console.error('GET error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error'),
-      code: 'INTERNAL_SERVER_ERROR'
-    }, { status: 500 });
+    console.error('Featured schools error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch featured schools' },
+      { status: 500 }
+    );
   }
 }

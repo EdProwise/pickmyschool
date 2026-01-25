@@ -4,6 +4,7 @@ import VisualEditsMessenger from "../visual-edits/VisualEditsMessenger";
 import ErrorReporter from "@/components/ErrorReporter";
 import Script from "next/script";
 import { Toaster } from "sonner";
+import { AIChat } from "@/components/AIChat";
 
 export const metadata: Metadata = {
   title: "PickMySchool - Find the Perfect School for Your Child",
@@ -37,6 +38,7 @@ export default function RootLayout({
         />
         <Toaster position="top-right" richColors />
         {children}
+        <AIChat />
         <VisualEditsMessenger />
       </body>
     </html>

@@ -24,11 +24,11 @@ export default function SchoolCard({ school }: SchoolCardProps) {
         {/* Logo and Rating Row */}
         <div className="flex items-start justify-between mb-4 gap-3">
           {/* School Logo with Premium Frame */}
-          {school.logo && (
+          {(school.logo || school.logoUrl) && (
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white to-gray-50 shadow-lg flex items-center justify-center overflow-hidden ring-2 ring-gray-100 group-hover:ring-cyan-300 transition-all duration-300 flex-shrink-0">
                 <img
-                  src={school.logo}
+                  src={school.logo || school.logoUrl || ''}
                   alt={`${school.name} logo`}
                   className="w-14 h-14 object-contain"
                 />
@@ -74,14 +74,16 @@ export default function SchoolCard({ school }: SchoolCardProps) {
             {school.board}
           </Badge>
           {school.schoolType && (
-            <Badge className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-0 font-semibold hover:from-purple-200 hover:to-pink-200 transition-colors">
-              {school.schoolType}
-            </Badge>
+            <Link href={`/schools?schoolType=${encodeURIComponent(school.schoolType)}`} onClick={(e) => e.stopPropagation()}>
+              <Badge className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-0 font-semibold hover:from-purple-200 hover:to-pink-200 transition-colors cursor-pointer">
+                {school.schoolType}
+              </Badge>
+            </Link>
           )}
         </div>
 
         {/* Fees Range with Premium Styling */}
-        {school.feesMin && school.feesMax && (
+        {(school.feesMin !== null || school.feesMax !== null) && (
           <div className="flex items-center gap-2 mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-sm">
               <IndianRupee size={16} className="text-white" />
@@ -89,7 +91,12 @@ export default function SchoolCard({ school }: SchoolCardProps) {
             <div className="flex-1">
               <p className="text-xs text-muted-foreground font-medium mb-0.5">Annual Fees</p>
               <p className="text-sm font-bold text-foreground">
-                ₹{school.feesMin.toLocaleString('en-IN')} - ₹{school.feesMax.toLocaleString('en-IN')}
+                {school.feesMin !== null && school.feesMax !== null
+                  ? `₹${school.feesMin.toLocaleString('en-IN')} - ₹${school.feesMax.toLocaleString('en-IN')}`
+                  : school.feesMin !== null
+                    ? `From ₹${school.feesMin.toLocaleString('en-IN')}`
+                    : `Up to ₹${school.feesMax!.toLocaleString('en-IN')}`
+                }
               </p>
             </div>
           </div>

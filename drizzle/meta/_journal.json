@@ -71,6 +71,34 @@
       "when": 1764956117101,
       "tag": "0009_fuzzy_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1765473338049,
+      "tag": "0010_real_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1765486434996,
+      "tag": "0011_uneven_the_captain",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1765739284794,
+      "tag": "0012_young_wrecking_crew",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1765739949891,
+      "tag": "0013_simple_tyrannus",
+      "breakpoints": true
     }
   ]
 }

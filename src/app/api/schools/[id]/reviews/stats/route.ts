@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { reviews, schools } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Review, School } from '@/lib/models';
+import { getSchool } from '@/lib/schoolsHelper';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const schoolId = params.id;
+    await connectToDatabase();
+    
+    const { id: schoolId } = params;
 
     // Validate ID is valid integer
     if (!schoolId || isNaN(parseInt(schoolId))) {
@@ -23,14 +25,10 @@ export async function GET(
 
     const id = parseInt(schoolId);
 
-    // Verify school exists
-    const school = await db
-      .select()
-      .from(schools)
-      .where(eq(schools.id, id))
-      .limit(1);
+    // Verify school exists using helper
+    const school = await getSchool(id);
 
-    if (school.length === 0) {
+    if (!school) {
       return NextResponse.json(
         {
           error: 'School not found',
@@ -41,24 +39,19 @@ export async function GET(
     }
 
     // Query approved reviews for statistics
-    const approvedReviews = await db
-      .select({
-        rating: reviews.rating,
-      })
-      .from(reviews)
-      .where(and(eq(reviews.schoolId, id), eq(reviews.approvalStatus, 'approved')));
+    const query = { schoolId: id, approvalStatus: 'approved' };
+    
+    const statsResult = await Review.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: '$rating',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-    // Calculate total reviews
-    const totalReviews = approvedReviews.length;
-
-    // Calculate average rating
-    let averageRating = 0;
-    if (totalReviews > 0) {
-      const sum = approvedReviews.reduce((acc, review) => acc + review.rating, 0);
-      averageRating = parseFloat((sum / totalReviews).toFixed(2));
-    }
-
-    // Initialize rating distribution with all ratings 1-5 set to 0
+    // Initialize rating distribution
     const ratingDistribution: { [key: string]: number } = {
       '1': 0,
       '2': 0,
@@ -67,15 +60,21 @@ export async function GET(
       '5': 0,
     };
 
-    // Fill in actual counts from query results
-    approvedReviews.forEach((review) => {
-      const ratingKey = review.rating.toString();
-      if (ratingDistribution.hasOwnProperty(ratingKey)) {
-        ratingDistribution[ratingKey]++;
+    let totalReviews = 0;
+    let totalScore = 0;
+
+    statsResult.forEach((row) => {
+      const rating = row._id.toString();
+      const count = row.count;
+      if (ratingDistribution.hasOwnProperty(rating)) {
+        ratingDistribution[rating] = count;
       }
+      totalReviews += count;
+      totalScore += (row._id * count);
     });
 
-    // Return statistics
+    const averageRating = totalReviews > 0 ? parseFloat((totalScore / totalReviews).toFixed(2)) : 0;
+
     return NextResponse.json(
       {
         averageRating,

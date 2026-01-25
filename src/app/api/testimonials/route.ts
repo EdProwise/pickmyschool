@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { testimonials } from '@/db/schema';
-import { eq, desc, asc } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Testimonial } from '@/lib/models';
 
 export async function GET(request: NextRequest) {
   try {
-    const featuredTestimonials = await db.select()
-      .from(testimonials)
-      .where(eq(testimonials.featured, true))
-      .orderBy(asc(testimonials.displayOrder), desc(testimonials.createdAt))
-      .limit(6);
+    await connectToDatabase();
+    
+    const featuredTestimonials = await Testimonial.find({ featured: true })
+      .sort({ displayOrder: 1, createdAt: -1 })
+      .limit(6)
+      .lean();
 
     return NextResponse.json(featuredTestimonials, { status: 200 });
   } catch (error) {

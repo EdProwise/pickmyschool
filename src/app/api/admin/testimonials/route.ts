@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { testimonials } from '@/db/schema';
-import { eq, desc, asc, and } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Testimonial } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JWTPayload {
-  adminId: number;
+  adminId: string;
   role: string;
 }
 
-function verifyAdminToken(request: NextRequest): { valid: boolean; adminId?: number; role?: string; error?: string } {
+function verifyAdminToken(request: NextRequest): { valid: boolean; adminId?: string; role?: string; error?: string } {
   const authHeader = request.headers.get('authorization');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -49,6 +48,8 @@ export async function POST(request: NextRequest) {
         code: 'UNAUTHORIZED' 
       }, { status: 401 });
     }
+
+    await connectToDatabase();
 
     const body = await request.json();
     const { parentName, location, rating, testimonialText, avatarUrl, featured, displayOrder } = body;
@@ -89,23 +90,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const now = new Date().toISOString();
+    const newTestimonial = await Testimonial.create({
+      parentName: parentName.trim(),
+      location: location.trim(),
+      rating: ratingNum,
+      testimonialText: testimonialText.trim(),
+      avatarUrl: avatarUrl?.trim() || null,
+      featured: featured ?? false,
+      displayOrder: displayOrder ? parseInt(displayOrder) : null,
+    });
 
-    const newTestimonial = await db.insert(testimonials)
-      .values({
-        parentName: parentName.trim(),
-        location: location.trim(),
-        rating: ratingNum,
-        testimonialText: testimonialText.trim(),
-        avatarUrl: avatarUrl?.trim() || null,
-        featured: featured ?? false,
-        displayOrder: displayOrder ? parseInt(displayOrder) : null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
-
-    return NextResponse.json(newTestimonial[0], { status: 201 });
+    return NextResponse.json({ ...newTestimonial.toObject(), id: newTestimonial._id }, { status: 201 });
 
   } catch (error) {
     console.error('POST error:', error);
@@ -132,24 +127,27 @@ export async function GET(request: NextRequest) {
       }, { status: 401 });
     }
 
+    await connectToDatabase();
+
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
     const featuredFilter = searchParams.get('featured');
 
-    let query = db.select().from(testimonials);
+    const query: any = {};
 
     if (featuredFilter !== null) {
       const isFeatured = featuredFilter === 'true' || featuredFilter === '1';
-      query = query.where(eq(testimonials.featured, isFeatured));
+      query.featured = isFeatured;
     }
 
-    const results = await query
-      .orderBy(asc(testimonials.displayOrder), desc(testimonials.createdAt))
+    const results = await Testimonial.find(query)
+      .sort({ displayOrder: 1, createdAt: -1 })
+      .skip(offset)
       .limit(limit)
-      .offset(offset);
+      .lean();
 
-    return NextResponse.json(results, { status: 200 });
+    return NextResponse.json(results.map(r => ({ ...r, id: r._id })), { status: 200 });
 
   } catch (error) {
     console.error('GET error:', error);

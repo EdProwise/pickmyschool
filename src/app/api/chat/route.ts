@@ -1,311 +1,161 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { chats, schools, users } from '@/db/schema';
-import { eq, like, gte, lte, and, desc, or } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { School, Chat, Result, StudentAchievement } from '@/lib/models';
+import { extractFiltersFromQuery, buildSystemPrompt, generateAIResponse } from '@/lib/gemini';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-interface ParsedCriteria {
-  city?: string;
-  board?: string;
-  schoolType?: string;
-  feesMin?: number;
-  feesMax?: number;
-  facilities?: string[];
-}
+function getUserIdFromToken(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
 
-interface MessageObject {
-  sender: 'user' | 'ai';
-  content: string;
-  timestamp: string;
-  suggestedSchools?: number[];
-}
-
-function parseMessage(message: string): ParsedCriteria {
-  const criteria: ParsedCriteria = {};
-  const messageLower = message.toLowerCase();
-
-  // Parse city
-  const cityMatch = messageLower.match(/(delhi|mumbai|bangalore|pune|chennai|hyderabad|kolkata)/i);
-  if (cityMatch) {
-    criteria.city = cityMatch[1].charAt(0).toUpperCase() + cityMatch[1].slice(1);
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    return decoded.userId;
+  } catch {
+    return null;
   }
-
-  // Parse board
-  const boardMatch = messageLower.match(/(cbse|icse|ib|state board)/i);
-  if (boardMatch) {
-    let board = boardMatch[1].toUpperCase();
-    if (board === 'STATE BOARD') {
-      board = 'State Board';
-    }
-    criteria.board = board;
-  }
-
-  // Parse school type
-  const schoolTypeMatch = messageLower.match(/(day school|boarding)/i);
-  if (schoolTypeMatch) {
-    if (schoolTypeMatch[1].toLowerCase() === 'boarding') {
-      criteria.schoolType = 'Boarding';
-    } else if (schoolTypeMatch[1].toLowerCase() === 'day school') {
-      criteria.schoolType = 'Day School';
-    }
-  }
-
-  // Parse fees under/below/less than
-  const feesUnderMatch = messageLower.match(/(?:under|below|less than|maximum|max)\s*(?:rs\.?|₹)?\s*(\d+)/i);
-  if (feesUnderMatch) {
-    criteria.feesMax = parseInt(feesUnderMatch[1]);
-  }
-
-  // Parse fees above/more than
-  const feesAboveMatch = messageLower.match(/(?:above|more than|minimum|min)\s*(?:rs\.?|₹)?\s*(\d+)/i);
-  if (feesAboveMatch) {
-    criteria.feesMin = parseInt(feesAboveMatch[1]);
-  }
-
-  // Parse facilities
-  const facilityKeywords = [
-    { pattern: /library/i, name: 'Library' },
-    { pattern: /sports/i, name: 'Sports Complex' },
-    { pattern: /swimming pool/i, name: 'Swimming Pool' },
-    { pattern: /hostel/i, name: 'Hostel' },
-    { pattern: /laboratory|lab/i, name: 'Science Labs' },
-    { pattern: /computer/i, name: 'Computer Lab' },
-    { pattern: /playground/i, name: 'Playground' },
-    { pattern: /auditorium/i, name: 'Auditorium' },
-    { pattern: /cafeteria|canteen/i, name: 'Cafeteria' },
-    { pattern: /transport|bus/i, name: 'Transport' },
-  ];
-
-  const detectedFacilities: string[] = [];
-  for (const facility of facilityKeywords) {
-    if (facility.pattern.test(messageLower)) {
-      detectedFacilities.push(facility.name);
-    }
-  }
-
-  if (detectedFacilities.length > 0) {
-    criteria.facilities = detectedFacilities;
-  }
-
-  return criteria;
-}
-
-function generateAIResponse(criteria: ParsedCriteria, matchedSchools: any[]): string {
-  if (matchedSchools.length === 0) {
-    let suggestions = "I couldn't find schools matching all your criteria. ";
-    const relaxSuggestions: string[] = [];
-
-    if (criteria.feesMax) {
-      relaxSuggestions.push(`try increasing your budget above ₹${criteria.feesMax.toLocaleString()}`);
-    }
-    if (criteria.city) {
-      relaxSuggestions.push(`consider nearby cities`);
-    }
-    if (criteria.facilities && criteria.facilities.length > 0) {
-      relaxSuggestions.push(`look for schools with fewer facility requirements`);
-    }
-
-    if (relaxSuggestions.length > 0) {
-      suggestions += `Here are some suggestions: ${relaxSuggestions.join(', ')}.`;
-    }
-
-    return suggestions;
-  }
-
-  let response = `I found ${matchedSchools.length} school${matchedSchools.length > 1 ? 's' : ''} matching your criteria`;
-
-  const criteriaDetails: string[] = [];
-  if (criteria.board) criteriaDetails.push(criteria.board);
-  if (criteria.city) criteriaDetails.push(`in ${criteria.city}`);
-  if (criteria.schoolType) criteriaDetails.push(criteria.schoolType);
-  if (criteria.feesMax) criteriaDetails.push(`under ₹${criteria.feesMax.toLocaleString()}`);
-  if (criteria.feesMin) criteriaDetails.push(`above ₹${criteria.feesMin.toLocaleString()}`);
-  if (criteria.facilities && criteria.facilities.length > 0) {
-    criteriaDetails.push(`with ${criteria.facilities.join(', ')}`);
-  }
-
-  if (criteriaDetails.length > 0) {
-    response += ` (${criteriaDetails.join(' ')})`;
-  }
-
-  response += ': ';
-
-  const topSchools = matchedSchools.slice(0, 3);
-  const schoolNames = topSchools.map(s => s.name).join(', ');
-  response += schoolNames;
-
-  if (matchedSchools.length > 3) {
-    response += `, and ${matchedSchools.length - 3} more`;
-  }
-
-  response += '. Here are the details:';
-
-  return response;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Extract and verify JWT token
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No authorization token provided', code: 'NO_TOKEN' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.substring(7);
-    let decoded: any;
-
-    try {
-      decoded = jwt.verify(token, JWT_SECRET) as any;
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
-        { status: 401 }
-      );
-    }
-
-    const userId = decoded.userId;
-    const userRole = decoded.role;
-
-    // 2. Parse request body
+    await connectToDatabase();
+    
     const body = await request.json();
-    const { message } = body;
+    const { message, conversationId } = body;
 
-    if (!message || typeof message !== 'string' || message.trim() === '') {
+    console.log('Chat API request:', { message, conversationId });
+
+    if (!message || typeof message !== 'string') {
       return NextResponse.json(
-        { error: 'Message is required', code: 'MISSING_MESSAGE' },
+        { error: 'Message is required' },
         { status: 400 }
       );
     }
 
-    // 3. Parse user message to extract search criteria
-    const criteria = parseMessage(message);
+    const userId = getUserIdFromToken(request);
 
-    // 4. Build dynamic query to schools table
-    const conditions: any[] = [];
+    const filters = extractFiltersFromQuery(message);
+    console.log('Extracted filters:', JSON.stringify(filters));
 
-    if (criteria.city) {
-      conditions.push(eq(schools.city, criteria.city));
+    const query: any = {};
+
+    if (filters.board && filters.board.length > 0) {
+      query.board = { $in: filters.board.map(b => new RegExp(b, 'i')) };
     }
 
-    if (criteria.board) {
-      conditions.push(eq(schools.board, criteria.board));
+    if (filters.city && filters.city.length > 0) {
+      query.city = { $in: filters.city.map(c => new RegExp(c, 'i')) };
     }
 
-    if (criteria.schoolType) {
-      conditions.push(eq(schools.schoolType, criteria.schoolType));
+    if (filters.schoolType && filters.schoolType.length > 0) {
+      query.schoolType = { $in: filters.schoolType.map(t => new RegExp(t, 'i')) };
     }
 
-    if (criteria.feesMax !== undefined) {
-      conditions.push(lte(schools.feesMin, criteria.feesMax));
+    if (filters.medium && filters.medium.length > 0) {
+      query.medium = { $in: filters.medium.map(m => new RegExp(m, 'i')) };
     }
 
-    if (criteria.feesMin !== undefined) {
-      conditions.push(gte(schools.feesMax, criteria.feesMin));
+    if (filters.schoolName) {
+      query.name = new RegExp(filters.schoolName, 'i');
     }
 
-    // 5. Execute query with filters
-    let query = db.select().from(schools);
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    let matchedSchools = await query.orderBy(desc(schools.rating)).limit(10);
-
-    // Filter by facilities in memory (since facilities is JSON array)
-    if (criteria.facilities && criteria.facilities.length > 0) {
-      matchedSchools = matchedSchools.filter(school => {
-        if (!school.facilities || !Array.isArray(school.facilities)) {
-          return false;
-        }
-        return criteria.facilities!.every(facility =>
-          school.facilities.some((f: string) =>
-            f.toLowerCase().includes(facility.toLowerCase()) ||
-            facility.toLowerCase().includes(f.toLowerCase())
-          )
-        );
-      });
-    }
-
-    // 6. Generate AI response
-    const aiResponseText = generateAIResponse(criteria, matchedSchools);
-
-    // 7. Create message objects
-    const now = new Date().toISOString();
-    const userMessage: MessageObject = {
-      sender: 'user',
-      content: message,
-      timestamp: now,
-      suggestedSchools: [],
-    };
-
-    const aiMessage: MessageObject = {
-      sender: 'ai',
-      content: aiResponseText,
-      timestamp: now,
-      suggestedSchools: matchedSchools.map(s => s.id),
-    };
-
-    // 8. Update or create chat record
-    const existingChat = await db
-      .select()
-      .from(chats)
-      .where(eq(chats.userId, userId))
-      .limit(1);
-
-    let chatId: number;
-
-    if (existingChat.length > 0) {
-      // Update existing chat
-      const currentMessages = existingChat[0].messages as MessageObject[] || [];
-      const updatedMessages = [...currentMessages, userMessage, aiMessage];
-
-      await db
-        .update(chats)
-        .set({
-          messages: updatedMessages,
-          lastMessageAt: now,
-          updatedAt: now,
-        })
-        .where(eq(chats.id, existingChat[0].id));
-
-      chatId = existingChat[0].id;
+    let relevantSchools;
+    
+    if (Object.keys(query).length > 0) {
+      relevantSchools = await School.find(query).limit(3).lean();
     } else {
-      // Create new chat
-      const newChat = await db
-        .insert(chats)
-        .values({
-          userId,
-          role: userRole,
-          messages: [userMessage, aiMessage],
-          lastMessageAt: now,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-
-      chatId = newChat[0].id;
+      relevantSchools = await School.find({})
+        .sort({ featured: -1, rating: -1 })
+        .limit(3)
+        .lean();
     }
 
-    // 9. Return response
+    console.log(`Found ${relevantSchools.length} relevant schools`);
+
+    const schoolIds = relevantSchools.map(s => s.id);
+    let schoolResults: any[] = [];
+    let achievements: any[] = [];
+
+    if (schoolIds.length > 0) {
+      [schoolResults, achievements] = await Promise.all([
+        Result.find({ schoolId: { $in: schoolIds } }).lean(),
+        StudentAchievement.find({ schoolId: { $in: schoolIds } }).lean()
+      ]);
+    }
+
+    const schoolsWithAllData = relevantSchools.map(school => ({
+      ...school,
+      examResults: schoolResults.filter(r => r.schoolId === school.id),
+      studentAchievements: achievements.filter(a => a.schoolId === school.id),
+    }));
+
+    const systemPrompt = buildSystemPrompt(schoolsWithAllData);
+    const aiResponse = await generateAIResponse(systemPrompt, message);
+
+    const mentionedSchoolIds: number[] = [];
+    relevantSchools.forEach(school => {
+      if (aiResponse.includes(school.name)) {
+        mentionedSchoolIds.push(school.id);
+      }
+    });
+
+    return NextResponse.json({
+      message: aiResponse,
+      schools: mentionedSchoolIds.length > 0 
+        ? relevantSchools.filter(s => mentionedSchoolIds.includes(s.id)).slice(0, 5)
+        : [],
+      conversationId: conversationId || `conv_${Date.now()}_${userId || 'anon'}`,
+    });
+  } catch (error) {
+    console.error('Chat API error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      {
-        response: aiResponseText,
-        schools: matchedSchools,
-        chatId,
-        message: 'Message saved to chat history',
+      { 
+        error: 'Failed to process message',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 200 }
+      { status: 500 }
     );
-  } catch (error: any) {
-    console.error('POST chat error:', error);
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const userId = getUserIdFromToken(request);
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const searchParams = request.nextUrl.searchParams;
+    const conversationId = searchParams.get('conversationId');
+
+    let history;
+    if (conversationId) {
+      history = await Chat.find({
+        userId: userId,
+        conversationId: conversationId
+      }).sort({ createdAt: 1 }).lean();
+    } else {
+      history = await Chat.find({ userId: userId })
+        .sort({ createdAt: 1 })
+        .limit(50)
+        .lean();
+    }
+
+    return NextResponse.json({ history: history.map(h => ({ ...h, id: h._id })) });
+  } catch (error) {
+    console.error('Chat history API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
+      { error: 'Failed to fetch chat history' },
       { status: 500 }
     );
   }

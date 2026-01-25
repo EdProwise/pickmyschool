@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { User } from '@/lib/models';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 export async function POST(request: NextRequest) {
   try {
+    await connectToDatabase();
+    
     const body = await request.json();
     const { email, password } = body;
 
-    // Validate required fields
     if (!email || !password) {
       return NextResponse.json(
         { 
@@ -21,18 +21,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize email input
     const sanitizedEmail = email.trim().toLowerCase();
 
-    // Query user by email
-    const userRecords = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, sanitizedEmail))
-      .limit(1);
+    const user = await User.findOne({ email: sanitizedEmail });
 
-    // Check if user exists
-    if (userRecords.length === 0) {
+    if (!user) {
       console.log('Login attempt failed: User not found for email:', sanitizedEmail);
       return NextResponse.json(
         { 
@@ -43,11 +36,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = userRecords[0];
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { 
+          error: 'Please verify your email before logging in. Check your inbox for the verification link.',
+          code: 'EMAIL_NOT_VERIFIED'
+        },
+        { status: 403 }
+      );
+    }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
+      
     if (!isPasswordValid) {
       console.log('Login attempt failed: Invalid password for user:', sanitizedEmail);
       return NextResponse.json(
@@ -59,26 +59,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
     const tokenPayload = {
-      userId: user.id,
+      userId: user._id.toString(),
       email: user.email,
-      role: user.role
+      role: user.role,
+      schoolId: user.schoolId
     };
 
     const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '7d' });
 
-    // Remove password from user object
-    const { password: _, ...userWithoutPassword } = user;
+    const userObj = user.toObject();
+    const { password: _, ...userWithoutPassword } = userObj;
 
-    // Log successful authentication
     console.log('Login successful for user:', sanitizedEmail, 'Role:', user.role);
 
-    // Return success response
     return NextResponse.json(
       {
-        user: userWithoutPassword,
+        user: {
+          ...userWithoutPassword,
+          id: user._id.toString()
+        },
         token,
         message: 'Login successful'
       },

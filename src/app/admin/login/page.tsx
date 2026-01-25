@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -112,7 +113,17 @@ export default function AdminLoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-3">
+              <p className="text-sm text-gray-400">
+                Don't have an admin account?{' '}
+                <Link 
+                  href="/admin/signup" 
+                  className="font-semibold hover:underline transition-colors"
+                  style={{ color: '#04d3d3' }}
+                >
+                  Create one here
+                </Link>
+              </p>
               <p className="text-sm text-gray-400">
                 Authorized personnel only
               </p>

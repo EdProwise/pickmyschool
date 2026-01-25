@@ -5,6 +5,7 @@ export interface School {
   id: number;
   name: string;
   logo: string | null;
+  logoUrl?: string | null;
   bannerImage: string | null;
   address: string | null;
   city: string;
@@ -23,6 +24,57 @@ export interface School {
   gallery: string[] | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  email: string | null;
+  streamsAvailable: string | null;
+  languages: string | null;
+  totalStudents: string | null;
+  totalTeachers: number | null;
+  isInternational: boolean;
+  // Facilities Boolean Flags
+  hasLibrary?: boolean;
+  hasComputerLab?: boolean;
+  hasPhysicsLab?: boolean;
+  hasChemistryLab?: boolean;
+  hasBiologyLab?: boolean;
+  hasMathsLab?: boolean;
+  hasLanguageLab?: boolean;
+  hasRoboticsLab?: boolean;
+  hasStemLab?: boolean;
+  hasAuditorium?: boolean;
+  hasPlayground?: boolean;
+  hasSwimmingPool?: boolean;
+  hasFitnessCentre?: boolean;
+  hasYoga?: boolean;
+  hasMartialArts?: boolean;
+  hasMusicDance?: boolean;
+  hasHorseRiding?: boolean;
+  hasSmartBoard?: boolean;
+  hasWifi?: boolean;
+  hasCctv?: boolean;
+  hasElearning?: boolean;
+  hasAcClassrooms?: boolean;
+  hasAiTools?: boolean;
+  hasTransport?: boolean;
+  hasGpsBuses?: boolean;
+  hasCctvBuses?: boolean;
+  hasBusCaretaker?: boolean;
+  hasMedicalRoom?: boolean;
+  hasDoctorNurse?: boolean;
+  hasFireSafety?: boolean;
+  hasCleanWater?: boolean;
+  hasSecurityGuards?: boolean;
+  hasAirPurifier?: boolean;
+  hasHostel?: boolean;
+  hasMess?: boolean;
+  hasHostelStudyRoom?: boolean;
+  hasAcHostel?: boolean;
+  hasCafeteria?: boolean;
+  sportsFacilities?: string | null;
+  classroomType?: string | null;
+  
+  website?: string | null;
+  whatsappNumber?: string | null;
+  feesStructure?: any;
   rating: number;
   reviewCount: number;
   profileViews: number;
@@ -31,6 +83,21 @@ export interface School {
   longitude: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SchoolResult {
+  id: number;
+  schoolId: number;
+  year: number;
+  examType: string;
+  classLevel: string | null;
+  passPercentage: number | null;
+  totalStudents: number | null;
+  distinction: number | null;
+  firstClass: number | null;
+  toppers: any;
+  achievements: string | null;
+  certificateImages: any;
 }
 
 export interface User {
@@ -61,6 +128,12 @@ export interface Enquiry {
   followUpDate: string | null;
   createdAt: string;
   updatedAt: string;
+  school?: {
+    name: string;
+    city: string;
+    contactEmail: string | null;
+    contactPhone: string | null;
+  } | null;
 }
 
 export interface ChatMessage {
@@ -89,6 +162,15 @@ export const getSchools = async (params?: {
   schoolType?: string;
   facilities?: string;
   search?: string;
+  minRating?: number;
+  gender?: string;
+  language?: string;
+  stream?: string;
+  k12Level?: string;
+  isInternational?: string;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
   limit?: number;
   offset?: number;
   sort?: string;
@@ -134,6 +216,32 @@ export const getSchoolsByIds = async (ids: number[]): Promise<School[]> => {
 export const getFeaturedSchools = async (limit = 10): Promise<School[]> => {
   const response = await fetch(`${API_BASE_URL}/api/schools/featured?limit=${limit}`);
   if (!response.ok) throw new Error('Failed to fetch featured schools');
+  return response.json();
+};
+
+export const getTrendingSchools = async (limit = 4): Promise<School[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools?sort=profileViews&order=desc&limit=${limit}`);
+  if (!response.ok) throw new Error('Failed to fetch trending schools');
+  return response.json();
+};
+
+export const getRecommendedSchools = async (token: string, limit = 8): Promise<{
+  recommendations: School[];
+  metadata: {
+    userCity: string | null;
+    totalAnalyzed: number;
+    totalRecommendations: number;
+    basedOn: {
+      enquiries: number;
+      savedSchools: number;
+      location: boolean;
+    };
+  };
+}> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools/recommendations?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error('Failed to fetch recommendations');
   return response.json();
 };
 

@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { reviews, users, schools } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Review, User, Notification, School } from '@/lib/models';
+import { getSchool, updateSchoolStats } from '@/lib/schoolsHelper';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface DecodedToken {
-  userId: number;
+  userId: string;
   role: string;
   email: string;
-  iat?: number;
-  exp?: number;
 }
 
 function verifyToken(request: NextRequest): DecodedToken | null {
@@ -45,6 +43,8 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    await connectToDatabase();
 
     const body = await request.json();
     const { schoolId, rating, reviewText, photos } = body;
@@ -84,52 +84,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingReviews = await db
-      .select()
-      .from(reviews)
-      .where(
-        and(
-          eq(reviews.userId, decoded.userId),
-          eq(reviews.schoolId, schoolId)
-        )
-      )
-      .limit(1);
+    const existingReview = await Review.findOne({
+      userId: decoded.userId,
+      schoolId: schoolId
+    });
 
-    if (existingReviews.length > 0) {
+    if (existingReview) {
       return NextResponse.json(
         { error: 'You have already reviewed this school', code: 'DUPLICATE_REVIEW' },
         { status: 409 }
       );
     }
 
-    const school = await db
-      .select()
-      .from(schools)
-      .where(eq(schools.id, schoolId))
-      .limit(1);
+    const school = await getSchool(schoolId);
 
-    if (school.length === 0) {
+    if (!school) {
       return NextResponse.json(
         { error: 'School not found', code: 'SCHOOL_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const newReview = await db
-      .insert(reviews)
-      .values({
-        userId: decoded.userId,
-        schoolId: schoolId,
-        rating: rating,
-        reviewText: reviewText.trim(),
-        photos: photos || [],
-        approvalStatus: 'approved',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .returning();
+    const newReview = await Review.create({
+      userId: decoded.userId,
+      schoolId: schoolId,
+      rating: rating,
+      reviewText: reviewText.trim(),
+      photos: photos || [],
+      approvalStatus: 'approved',
+    });
 
-    return NextResponse.json(newReview[0], { status: 201 });
+    await updateSchoolStats(schoolId);
+
+    if (school.userId) {
+      try {
+        const studentInfo = await User.findById(decoded.userId).select('name');
+        const studentName = studentInfo?.name || 'A student';
+        const stars = '⭐'.repeat(rating);
+
+        await Notification.create({
+          recipientId: school.userId,
+          recipientType: 'school',
+          title: 'New Review Posted',
+          message: `${studentName} has posted a ${rating}-star review ${stars} for your school.`,
+          type: 'review',
+          relatedId: newReview._id,
+          isRead: false,
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification for school:', notifError);
+      }
+    }
+
+    return NextResponse.json({ ...newReview.toObject(), id: newReview._id }, { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
     return NextResponse.json(
@@ -141,12 +148,18 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    await connectToDatabase();
+    
     const searchParams = request.nextUrl.searchParams;
     const schoolIdParam = searchParams.get('schoolId');
+    const statusParam = searchParams.get('status');
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
 
-    let conditions = [];
+    const decoded = verifyToken(request);
+    const isSchoolUser = decoded?.role === 'school';
+
+    const query: any = {};
 
     if (schoolIdParam) {
       const schoolId = parseInt(schoolIdParam);
@@ -156,49 +169,29 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      conditions.push(eq(reviews.schoolId, schoolId));
+      query.schoolId = schoolId;
     }
 
-    // Always show approved reviews for public viewing
-    conditions.push(eq(reviews.approvalStatus, 'approved'));
-
-    let reviewsList;
-    if (conditions.length > 1) {
-      reviewsList = await db
-        .select()
-        .from(reviews)
-        .where(and(...conditions))
-        .orderBy(desc(reviews.createdAt))
-        .limit(limit)
-        .offset(offset);
-    } else if (conditions.length === 1) {
-      reviewsList = await db
-        .select()
-        .from(reviews)
-        .where(conditions[0])
-        .orderBy(desc(reviews.createdAt))
-        .limit(limit)
-        .offset(offset);
+    if (isSchoolUser && statusParam && ['pending', 'approved', 'rejected'].includes(statusParam)) {
+      query.approvalStatus = statusParam;
     } else {
-      reviewsList = await db
-        .select()
-        .from(reviews)
-        .orderBy(desc(reviews.createdAt))
-        .limit(limit)
-        .offset(offset);
+      query.approvalStatus = 'approved';
     }
+
+    const reviewsList = await Review.find(query)
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
+      .lean();
 
     const reviewsWithStudentInfo = await Promise.all(
       reviewsList.map(async (review) => {
-        const user = await db
-          .select({ name: users.name })
-          .from(users)
-          .where(eq(users.id, review.userId))
-          .limit(1);
+        const user = await User.findById(review.userId).select('name');
 
         return {
           ...review,
-          studentName: user.length > 0 ? user[0].name : 'Unknown User',
+          id: review._id,
+          studentName: user?.name || 'Unknown User',
         };
       })
     );

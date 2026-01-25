@@ -1,0 +1,1 @@
+\"const jwt = require('jsonwebtoken'); const token = jwt.sign({userId: 1, role: 'school'}, 'your-secret-key-change-in-production'); fetch('http://localhost:3000/api/schools/analytics', {headers: {'Authorization': 'Bearer ' + token}}).then(r => r.json()).then(d => console.log(JSON.stringify(d, null, 2))).catch(e => console.error('Error:', e.message));\"  

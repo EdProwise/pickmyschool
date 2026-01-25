@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { chats } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Chat } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JWTPayload {
-  userId: number;
+  userId: string;
   email: string;
   role: string;
 }
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract and verify JWT token
     const authHeader = request.headers.get('authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -44,23 +42,19 @@ export async function GET(request: NextRequest) {
 
     const userId = decoded.userId;
 
-    // Query chat history for authenticated user
-    const chatRecord = await db.select()
-      .from(chats)
-      .where(eq(chats.userId, userId))
-      .limit(1);
+    await connectToDatabase();
 
-    // If no chat history found, return null with message
-    if (chatRecord.length === 0) {
+    const chatRecord = await Chat.findOne({ userId: userId }).lean();
+
+    if (!chatRecord) {
       return NextResponse.json({
         chat: null,
         message: 'No chat history found'
       }, { status: 200 });
     }
 
-    // Return chat history
     return NextResponse.json({
-      chat: chatRecord[0]
+      chat: { ...chatRecord, id: chatRecord._id }
     }, { status: 200 });
 
   } catch (error) {

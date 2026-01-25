@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { enquiries, schools } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Enquiry, Notification, School } from '@/lib/models';
+import { getSchool } from '@/lib/schoolsHelper';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JWTPayload {
-  userId: number;
+  userId: string;
   role: string;
 }
 
@@ -42,28 +42,26 @@ function verifyToken(request: NextRequest): { user: JWTPayload | null; error: Ne
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const { user, error } = verifyToken(request);
-    if (error) return error;
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required', code: 'AUTHENTICATION_REQUIRED' },
-        { status: 401 }
-      );
-    }
-
-    // Authorization check - only students can submit enquiries
-    if (user.role !== 'student') {
-      return NextResponse.json(
-        { error: 'Only students can submit enquiries', code: 'FORBIDDEN' },
-        { status: 403 }
-      );
+    await connectToDatabase();
+    
+    const authHeader = request.headers.get('Authorization');
+    let studentId: string | null = null;
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+        if (decoded.role === 'student') {
+          studentId = decoded.userId;
+        }
+      } catch (error) {
+        console.log('Invalid token, proceeding as guest');
+      }
     }
 
     const body = await request.json();
     const { schoolId, studentName, studentEmail, studentPhone, studentClass, message } = body;
 
-    // Validate required fields
     if (!schoolId || !studentName || !studentEmail || !studentPhone || !studentClass) {
       return NextResponse.json(
         { 
@@ -74,7 +72,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const trimmedEmail = studentEmail.trim().toLowerCase();
     if (!emailRegex.test(trimmedEmail)) {
@@ -84,7 +81,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate schoolId is a valid integer
     const parsedSchoolId = parseInt(schoolId);
     if (isNaN(parsedSchoolId)) {
       return NextResponse.json(
@@ -93,41 +89,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify school exists
-    const school = await db.select()
-      .from(schools)
-      .where(eq(schools.id, parsedSchoolId))
-      .limit(1);
+    const school = await getSchool(parsedSchoolId);
 
-    if (school.length === 0) {
+    if (!school) {
       return NextResponse.json(
         { error: 'School not found', code: 'SCHOOL_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    // Create enquiry
-    const now = new Date().toISOString();
-    const newEnquiry = await db.insert(enquiries)
-      .values({
-        studentId: user.userId,
-        schoolId: parsedSchoolId,
-        studentName: studentName.trim(),
-        studentEmail: trimmedEmail,
-        studentPhone: studentPhone.trim(),
-        studentClass: studentClass.trim(),
-        message: message ? message.trim() : null,
-        status: 'New',
-        notes: null,
-        followUpDate: null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const newEnquiry = await Enquiry.create({
+      studentId: studentId,
+      schoolId: parsedSchoolId,
+      studentName: studentName.trim(),
+      studentEmail: trimmedEmail,
+      studentPhone: studentPhone.trim(),
+      studentClass: studentClass.trim(),
+      message: message ? message.trim() : null,
+      status: 'New',
+    });
+
+    if (school.userId) {
+      try {
+        await Notification.create({
+          recipientId: school.userId,
+          recipientType: 'school',
+          title: 'New Enquiry Received',
+          message: `New enquiry from ${studentName.trim()} for ${studentClass.trim()}. Contact: ${studentPhone.trim()}`,
+          type: 'enquiry',
+          relatedId: newEnquiry._id,
+          isRead: false,
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+    }
+
+    // Forward to EdproWise Booster Webhook
+    try {
+      await fetch('https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4',
+          name: studentName.trim(),
+          phone: studentPhone.trim(),
+          email: trimmedEmail,
+          message: message ? message.trim() : `Interested in admission for class ${studentClass.trim()}`,
+          source: 'PickMySchool'
+        })
+      });
+      console.log('Enquiry forwarded to EdproWise Booster successfully');
+    } catch (webhookError) {
+      console.error('Failed to forward enquiry to EdproWise Booster:', webhookError);
+    }
 
     return NextResponse.json(
       {
-        enquiry: newEnquiry[0],
+        enquiry: { ...newEnquiry.toObject(), id: newEnquiry._id },
         message: 'Enquiry submitted successfully'
       },
       { status: 201 }
@@ -144,7 +163,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
     const { user, error } = verifyToken(request);
     if (error) return error;
     if (!user) {
@@ -154,7 +172,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Authorization check - only students can view their enquiries
     if (user.role !== 'student') {
       return NextResponse.json(
         { error: 'Only students can submit enquiries', code: 'FORBIDDEN' },
@@ -162,43 +179,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query parameters
+    await connectToDatabase();
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '10'), 50);
     const offset = parseInt(searchParams.get('offset') ?? '0');
 
-    // Build query conditions
-    const conditions = [eq(enquiries.studentId, user.userId)];
-    
+    const query: any = { studentId: user.userId };
     if (status) {
-      conditions.push(eq(enquiries.status, status));
+      query.status = status;
     }
 
-    // Fetch enquiries for the authenticated student
-    const studentEnquiries = await db.select()
-      .from(enquiries)
-      .where(and(...conditions))
-      .orderBy(desc(enquiries.createdAt))
+    const studentEnquiries = await Enquiry.find(query)
+      .sort({ createdAt: -1 })
+      .skip(offset)
       .limit(limit)
-      .offset(offset);
+      .lean();
 
-    // Fetch school details for each enquiry
     const enquiriesWithSchools = await Promise.all(
       studentEnquiries.map(async (enquiry) => {
-        const schoolDetails = await db.select({
-          name: schools.name,
-          city: schools.city,
-          contactEmail: schools.contactEmail,
-          contactPhone: schools.contactPhone,
-        })
-        .from(schools)
-        .where(eq(schools.id, enquiry.schoolId))
-        .limit(1);
+        const school = await getSchool(enquiry.schoolId);
 
         return {
           ...enquiry,
-          school: schoolDetails[0] || null,
+          id: enquiry._id,
+          school: school ? {
+            name: school.name,
+            city: school.city,
+            contactEmail: school.contactEmail,
+            contactPhone: school.contactPhone,
+          } : null,
         };
       })
     );

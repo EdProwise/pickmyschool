@@ -1,0 +1,1 @@
+\"const { createClient } = require('@libsql/client'); const c = createClient({ url: process.env.TURSO_CONNECTION_URL, authToken: process.env.TURSO_AUTH_TOKEN }); c.execute('SELECT * FROM schools2 WHERE id = 3').then(r => console.log(JSON.stringify(r.rows))).catch(e => console.error(e));\"  

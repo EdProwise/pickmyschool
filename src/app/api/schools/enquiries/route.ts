@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { enquiries, users } from '@/db/schema';
-import { eq, desc, asc, gte, lte, and, sql } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Enquiry, User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 export async function GET(request: NextRequest) {
   try {
+    await connectToDatabase();
+
     // Extract and verify JWT token
-    const authHeader = request.headers.get('authorization');
+    const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'No authorization token provided', code: 'NO_TOKEN' },
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     let decoded: any;
     
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-in-production');
     } catch (error) {
       return NextResponse.json(
         { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
@@ -37,20 +38,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get school admin's schoolId from users table
-    const userRecord = await db.select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
-    if (userRecord.length === 0) {
+    // Get school admin's schoolId from users collection
+    const userRecord = await User.findById(userId);
+    
+    if (!userRecord) {
       return NextResponse.json(
         { error: 'User not found', code: 'USER_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const schoolId = userRecord[0].schoolId;
+    const schoolId = userRecord.schoolId;
 
     if (!schoolId) {
       return NextResponse.json(
@@ -70,65 +68,49 @@ export async function GET(request: NextRequest) {
     const sortField = searchParams.get('sort') ?? 'createdAt';
     const sortOrder = searchParams.get('order') ?? 'desc';
 
-    // Build where conditions
-    const conditions = [eq(enquiries.schoolId, schoolId)];
+    // Build query object
+    const query: any = { schoolId };
 
     if (status) {
-      conditions.push(eq(enquiries.status, status));
+      query.status = status;
     }
 
     if (studentClass) {
-      conditions.push(eq(enquiries.studentClass, studentClass));
+      query.studentClass = studentClass;
     }
 
-    if (fromDate) {
-      conditions.push(gte(enquiries.createdAt, fromDate));
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      if (fromDate) query.createdAt.$gte = new Date(fromDate);
+      if (toDate) query.createdAt.$lte = new Date(toDate);
     }
-
-    if (toDate) {
-      conditions.push(lte(enquiries.createdAt, toDate));
-    }
-
-    const whereCondition = conditions.length > 1 ? and(...conditions) : conditions[0];
 
     // Get total count for metadata
-    const totalResult = await db.select({ count: sql<number>`count(*)` })
-      .from(enquiries)
-      .where(whereCondition);
-
-    const total = Number(totalResult[0]?.count ?? 0);
+    const total = await Enquiry.countDocuments(query);
 
     // Get status breakdown
-    const statusBreakdownResult = await db.select({
-      status: enquiries.status,
-      count: sql<number>`count(*)`
-    })
-      .from(enquiries)
-      .where(eq(enquiries.schoolId, schoolId))
-      .groupBy(enquiries.status);
+    const statusBreakdownResult = await Enquiry.aggregate([
+      { $match: { schoolId } },
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
 
     const statusBreakdown: Record<string, number> = {};
     statusBreakdownResult.forEach(row => {
-      statusBreakdown[row.status] = Number(row.count);
+      statusBreakdown[row._id] = row.count;
     });
 
-    // Build sort order
-    const sortColumn = sortField === 'status' ? enquiries.status : enquiries.createdAt;
-    const orderFn = sortOrder === 'asc' ? asc : desc;
-
     // Query enquiries with pagination
-    const enquiriesResult = await db.select()
-      .from(enquiries)
-      .where(whereCondition)
-      .orderBy(orderFn(sortColumn))
+    const enquiriesResult = await Enquiry.find(query)
+      .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 })
+      .skip(offset)
       .limit(limit)
-      .offset(offset);
+      .lean();
 
     // Calculate hasMore
     const hasMore = (offset + enquiriesResult.length) < total;
 
     return NextResponse.json({
-      enquiries: enquiriesResult,
+      enquiries: enquiriesResult.map(e => ({ ...e, id: e._id })),
       metadata: {
         total,
         limit,

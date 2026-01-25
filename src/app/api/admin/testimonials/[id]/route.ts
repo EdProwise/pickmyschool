@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { testimonials } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Testimonial } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JWTPayload {
-  adminId: number;
+  adminId: string;
   role: string;
 }
 
@@ -28,20 +27,11 @@ function verifyToken(request: NextRequest): JWTPayload | null {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    // Validate ID
-    if (!id || isNaN(parseInt(id))) {
-      return NextResponse.json(
-        { error: 'Valid ID is required', code: 'INVALID_ID' },
-        { status: 400 }
-      );
-    }
-
-    // Verify authentication
     const decoded = verifyToken(request);
     if (!decoded) {
       return NextResponse.json(
@@ -50,7 +40,6 @@ export async function PUT(
       );
     }
 
-    // Verify authorization
     if (decoded.role !== 'super_admin') {
       return NextResponse.json(
         { error: 'Access denied. Super admin role required', code: 'FORBIDDEN' },
@@ -58,7 +47,8 @@ export async function PUT(
       );
     }
 
-    // Parse request body
+    await connectToDatabase();
+
     const body = await request.json();
     const {
       parentName,
@@ -70,7 +60,6 @@ export async function PUT(
       displayOrder,
     } = body;
 
-    // Validate rating if provided
     if (rating !== undefined && (rating < 1 || rating > 5)) {
       return NextResponse.json(
         { error: 'Rating must be between 1 and 5', code: 'INVALID_RATING' },
@@ -78,24 +67,16 @@ export async function PUT(
       );
     }
 
-    // Check if testimonial exists
-    const existing = await db
-      .select()
-      .from(testimonials)
-      .where(eq(testimonials.id, parseInt(id)))
-      .limit(1);
+    const existing = await Testimonial.findById(id);
 
-    if (existing.length === 0) {
+    if (!existing) {
       return NextResponse.json(
         { error: 'Testimonial not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    // Prepare update data
-    const updateData: any = {
-      updatedAt: new Date().toISOString(),
-    };
+    const updateData: any = {};
 
     if (parentName !== undefined) updateData.parentName = parentName.trim();
     if (location !== undefined) updateData.location = location.trim();
@@ -105,14 +86,13 @@ export async function PUT(
     if (featured !== undefined) updateData.featured = Boolean(featured);
     if (displayOrder !== undefined) updateData.displayOrder = displayOrder ? parseInt(displayOrder) : null;
 
-    // Update testimonial
-    const updated = await db
-      .update(testimonials)
-      .set(updateData)
-      .where(eq(testimonials.id, parseInt(id)))
-      .returning();
+    const updated = await Testimonial.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
 
-    return NextResponse.json(updated[0], { status: 200 });
+    return NextResponse.json({ ...updated!.toObject(), id: updated!._id }, { status: 200 });
   } catch (error: any) {
     console.error('PUT error:', error);
     return NextResponse.json(
@@ -124,20 +104,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    // Validate ID
-    if (!id || isNaN(parseInt(id))) {
-      return NextResponse.json(
-        { error: 'Valid ID is required', code: 'INVALID_ID' },
-        { status: 400 }
-      );
-    }
-
-    // Verify authentication
     const decoded = verifyToken(request);
     if (!decoded) {
       return NextResponse.json(
@@ -146,7 +117,6 @@ export async function DELETE(
       );
     }
 
-    // Verify authorization
     if (decoded.role !== 'super_admin') {
       return NextResponse.json(
         { error: 'Access denied. Super admin role required', code: 'FORBIDDEN' },
@@ -154,31 +124,24 @@ export async function DELETE(
       );
     }
 
-    // Check if testimonial exists
-    const existing = await db
-      .select()
-      .from(testimonials)
-      .where(eq(testimonials.id, parseInt(id)))
-      .limit(1);
+    await connectToDatabase();
 
-    if (existing.length === 0) {
+    const existing = await Testimonial.findById(id);
+
+    if (!existing) {
       return NextResponse.json(
         { error: 'Testimonial not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    // Delete testimonial
-    const deleted = await db
-      .delete(testimonials)
-      .where(eq(testimonials.id, parseInt(id)))
-      .returning();
+    const deleted = await Testimonial.findByIdAndDelete(id);
 
     return NextResponse.json(
       {
         message: 'Testimonial deleted successfully',
-        deletedId: parseInt(id),
-        deleted: deleted[0],
+        deletedId: id,
+        deleted: deleted ? { ...deleted.toObject(), id: deleted._id } : null,
       },
       { status: 200 }
     );

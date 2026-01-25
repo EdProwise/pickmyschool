@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { schools } from '@/db/schema';
-import { eq, like, and, desc, or } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
+import { getSchools } from '@/lib/schoolsHelper';
 
 interface JWTPayload {
-  adminId: number;
+  adminId: string;
   role: string;
   email: string;
 }
@@ -29,7 +29,6 @@ function verifyToken(request: NextRequest): JWTPayload | null {
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract and verify token
     const authHeader = request.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -48,7 +47,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user is super admin
     if (decoded.role !== 'super_admin') {
       return NextResponse.json(
         { error: 'Not authorized to access this resource', code: 'FORBIDDEN' },
@@ -56,7 +54,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query parameters
+    await connectToDatabase();
+
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
@@ -65,46 +64,14 @@ export async function GET(request: NextRequest) {
     const board = searchParams.get('board');
     const featuredParam = searchParams.get('featured');
 
-    // Build query with filters
-    let query = db.select().from(schools);
-    const conditions = [];
+    const filters: any = {};
+    if (search) filters.search = search;
+    if (city) filters.city = city;
+    if (board) filters.board = board;
+    if (featuredParam === 'true') filters.featured = true;
+    if (featuredParam === 'false') filters.featured = false;
 
-    // Search filter (name or city)
-    if (search) {
-      conditions.push(
-        or(
-          like(schools.name, `%${search}%`),
-          like(schools.city, `%${search}%`)
-        )
-      );
-    }
-
-    // City filter
-    if (city) {
-      conditions.push(eq(schools.city, city));
-    }
-
-    // Board filter
-    if (board) {
-      conditions.push(eq(schools.board, board));
-    }
-
-    // Featured filter
-    if (featuredParam === 'true' || featuredParam === 'false') {
-      const featuredValue = featuredParam === 'true';
-      conditions.push(eq(schools.featured, featuredValue));
-    }
-
-    // Apply all conditions
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    // Order by rating descending and apply pagination
-    const results = await query
-      .orderBy(desc(schools.rating))
-      .limit(limit)
-      .offset(offset);
+    const results = await getSchools(filters, { limit, offset });
 
     return NextResponse.json(results, { status: 200 });
 

@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { schools, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { User, School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
+import { getSchool, updateSchool, createSchool } from '@/lib/schoolsHelper';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JWTPayload {
-  userId: number;
+  userId: string;
   email: string;
   role: string;
 }
 
-function authenticateRequest(request: NextRequest): { user: JWTPayload } | { error: NextResponse } {
+async function authenticateRequest(request: NextRequest): Promise<{ user: JWTPayload } | { error: NextResponse }> {
   const authHeader = request.headers.get('authorization');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -52,49 +52,37 @@ function authenticateRequest(request: NextRequest): { user: JWTPayload } | { err
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = authenticateRequest(request);
+    await connectToDatabase();
+    
+    // FIX: await the async authenticateRequest function
+    const auth = await authenticateRequest(request);
     if ('error' in auth) {
       return auth.error;
     }
 
     const { user } = auth;
 
-    // First try to find by userId
-    let profile = await db.select()
-      .from(schools)
-      .where(eq(schools.userId, user.userId))
-      .limit(1);
+    // Find user record
+    const userRecord = await User.findById(user.userId);
 
-    // If not found, check if user has a schoolId and fetch by that
-    if (profile.length === 0) {
-      const userRecord = await db.select()
-        .from(users)
-        .where(eq(users.id, user.userId))
-        .limit(1);
-
-      if (userRecord.length > 0 && userRecord[0].schoolId) {
-        profile = await db.select()
-          .from(schools)
-          .where(eq(schools.id, userRecord[0].schoolId))
-          .limit(1);
-        
-        // Update the school row to have the userId
-        if (profile.length > 0) {
-          await db.update(schools)
-            .set({ userId: user.userId })
-            .where(eq(schools.id, userRecord[0].schoolId));
-        }
-      }
-    }
-
-    if (profile.length === 0) {
+    if (!userRecord || !userRecord.schoolId) {
       return NextResponse.json(
         { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(profile[0], { status: 200 });
+    // schoolId is an ObjectId, but schoolsHelper uses numeric ID.
+    const school = await School.findById(userRecord.schoolId).lean();
+
+    if (!school) {
+      return NextResponse.json(
+        { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ ...school, id: school.id }, { status: 200 });
   } catch (error: any) {
     console.error('GET error:', error);
     return NextResponse.json(
@@ -106,7 +94,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const auth = authenticateRequest(request);
+    await connectToDatabase();
+    
+    // FIX: await the async authenticateRequest function
+    const auth = await authenticateRequest(request);
     if ('error' in auth) {
       return auth.error;
     }
@@ -125,41 +116,40 @@ export async function PUT(request: NextRequest) {
       const n = parseFloat(String(val));
       return Number.isFinite(n) ? n : null;
     };
+    const toBool = (val: unknown): boolean => {
+      if (val === true || val === 1 || val === '1' || val === 'true') return true;
+      return false;
+    };
+    const toStringOrNull = (val: unknown): string | null => {
+      if (val === null || val === undefined || val === '') return null;
+      return String(val).trim();
+    };
 
-    // Check if profile exists by userId first
-    let existingProfile = await db.select()
-      .from(schools)
-      .where(eq(schools.userId, user.userId))
-      .limit(1);
+    // Check if profile exists
+    const userRecord = await User.findById(user.userId);
 
-    // If not found by userId, check user's schoolId
-    let targetSchoolId: number | null = null;
-    if (existingProfile.length === 0) {
-      const userRecord = await db.select()
-        .from(users)
-        .where(eq(users.id, user.userId))
-        .limit(1);
+    let targetSchoolNumericId: number | null = null;
+    let targetSchoolObjectId: any = null;
+    let isCreating = false;
 
-      if (userRecord.length > 0 && userRecord[0].schoolId) {
-        existingProfile = await db.select()
-          .from(schools)
-          .where(eq(schools.id, userRecord[0].schoolId))
-          .limit(1);
-        
-        targetSchoolId = userRecord[0].schoolId;
+    if (userRecord && userRecord.schoolId) {
+      targetSchoolObjectId = userRecord.schoolId;
+      const existing = await School.findById(targetSchoolObjectId);
+      if (existing) {
+        targetSchoolNumericId = existing.id;
+      } else {
+        isCreating = true;
       }
-    } else if (existingProfile.length > 0) {
-      targetSchoolId = existingProfile[0].id;
+    } else {
+      isCreating = true;
     }
-
-    const isCreating = existingProfile.length === 0;
 
     // Validate required fields for creation
     if (isCreating) {
       if (!body.name || !body.city || !body.board) {
         return NextResponse.json(
           { 
-            error: 'Required fields missing: name, city, and board are required for creating a profile', 
+            error: 'Required fields missing: name, city, and board are required', 
             code: 'VALIDATION_ERROR' 
           },
           { status: 400 }
@@ -169,54 +159,57 @@ export async function PUT(request: NextRequest) {
 
     // Prepare update data with type conversions and validation
     const updateData: any = {
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date()
     };
 
     // Basic Info - comprehensive fields
     if (body.name !== undefined) updateData.name = String(body.name).trim();
-    if (body.establishmentYear !== undefined) {
-      const v = toIntOrNull(body.establishmentYear);
-      updateData.establishmentYear = v;
-    }
-    if (body.schoolType !== undefined) updateData.schoolType = String(body.schoolType).trim();
-    if (body.k12Level !== undefined) updateData.k12Level = String(body.k12Level).trim();
+    if (body.establishmentYear !== undefined) updateData.establishmentYear = toIntOrNull(body.establishmentYear);
+    if (body.schoolType !== undefined) updateData.schoolType = toStringOrNull(body.schoolType);
+    if (body.k12Level !== undefined) updateData.k12Level = toStringOrNull(body.k12Level);
     if (body.board !== undefined) updateData.board = String(body.board).trim();
-    if (body.gender !== undefined) updateData.gender = String(body.gender).trim();
-    if (body.isInternational !== undefined) updateData.isInternational = Boolean(body.isInternational);
-    if (body.streamsAvailable !== undefined) updateData.streamsAvailable = String(body.streamsAvailable).trim();
-    if (body.languages !== undefined) updateData.languages = String(body.languages).trim();
-    if (body.totalStudents !== undefined) updateData.totalStudents = String(body.totalStudents).trim();
-    if (body.totalTeachers !== undefined) {
-      const v = toIntOrNull(body.totalTeachers);
-      updateData.totalTeachers = v;
-    }
-    if (body.logoUrl !== undefined) updateData.logoUrl = String(body.logoUrl).trim();
-    if (body.aboutSchool !== undefined) updateData.aboutSchool = String(body.aboutSchool).trim();
-    if (body.bannerImageUrl !== undefined) updateData.bannerImageUrl = String(body.bannerImageUrl).trim();
+    if (body.gender !== undefined) updateData.gender = toStringOrNull(body.gender);
+    if (body.isInternational !== undefined) updateData.isInternational = toBool(body.isInternational);
+    if (body.streamsAvailable !== undefined) updateData.streamsAvailable = toStringOrNull(body.streamsAvailable);
+    if (body.languages !== undefined) updateData.languages = toStringOrNull(body.languages);
+    if (body.totalStudents !== undefined) updateData.totalStudents = toStringOrNull(body.totalStudents);
+    if (body.totalTeachers !== undefined) updateData.totalTeachers = toIntOrNull(body.totalTeachers);
+    if (body.logoUrl !== undefined) updateData.logoUrl = toStringOrNull(body.logoUrl);
+    if (body.aboutSchool !== undefined) updateData.aboutSchool = toStringOrNull(body.aboutSchool);
+    if (body.bannerImageUrl !== undefined) updateData.bannerImageUrl = toStringOrNull(body.bannerImageUrl);
+    if (body.studentTeacherRatio !== undefined) updateData.studentTeacherRatio = toStringOrNull(body.studentTeacherRatio);
+    if (body.description !== undefined) updateData.description = toStringOrNull(body.description);
+    if (body.contactEmail !== undefined) updateData.contactEmail = toStringOrNull(body.contactEmail);
+    if (body.contactPhone !== undefined) updateData.contactPhone = toStringOrNull(body.contactPhone);
+    if (body.feesMin !== undefined) updateData.feesMin = toIntOrNull(body.feesMin);
+    if (body.feesMax !== undefined) updateData.feesMax = toIntOrNull(body.feesMax);
+    if (body.rating !== undefined) updateData.rating = toFloatOrNull(body.rating);
+    if (body.reviewCount !== undefined) updateData.reviewCount = toIntOrNull(body.reviewCount);
+    if (body.profileViews !== undefined) updateData.profileViews = toIntOrNull(body.profileViews);
+    if (body.featured !== undefined) updateData.featured = Boolean(body.featured);
+    if (body.latitude !== undefined) updateData.latitude = toFloatOrNull(body.latitude);
+    if (body.longitude !== undefined) updateData.longitude = toFloatOrNull(body.longitude);
     
     // Contact Info
-    if (body.address !== undefined) updateData.address = String(body.address).trim();
+    if (body.address !== undefined) updateData.address = toStringOrNull(body.address);
     if (body.city !== undefined) updateData.city = String(body.city).trim();
-    if (body.state !== undefined) updateData.state = String(body.state).trim();
-    if (body.country !== undefined) updateData.country = String(body.country).trim();
-    if (body.website !== undefined) updateData.website = String(body.website).trim();
-    if (body.contactNumber !== undefined) updateData.contactNumber = String(body.contactNumber).trim();
-    if (body.whatsappNumber !== undefined) updateData.whatsappNumber = String(body.whatsappNumber).trim();
-    if (body.email !== undefined) updateData.email = String(body.email).trim().toLowerCase();
-    if (body.facebookUrl !== undefined) updateData.facebookUrl = String(body.facebookUrl).trim();
-    if (body.instagramUrl !== undefined) updateData.instagramUrl = String(body.instagramUrl).trim();
-    if (body.linkedinUrl !== undefined) updateData.linkedinUrl = String(body.linkedinUrl).trim();
-    if (body.youtubeUrl !== undefined) updateData.youtubeUrl = String(body.youtubeUrl).trim();
-    if (body.googleMapUrl !== undefined) updateData.googleMapUrl = String(body.googleMapUrl).trim();
+    if (body.state !== undefined) updateData.state = toStringOrNull(body.state);
+    if (body.country !== undefined) updateData.country = toStringOrNull(body.country);
+    if (body.website !== undefined) updateData.website = toStringOrNull(body.website);
+    if (body.contactNumber !== undefined) updateData.contactNumber = toStringOrNull(body.contactNumber);
+    if (body.whatsappNumber !== undefined) updateData.whatsappNumber = toStringOrNull(body.whatsappNumber);
+    if (body.email !== undefined) updateData.email = toStringOrNull(body.email)?.toLowerCase();
+    if (body.facebookUrl !== undefined) updateData.facebookUrl = toStringOrNull(body.facebookUrl);
+    if (body.instagramUrl !== undefined) updateData.instagramUrl = toStringOrNull(body.instagramUrl);
+    if (body.linkedinUrl !== undefined) updateData.linkedinUrl = toStringOrNull(body.linkedinUrl);
+    if (body.youtubeUrl !== undefined) updateData.youtubeUrl = toStringOrNull(body.youtubeUrl);
+    if (body.googleMapUrl !== undefined) updateData.googleMapUrl = toStringOrNull(body.googleMapUrl);
     
     // Academic Facilities
     if (body.classroomType !== undefined) updateData.classroomType = String(body.classroomType).trim();
     if (body.hasLibrary !== undefined) updateData.hasLibrary = Boolean(body.hasLibrary);
     if (body.hasComputerLab !== undefined) updateData.hasComputerLab = Boolean(body.hasComputerLab);
-    if (body.computerCount !== undefined) {
-      const v = toIntOrNull(body.computerCount);
-      updateData.computerCount = v;
-    }
+    if (body.computerCount !== undefined) updateData.computerCount = toIntOrNull(body.computerCount);
     if (body.hasPhysicsLab !== undefined) updateData.hasPhysicsLab = Boolean(body.hasPhysicsLab);
     if (body.hasChemistryLab !== undefined) updateData.hasChemistryLab = Boolean(body.hasChemistryLab);
     if (body.hasBiologyLab !== undefined) updateData.hasBiologyLab = Boolean(body.hasBiologyLab);
@@ -276,183 +269,27 @@ export async function PUT(request: NextRequest) {
     if (body.pincode !== undefined) updateData.pincode = String(body.pincode).trim();
     if (body.medium !== undefined) updateData.medium = String(body.medium).trim();
     if (body.classesOffered !== undefined) updateData.classesOffered = String(body.classesOffered).trim();
-    if (body.studentTeacherRatio !== undefined) updateData.studentTeacherRatio = String(body.studentTeacherRatio).trim();
-    if (body.description !== undefined) updateData.description = String(body.description).trim();
-    if (body.contactEmail !== undefined) updateData.contactEmail = String(body.contactEmail).trim().toLowerCase();
-    if (body.contactPhone !== undefined) updateData.contactPhone = String(body.contactPhone).trim();
-    if (body.feesMin !== undefined) {
-      const v = toIntOrNull(body.feesMin);
-      updateData.feesMin = v;
-    }
-    if (body.feesMax !== undefined) {
-      const v = toIntOrNull(body.feesMax);
-      updateData.feesMax = v;
-    }
-    if (body.rating !== undefined) {
-      const v = toFloatOrNull(body.rating);
-      updateData.rating = v;
-    }
-    if (body.reviewCount !== undefined) {
-      const v = toIntOrNull(body.reviewCount);
-      updateData.reviewCount = v;
-    }
-    if (body.profileViews !== undefined) {
-      const v = toIntOrNull(body.profileViews);
-      updateData.profileViews = v;
-    }
-    if (body.featured !== undefined) updateData.featured = Boolean(body.featured);
-    if (body.latitude !== undefined) {
-      const v = toFloatOrNull(body.latitude);
-      updateData.latitude = v;
-    }
-    if (body.longitude !== undefined) {
-      const v = toFloatOrNull(body.longitude);
-      updateData.longitude = v;
-    }
     
-    // JSON fields
-    if (body.galleryImages !== undefined) {
-      if (!Array.isArray(body.galleryImages)) {
-        return NextResponse.json(
-          { error: 'galleryImages must be an array', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      updateData.galleryImages = body.galleryImages;
-    }
-
-    if (body.awards !== undefined) {
-      if (!Array.isArray(body.awards)) {
-        return NextResponse.json(
-          { error: 'awards must be an array', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      updateData.awards = body.awards;
-    }
-
-    if (body.feesStructure !== undefined) {
-      if (typeof body.feesStructure !== 'object' || Array.isArray(body.feesStructure)) {
-        return NextResponse.json(
-          { error: 'feesStructure must be an object', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      updateData.feesStructure = body.feesStructure;
-    }
-
-    if (body.facilities !== undefined) {
-      if (!Array.isArray(body.facilities)) {
-        return NextResponse.json(
-          { error: 'facilities must be an array', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      updateData.facilities = body.facilities;
-    }
-
-    if (body.gallery !== undefined) {
-      if (!Array.isArray(body.gallery)) {
-        return NextResponse.json(
-          { error: 'gallery must be an array', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      updateData.gallery = body.gallery;
-    }
-
-    if (body.facilityImages !== undefined) {
-      if (typeof body.facilityImages !== 'object' || Array.isArray(body.facilityImages)) {
-        return NextResponse.json(
-          { error: 'facilityImages must be an object', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      console.log('Saving facilityImages:', JSON.stringify(body.facilityImages));
-      updateData.facilityImages = body.facilityImages;
-    }
-
-    if (body.virtualTourVideos !== undefined) {
-      if (!Array.isArray(body.virtualTourVideos)) {
-        return NextResponse.json(
-          { error: 'virtualTourVideos must be an array', code: 'VALIDATION_ERROR' },
-          { status: 400 }
-        );
-      }
-      updateData.virtualTourVideos = body.virtualTourVideos;
-    }
+    // Array/JSON fields
+    if (body.galleryImages !== undefined) updateData.galleryImages = Array.isArray(body.galleryImages) ? body.galleryImages : [];
+    if (body.awards !== undefined) updateData.awards = Array.isArray(body.awards) ? body.awards : [];
+    if (body.feesStructure !== undefined) updateData.feesStructure = body.feesStructure;
+    if (body.facilities !== undefined) updateData.facilities = Array.isArray(body.facilities) ? body.facilities : [];
+    if (body.gallery !== undefined) updateData.gallery = Array.isArray(body.gallery) ? body.gallery : [];
+    if (body.facilityImages !== undefined) updateData.facilityImages = body.facilityImages;
+    if (body.virtualTourVideos !== undefined) updateData.virtualTourVideos = Array.isArray(body.virtualTourVideos) ? body.virtualTourVideos : [];
 
     if (isCreating) {
-      // Create new profile
       updateData.userId = user.userId;
-      updateData.createdAt = new Date().toISOString();
-      updateData.rating = updateData.rating ?? 0;
-      updateData.reviewCount = updateData.reviewCount ?? 0;
-      updateData.profileViews = updateData.profileViews ?? 0;
-      updateData.featured = updateData.featured ?? false;
+      const createdProfile = await createSchool(updateData);
+      
+      // Update user record with schoolId
+      await User.findByIdAndUpdate(user.userId, { schoolId: createdProfile._id });
 
-      // Only return id to avoid RETURNING * on older schemas
-      const inserted = await db.insert(schools)
-        .values(updateData)
-        .returning({ id: schools.id });
-
-      // Link user to this school
-      await db.update(users)
-        .set({ schoolId: inserted[0].id })
-        .where(eq(users.id, user.userId));
-
-      // Fetch created profile
-      const createdProfile = await db.select()
-        .from(schools)
-        .where(eq(schools.id, inserted[0].id))
-        .limit(1);
-
-      return NextResponse.json(createdProfile[0], { status: 200 });
+      return NextResponse.json({ ...createdProfile, id: createdProfile.id }, { status: 200 });
     } else {
-      // Ensure userId is set
-      if (!updateData.userId) {
-        updateData.userId = user.userId;
-      }
-
-      if (!targetSchoolId) {
-        return NextResponse.json(
-          { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
-          { status: 404 }
-        );
-      }
-
-      // Filter out fields that don't exist in the current DB (handles older DBs without new columns)
-      const currentRow = existingProfile[0] || {};
-      const allowedCols = new Set(Object.keys(currentRow as Record<string, any>));
-      const filteredUpdateData = Object.fromEntries(
-        Object.entries(updateData).filter(([k]) => allowedCols.has(k))
-      );
-      const pruned = Object.keys(updateData).filter((k) => !allowedCols.has(k));
-      if (pruned.length) {
-        console.warn('Pruned unsupported columns from update:', pruned);
-      }
-
-      // Update existing profile by schoolId (avoid RETURNING *)
-      await db.update(schools)
-        .set(filteredUpdateData)
-        .where(eq(schools.id, targetSchoolId));
-
-      // Read back the updated row
-      const refreshed = await db.select()
-        .from(schools)
-        .where(eq(schools.id, targetSchoolId))
-        .limit(1);
-
-      if (refreshed.length === 0) {
-        return NextResponse.json(
-          { error: 'School profile not found', code: 'PROFILE_NOT_FOUND' },
-          { status: 404 }
-        );
-      }
-
-      console.log('Updated school profile:', refreshed[0].id, 'facilityImages:', refreshed[0].facilityImages ? 'present' : 'null');
-
-      return NextResponse.json(refreshed[0], { status: 200 });
+      const updated = await updateSchool(targetSchoolNumericId!, updateData);
+      return NextResponse.json({ ...updated, id: updated.id }, { status: 200 });
     }
   } catch (error: any) {
     console.error('PUT error:', error);

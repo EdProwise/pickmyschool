@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { 
-  Users, TrendingUp, Clock, Eye, Mail, Phone, Calendar,
-  Filter, Search, Edit, MoreVertical, Plus, Building2,
-  LayoutDashboard, MessageSquare, Info, Contact2, Building,
-  Image, DollarSign, Trophy, GraduationCap, Newspaper,
-  Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-  CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video
-} from 'lucide-react';
+  // HMR touch
+  import { useState, useEffect } from 'react';
+  import { useRouter } from 'next/navigation';
+  import { 
+    Users, TrendingUp, Clock, Eye, Mail, Phone, Calendar,
+    Filter, Search, Edit, MoreVertical, Plus, Building2,
+    LayoutDashboard, MessageSquare, Info, Contact2, Building,
+    Image, DollarSign, Trophy, GraduationCap, Newspaper,
+    Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
+    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus
+  } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,9 +32,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { getMe, type User, type Enquiry } from '@/lib/api';
 import { toast } from 'sonner';
-import { AIChat } from '@/components/AIChat';
 import {
   BasicInfoSection,
   ContactInfoSection,
@@ -43,10 +49,20 @@ import {
   FeesSection
 } from './sections';
 import { SettingsSection } from './SettingsSection';
+import { ResultsSection } from './ResultsSection';
+import { AlumniSection } from './AlumniSection';
+import { NewsSection } from './NewsSection';
+import { AnalyticsSection } from './AnalyticsSection';
+import { EnquirySettingsSection } from './EnquirySettingsSection';
+import { SchoolPagePreview } from './SchoolPagePreview';
+import { WhatsappAPISection } from './WhatsappAPISection';
 
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'enquiry', label: 'Enquiry', icon: MessageSquare },
+  { id: 'enquiry', label: 'Enquiry List', icon: MessageSquare },
+  { id: 'whatsapp-api', label: 'Whatsapp API', icon: MessageSquare },
+  { id: 'enquiry-settings', label: 'Enquiry Form Settings', icon: ClipboardList },
+  { id: 'school-page', label: 'School Page', icon: Globe },
   { id: 'basic-info', label: 'Basic Info', icon: Info },
   { id: 'contact', label: 'Contact Information', icon: Contact2 },
   { id: 'facilities', label: 'Facilities & Infrastructure', icon: Building },
@@ -57,7 +73,6 @@ const sidebarItems = [
   { id: 'alumini', label: 'Alumini', icon: Users },
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'review', label: 'Review', icon: Star },
-  { id: 'campaign', label: 'Campaign', icon: TrendingUp },
   { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -81,21 +96,36 @@ export default function SchoolDashboard() {
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [enquiryNotes, setEnquiryNotes] = useState('');
   const [enquiryStatus, setEnquiryStatus] = useState('');
+  
+  // Additional data modal state
+  const [additionalDataEnquiry, setAdditionalDataEnquiry] = useState<Enquiry | null>(null);
+  const [additionalAddress, setAdditionalAddress] = useState('');
+  const [additionalState, setAdditionalState] = useState('');
+  const [additionalAge, setAdditionalAge] = useState('');
+  const [additionalGender, setAdditionalGender] = useState('');
 
   // Reviews state
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewStats, setReviewStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [reviewFilterStatus, setReviewFilterStatus] = useState('pending');
+  // Updated reviewFilterStatus default value from 'pending' to 'approved'
+  const [reviewFilterStatus, setReviewFilterStatus] = useState('approved');
 
   useEffect(() => {
     loadSchoolData();
   }, []);
 
   useEffect(() => {
+    // Load review stats for header rating display
+    if (user?.schoolId) {
+      loadReviewStats();
+    }
+  }, [user]);
+
+  useEffect(() => {
     // Load profile when switching to profile-related sections
-    if (['basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees'].includes(activeSection) && !profile) {
+    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page'].includes(activeSection) && !profile) {
       loadSchoolProfile();
     }
   }, [activeSection]);
@@ -129,7 +159,7 @@ export default function SchoolDashboard() {
       
       if (userData.role !== 'school') {
         toast.error('Access denied. Schools only.');
-        router.push('/');
+        router.push('/login');
         return;
       }
 
@@ -142,7 +172,8 @@ export default function SchoolDashboard() {
 
       if (response.ok) {
         const data = await response.json();
-        setEnquiries(data);
+        // The API returns { enquiries: [...], metadata: {...} }
+        setEnquiries(data.enquiries || data);
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
@@ -170,7 +201,8 @@ export default function SchoolDashboard() {
       if (response.ok) {
         const data = await response.json();
         console.log('Profile loaded from API:', data);
-        console.log('Facility images in loaded profile:', data.facilityImages);
+        // LOGGING THIS as per request
+        console.log('Facility images in loaded profile:', data?.facilityImages);
         setProfile(data);
       } else if (response.status === 404) {
         // Profile doesn't exist yet, initialize with default values
@@ -212,7 +244,8 @@ export default function SchoolDashboard() {
       const updatedProfile = await response.json();
       setProfile(updatedProfile);
       console.log('Profile saved successfully:', updatedProfile);
-      console.log('Facility images in saved profile:', updatedProfile.facilityImages);
+      // Log updated profile's facility images in console
+      console.log('Facility images in saved profile:', updatedProfile?.facilityImages);
       toast.success('Profile updated successfully');
       
       // Reload profile to ensure fresh data
@@ -252,6 +285,35 @@ export default function SchoolDashboard() {
     }
   };
 
+  const handleSaveAdditionalData = async (enquiryId: number) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`/api/enquiries/${enquiryId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          studentAddress: additionalAddress,
+          studentState: additionalState,
+          studentAge: additionalAge,
+          studentGender: additionalGender,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save additional data');
+
+      toast.success('Additional data saved successfully');
+      setAdditionalDataEnquiry(null);
+      loadSchoolData();
+    } catch (error) {
+      toast.error('Failed to save additional data');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'New':
@@ -260,7 +322,7 @@ export default function SchoolDashboard() {
         return 'bg-gradient-to-r from-yellow-500 to-orange-500';
       case 'Converted':
         return 'bg-gradient-to-r from-green-500 to-emerald-600';
-      case 'Closed':
+      case 'Lost':
         return 'bg-gradient-to-r from-gray-500 to-gray-600';
       default:
         return 'bg-gray-500';
@@ -281,9 +343,36 @@ export default function SchoolDashboard() {
     newEnquiries: enquiries.filter(e => e.status === 'New').length,
     inProgress: enquiries.filter(e => e.status === 'In Progress').length,
     converted: enquiries.filter(e => e.status === 'Converted').length,
+    lost: enquiries.filter(e => e.status === 'Lost').length,
     contacted: Math.floor(enquiries.length * 0.85),
-    applications: Math.floor(enquiries.length * 0.47),
   };
+
+  // Calculate previous month stats for comparison
+  const now = new Date();
+  const today = new Date();
+  // Fixed: Assign today for consistency
+  const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59);
+
+  const thisMonthEnquiries = enquiries.filter(e => new Date(e.createdAt) >= thisMonthStart);
+  const lastMonthEnquiries = enquiries.filter(e => {
+    const date = new Date(e.createdAt);
+    return date >= lastMonthStart && date <= lastMonthEnd;
+  });
+
+  const thisMonthConverted = thisMonthEnquiries.filter(e => e.status === 'Converted').length;
+  const lastMonthConverted = lastMonthEnquiries.filter(e => e.status === 'Converted').length;
+
+  // Calculate growth percentage (avoid division by zero)
+  const growthPercentage = lastMonthEnquiries.length > 0
+    ? Math.round(((thisMonthEnquiries.length - lastMonthEnquiries.length) / lastMonthEnquiries.length) * 100)
+    : 0;
+
+  // Calculate conversion rate
+  const conversionRate = stats.totalLeads > 0
+    ? Math.round((stats.converted / stats.totalLeads) * 100)
+    : 0;
 
   const loadReviews = async () => {
     const token = localStorage.getItem('token');
@@ -371,6 +460,366 @@ export default function SchoolDashboard() {
         return <Badge>{status}</Badge>;
     }
   };
+
+  const renderEnquirySection = () => (
+    <div className="space-y-6">
+      <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <MessageSquare className="text-white" size={20} />
+              </div>
+              Leads & Enquiries
+            </CardTitle>
+            <div className="flex gap-2 flex-wrap">
+              <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+                <Input
+                  placeholder="Search by name, email, phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/50 border-gray-200 focus:border-cyan-400"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-40 bg-white/50">
+                  <Filter size={16} className="mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Converted">Converted</SelectItem>
+                    <SelectItem value="Lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredEnquiries.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center mx-auto mb-6">
+                <Users className="opacity-50" size={48} />
+              </div>
+              <p className="text-xl font-semibold mb-2">No enquiries found</p>
+              <p>Enquiries from parents will appear here</p>
+            </div>
+          ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-200 hover:bg-transparent">
+                      <TableHead className="font-semibold">Student Name</TableHead>
+                      <TableHead className="font-semibold">Email</TableHead>
+                      <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">Class</TableHead>
+                      <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold">Date</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEnquiries.map((enquiry) => (
+                      <TableRow key={enquiry.id} className="border-gray-100 hover:bg-cyan-50/50 transition-colors">
+                        <TableCell className="font-semibold">
+                          {enquiry.studentName}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail size={12} className="text-cyan-600" />
+                            <span className="text-muted-foreground">{enquiry.studentEmail}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone size={12} className="text-cyan-600" />
+                            <span className="text-muted-foreground">{enquiry.studentPhone}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="border-cyan-200 text-cyan-700 bg-cyan-50">
+                            {enquiry.studentClass}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(enquiry.status)} text-white border-0 shadow-sm`}>
+                            {enquiry.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(enquiry.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="hover:bg-cyan-50">
+                                <MoreVertical size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEnquiry(enquiry);
+                                  setEnquiryStatus(enquiry.status);
+                                  setEnquiryNotes(enquiry.notes || '');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Edit className="mr-2" size={14} />
+                                Update Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEnquiry(enquiry);
+                                  setEnquiryStatus(enquiry.status);
+                                  setEnquiryNotes('');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <FileText className="mr-2" size={14} />
+                                Prepare Notes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setAdditionalDataEnquiry(enquiry);
+                                  setAdditionalAddress((enquiry as any).studentAddress || '');
+                                  setAdditionalState((enquiry as any).studentState || '');
+                                  setAdditionalAge((enquiry as any).studentAge || '');
+                                  setAdditionalGender((enquiry as any).studentGender || '');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <UserPlus className="mr-2" size={14} />
+                                Add Additional Data
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Enquiry Modal */}
+      <Dialog open={!!selectedEnquiry} onOpenChange={(open) => !open && setSelectedEnquiry(null)}>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                <Edit className="text-white" size={20} />
+              </div>
+              Update Enquiry - {selectedEnquiry?.studentName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
+              <Select value={enquiryStatus} onValueChange={setEnquiryStatus}>
+                <SelectTrigger className="bg-white/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Converted">Converted</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Note History</Label>
+              <div className="space-y-3 max-h-60 overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-200">
+                {(() => {
+                  if (!selectedEnquiry) return null;
+                  let notes = [];
+                  try {
+                    notes = JSON.parse(selectedEnquiry.notes || '[]');
+                    if (!Array.isArray(notes)) {
+                      notes = selectedEnquiry.notes ? [{ date: selectedEnquiry.createdAt, text: selectedEnquiry.notes }] : [];
+                    }
+                  } catch (e) {
+                    notes = selectedEnquiry.notes ? [{ date: selectedEnquiry.createdAt, text: selectedEnquiry.notes }] : [];
+                  }
+
+                  if (notes.length === 0) {
+                    return <p className="text-sm text-muted-foreground text-center py-4">No notes recorded yet</p>;
+                  }
+
+                  return notes.map((note: any, index: number) => (
+                    <div key={index} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
+                          {new Date(note.date).toLocaleDateString()} {new Date(note.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.text}</p>
+                    </div>
+                  )).reverse();
+                })()}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-sm font-semibold">Add New Note</Label>
+              <Textarea
+                id="notes"
+                value={enquiryNotes}
+                onChange={(e) => setEnquiryNotes(e.target.value)}
+                rows={3}
+                placeholder="Type a new note here..."
+                className="bg-white/50 resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={() => selectedEnquiry && handleUpdateEnquiry(selectedEnquiry.id)}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg flex-1"
+              >
+                <CheckCircle2 className="mr-2" size={18} />
+                Update Enquiry
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setSelectedEnquiry(null)}
+                className="border-2 flex-1"
+              >
+                <XCircle className="mr-2" size={18} />
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Additional Data Modal */}
+      <Dialog open={!!additionalDataEnquiry} onOpenChange={(open) => !open && setAdditionalDataEnquiry(null)}>
+        <DialogContent className="max-w-4xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                <UserPlus className="text-white" size={20} />
+              </div>
+              Add Additional Data - {additionalDataEnquiry?.studentName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="address" className="text-sm font-semibold flex items-center gap-2">
+                  <MapPin size={14} className="text-cyan-600" />
+                  Address
+                </Label>
+                <Textarea
+                  id="address"
+                  value={additionalAddress}
+                  onChange={(e) => setAdditionalAddress(e.target.value)}
+                  rows={6}
+                  placeholder="Enter student's address..."
+                  className="bg-white/50 resize-none"
+                />
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state" className="text-sm font-semibold">State</Label>
+                  <Select value={additionalState} onValueChange={setAdditionalState}>
+                    <SelectTrigger className="bg-white/50">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                      <SelectItem value="Arunachal Pradesh">Arunachal Pradesh</SelectItem>
+                      <SelectItem value="Assam">Assam</SelectItem>
+                      <SelectItem value="Bihar">Bihar</SelectItem>
+                      <SelectItem value="Chhattisgarh">Chhattisgarh</SelectItem>
+                      <SelectItem value="Goa">Goa</SelectItem>
+                      <SelectItem value="Gujarat">Gujarat</SelectItem>
+                      <SelectItem value="Haryana">Haryana</SelectItem>
+                      <SelectItem value="Himachal Pradesh">Himachal Pradesh</SelectItem>
+                      <SelectItem value="Jharkhand">Jharkhand</SelectItem>
+                      <SelectItem value="Karnataka">Karnataka</SelectItem>
+                      <SelectItem value="Kerala">Kerala</SelectItem>
+                      <SelectItem value="Madhya Pradesh">Madhya Pradesh</SelectItem>
+                      <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                      <SelectItem value="Manipur">Manipur</SelectItem>
+                      <SelectItem value="Meghalaya">Meghalaya</SelectItem>
+                      <SelectItem value="Mizoram">Mizoram</SelectItem>
+                      <SelectItem value="Nagaland">Nagaland</SelectItem>
+                      <SelectItem value="Odisha">Odisha</SelectItem>
+                      <SelectItem value="Punjab">Punjab</SelectItem>
+                      <SelectItem value="Rajasthan">Rajasthan</SelectItem>
+                      <SelectItem value="Sikkim">Sikkim</SelectItem>
+                      <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                      <SelectItem value="Telangana">Telangana</SelectItem>
+                      <SelectItem value="Tripura">Tripura</SelectItem>
+                      <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
+                      <SelectItem value="Uttarakhand">Uttarakhand</SelectItem>
+                      <SelectItem value="West Bengal">West Bengal</SelectItem>
+                      <SelectItem value="Delhi">Delhi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="age" className="text-sm font-semibold">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      value={additionalAge}
+                      onChange={(e) => setAdditionalAge(e.target.value)}
+                      placeholder="Age"
+                      className="bg-white/50"
+                      min="3"
+                      max="25"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender" className="text-sm font-semibold">Gender</Label>
+                    <Select value={additionalGender} onValueChange={setAdditionalGender}>
+                      <SelectTrigger className="bg-white/50">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={() => additionalDataEnquiry && handleSaveAdditionalData(additionalDataEnquiry.id)}
+                className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white shadow-lg flex-1"
+              >
+                <CheckCircle2 className="mr-2" size={18} />
+                Save Additional Data
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setAdditionalDataEnquiry(null)}
+                className="border-2 flex-1"
+              >
+                <XCircle className="mr-2" size={18} />
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      </div>
+    );
 
   if (loading) {
     return (
@@ -473,7 +922,7 @@ export default function SchoolDashboard() {
               <Building2 className="text-white" size={20} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm truncate">{user.name}</p>
+              <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
               <p className="text-white/70 text-xs">School Admin</p>
             </div>
           </div>
@@ -508,13 +957,25 @@ export default function SchoolDashboard() {
             <div className="flex items-center gap-3">
               {/* Rating */}
               <div className="hidden md:flex items-center gap-1 px-4 py-2 bg-yellow-50 rounded-xl border border-yellow-200">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={18}
-                    className={i < 4 ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}
-                  />
-                ))}
+                {[...Array(5)].map((_, i) => {
+                  const avgRating = reviewStats?.averageRating || 0;
+                  return (
+                    <Star
+                      key={i}
+                      size={18}
+                      className={
+                        avgRating > 0 && i < Math.floor(avgRating)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : avgRating > 0 && i < avgRating
+                          ? 'fill-yellow-400/50 text-yellow-400'
+                          : 'fill-gray-300 text-gray-300'
+                      }
+                    />
+                  );
+                })}
+                <span className="ml-2 text-sm font-semibold text-gray-700">
+                  {reviewStats ? reviewStats.averageRating.toFixed(1) : '0.0'}
+                </span>
               </div>
               
               {/* Notifications */}
@@ -549,88 +1010,146 @@ export default function SchoolDashboard() {
         <div className="p-4 lg:p-8">
           {activeSection === 'dashboard' && (
             <div className="space-y-6">
-              {/* Stats Grid - Modern Bento Style */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                {/* Total Enquiries */}
-                <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardContent className="p-6 relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
-                        <Users className="text-white" size={24} />
+              {/* School Profile Summary */}
+              {profile && (
+                <Card className="border-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50/30 shadow-lg">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <Building2 className="text-white" size={20} />
                       </div>
-                      <Target className="text-cyan-600 opacity-20 group-hover:opacity-40 transition-opacity" size={32} />
+                      School Profile Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      <div className="p-4 bg-white/70 rounded-xl border border-cyan-100">
+                        <p className="text-xs text-muted-foreground mb-1">No. of Students</p>
+                        <p className="text-lg font-bold text-cyan-600">{profile.totalStudents || 'Not set'}</p>
+                      </div>
+                      <div className="p-4 bg-white/70 rounded-xl border border-cyan-100">
+                        <p className="text-xs text-muted-foreground mb-1">No. of Teachers</p>
+                        <p className="text-lg font-bold text-cyan-600">{profile.totalTeachers || 'Not set'}</p>
+                      </div>
+                      <div className="p-4 bg-white/70 rounded-xl border border-cyan-100">
+                        <p className="text-xs text-muted-foreground mb-1">Board</p>
+                        <p className="text-lg font-bold text-cyan-600">{profile.board || 'Not set'}</p>
+                      </div>
+                      <div className="p-4 bg-white/70 rounded-xl border border-cyan-100">
+                        <p className="text-xs text-muted-foreground mb-1">School Type</p>
+                        <p className="text-lg font-bold text-cyan-600">{profile.schoolType || 'Not set'}</p>
+                      </div>
+                      <div className="p-4 bg-white/70 rounded-xl border border-cyan-100">
+                        <p className="text-xs text-muted-foreground mb-1">Est. Year</p>
+                        <p className="text-lg font-bold text-cyan-600">{profile.establishmentYear || 'Not set'}</p>
+                      </div>
                     </div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">Total Enquiries</p>
-                    <p className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-1">
-                      {stats.totalLeads}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <TrendingUp size={12} className="text-green-600" />
-                      <span className="text-green-600 font-semibold">+12%</span> from last month
-                    </p>
                   </CardContent>
                 </Card>
+              )}
 
-                {/* Admission Confirmed */}
-                <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardContent className="p-6 relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
-                        <CheckCircle2 className="text-white" size={24} />
-                      </div>
-                      <Trophy className="text-green-600 opacity-20 group-hover:opacity-40 transition-opacity" size={32} />
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">Admission Confirmed</p>
-                    <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1">
-                      {stats.converted}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <TrendingUp size={12} className="text-green-600" />
-                      <span className="text-green-600 font-semibold">+8%</span> conversion rate
-                    </p>
-                  </CardContent>
-                </Card>
+                  {/* Stats Grid - Modern Bento Style */}
+                  <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-6">
+                    {/* Total Enquiries */}
+                    <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <CardContent className="p-4 sm:p-6 relative">
+                        <div className="flex items-start justify-between mb-2 sm:mb-4">
+                          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                            <Users className="text-white sm:w-6 sm:h-6" size={20} />
+                          </div>
+                          <Target className="text-cyan-600 opacity-20 group-hover:opacity-40 transition-opacity hidden sm:block" size={32} />
+                        </div>
+                        <p className="text-[10px] sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">Total Enquiries</p>
+                        <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                          {stats.totalLeads}
+                        </p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground flex items-center gap-1">
+                          <TrendingUp size={10} className={growthPercentage >= 0 ? "text-green-600" : "text-red-600"} />
+                          <span className={growthPercentage >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{growthPercentage > 0 ? '+' : ''}{growthPercentage}%</span>
+                        </p>
+                      </CardContent>
+                    </Card>
 
-                {/* In Progress */}
-                <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardContent className="p-6 relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-lg">
-                        <Clock className="text-white" size={24} />
-                      </div>
-                      <AlertCircle className="text-yellow-600 opacity-20 group-hover:opacity-40 transition-opacity" size={32} />
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">In Progress</p>
-                    <p className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-1">
-                      {stats.inProgress}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Pending follow-ups</p>
-                  </CardContent>
-                </Card>
+                    {/* Admission Confirmed */}
+                    <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <CardContent className="p-4 sm:p-6 relative">
+                        <div className="flex items-start justify-between mb-2 sm:mb-4">
+                          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                            <CheckCircle2 className="text-white sm:w-6 sm:h-6" size={20} />
+                          </div>
+                          <Trophy className="text-green-600 opacity-20 group-hover:opacity-40 transition-opacity hidden sm:block" size={32} />
+                        </div>
+                        <p className="text-[10px] sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">Confirmed</p>
+                        <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                          {stats.converted}
+                        </p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="text-green-600 font-bold">{conversionRate}%</span> rate
+                        </p>
+                      </CardContent>
+                    </Card>
 
-                {/* New Enquiries */}
-                <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardContent className="p-6 relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
-                        <Sparkles className="text-white" size={24} />
-                      </div>
-                      <ArrowUpRight className="text-purple-600 opacity-20 group-hover:opacity-40 transition-opacity" size={32} />
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">New Enquiries</p>
-                    <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1">
-                      {stats.newEnquiries}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Awaiting response</p>
-                  </CardContent>
-                </Card>
-              </div>
+                    {/* In Progress */}
+                    <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <CardContent className="p-4 sm:p-6 relative">
+                        <div className="flex items-start justify-between mb-2 sm:mb-4">
+                          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg">
+                            <Clock className="text-white sm:w-6 sm:h-6" size={20} />
+                          </div>
+                          <AlertCircle className="text-yellow-600 opacity-20 group-hover:opacity-40 transition-opacity hidden sm:block" size={32} />
+                        </div>
+                        <p className="text-[10px] sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">In Progress</p>
+                        <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                          {stats.inProgress}
+                        </p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground">Pending</p>
+                      </CardContent>
+                    </Card>
 
-              {/* Conversion Funnel */}
+                    {/* Lost Admission */}
+                    <Card className="group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                      <div className="absolute inset-0 bg-gradient-to-br from-red-400/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <CardContent className="p-4 sm:p-6 relative">
+                        <div className="flex items-start justify-between mb-2 sm:mb-4">
+                          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg">
+                            <XCircle className="text-white sm:w-6 sm:h-6" size={20} />
+                          </div>
+                          <ThumbsDown className="text-red-600 opacity-20 group-hover:opacity-40 transition-opacity hidden sm:block" size={32} />
+                        </div>
+                        <p className="text-[10px] sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">Lost</p>
+                        <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                          {stats.lost}
+                        </p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground">
+                          {stats.totalLeads > 0 ? Math.round((stats.lost / stats.totalLeads) * 100) : 0}% loss
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* New Enquiries */}
+                    <Card className="col-span-2 xl:col-span-1 group relative overflow-hidden border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <CardContent className="p-4 sm:p-6 relative">
+                        <div className="flex items-start justify-between mb-2 sm:mb-4">
+                          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
+                            <Sparkles className="text-white sm:w-6 sm:h-6" size={20} />
+                          </div>
+                          <ArrowUpRight className="text-purple-600 opacity-20 group-hover:opacity-40 transition-opacity hidden sm:block" size={32} />
+                        </div>
+                        <p className="text-[10px] sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">New Enquiries</p>
+                        <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                          {stats.newEnquiries}
+                        </p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground">Awaiting</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                {/* Conversion Funnel */}
+
               <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
@@ -652,229 +1171,67 @@ export default function SchoolDashboard() {
                         <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
                       </div>
                     </div>
-
-                    {/* Contacted */}
+                    {/* In Progress */}
                     <div className="group hover:scale-[1.02] transition-transform">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-base font-semibold text-gray-700">Contacted</span>
-                        <span className="text-2xl font-bold text-cyan-600">{stats.contacted}</span>
+                        <span className="text-base font-semibold text-gray-700">In Progress</span>
+                        <span className="text-2xl font-bold text-yellow-600">{stats.inProgress}</span>
                       </div>
-                      <div className="relative h-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl overflow-hidden shadow-lg" style={{ width: '85%' }}>
+                      <div className="relative h-16 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl overflow-hidden shadow-lg" style={{ width: '65%' }}>
                         <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
                       </div>
                     </div>
-
-                    {/* Applications */}
-                    <div className="group hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-base font-semibold text-gray-700">Applications</span>
-                        <span className="text-2xl font-bold text-blue-600">{stats.applications}</span>
+                      {/* Confirmed */}
+                      <div className="group hover:scale-[1.02] transition-transform">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-base font-semibold text-gray-700">Confirmed Admissions</span>
+                          <span className="text-2xl font-bold text-green-600">{stats.converted}</span>
+                        </div>
+                        <div className="relative h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl overflow-hidden shadow-lg" style={{ width: '45%' }}>
+                          <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
+                        </div>
                       </div>
-                      <div className="relative h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl overflow-hidden shadow-lg" style={{ width: '65%' }}>
-                        <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
+                      {/* Lost Admissions */}
+                      <div className="group hover:scale-[1.02] transition-transform">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-base font-semibold text-gray-700">Lost Admissions</span>
+                          <span className="text-2xl font-bold text-red-600">{stats.lost}</span>
+                        </div>
+                        <div className="relative h-16 bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl overflow-hidden shadow-lg" style={{ width: '25%' }}>
+                          <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
+                        </div>
                       </div>
                     </div>
-
-                    {/* Confirmed */}
-                    <div className="group hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-base font-semibold text-gray-700">Confirmed Admissions</span>
-                        <span className="text-2xl font-bold text-green-600">{stats.converted}</span>
-                      </div>
-                      <div className="relative h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl overflow-hidden shadow-lg" style={{ width: '45%' }}>
-                        <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </div>
           )}
 
-          {activeSection === 'enquiry' && (
-            <div className="space-y-6">
-              <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                        <MessageSquare className="text-white" size={20} />
-                      </div>
-                      Leads & Enquiries
-                    </CardTitle>
-                    <div className="flex gap-2 flex-wrap">
-                      <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-                        <Input
-                          placeholder="Search by name, email, phone..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 bg-white/50 border-gray-200 focus:border-cyan-400"
-                        />
-                      </div>
-                      <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-40 bg-white/50">
-                          <Filter size={16} className="mr-2" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="New">New</SelectItem>
-                          <SelectItem value="In Progress">In Progress</SelectItem>
-                          <SelectItem value="Converted">Converted</SelectItem>
-                          <SelectItem value="Closed">Closed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {filteredEnquiries.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center mx-auto mb-6">
-                        <Users className="opacity-50" size={48} />
-                      </div>
-                      <p className="text-xl font-semibold mb-2">No enquiries found</p>
-                      <p>Enquiries from parents will appear here</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-gray-200 hover:bg-transparent">
-                            <TableHead className="font-semibold">Student Name</TableHead>
-                            <TableHead className="font-semibold">Contact</TableHead>
-                            <TableHead className="font-semibold">Class</TableHead>
-                            <TableHead className="font-semibold">Status</TableHead>
-                            <TableHead className="font-semibold">Date</TableHead>
-                            <TableHead className="font-semibold">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredEnquiries.map((enquiry) => (
-                            <TableRow key={enquiry.id} className="border-gray-100 hover:bg-cyan-50/50 transition-colors">
-                              <TableCell className="font-semibold">
-                                {enquiry.studentName}
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <Mail size={12} className="text-cyan-600" />
-                                    <span className="text-muted-foreground">{enquiry.studentEmail}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Phone size={12} className="text-cyan-600" />
-                                    <span className="text-muted-foreground">{enquiry.studentPhone}</span>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="border-cyan-200 text-cyan-700 bg-cyan-50">
-                                  {enquiry.studentClass}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={`${getStatusColor(enquiry.status)} text-white border-0 shadow-sm`}>
-                                  {enquiry.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {new Date(enquiry.createdAt).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="hover:bg-cyan-50">
-                                      <MoreVertical size={16} />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedEnquiry(enquiry);
-                                        setEnquiryStatus(enquiry.status);
-                                        setEnquiryNotes(enquiry.notes || '');
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <Edit className="mr-2" size={14} />
-                                      Update Status
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+          {activeSection === 'enquiry' && renderEnquirySection()}
+          
+          {activeSection === 'whatsapp-api' && (
+            <WhatsappAPISection />
+          )}
 
-              {/* Edit Enquiry Card */}
-              {selectedEnquiry && (
-                <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                        <Edit className="text-white" size={20} />
-                      </div>
-                      Update Enquiry - {selectedEnquiry.studentName}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
-                      <Select value={enquiryStatus} onValueChange={setEnquiryStatus}>
-                        <SelectTrigger className="bg-white/50">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="New">New</SelectItem>
-                          <SelectItem value="In Progress">In Progress</SelectItem>
-                          <SelectItem value="Converted">Converted</SelectItem>
-                          <SelectItem value="Closed">Closed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+          {activeSection === 'enquiry-settings' && (
+            <EnquirySettingsSection />
+          )}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="notes" className="text-sm font-semibold">Notes / Response</Label>
-                      <Textarea
-                        id="notes"
-                        value={enquiryNotes}
-                        onChange={(e) => setEnquiryNotes(e.target.value)}
-                        rows={4}
-                        placeholder="Add notes or response for the parent..."
-                        className="bg-white/50 resize-none"
-                      />
-                    </div>
-
-                    <div className="flex gap-3 pt-2">
-                      <Button
-                        onClick={() => handleUpdateEnquiry(selectedEnquiry.id)}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg"
-                      >
-                        <CheckCircle2 className="mr-2" size={18} />
-                        Update Enquiry
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setSelectedEnquiry(null)}
-                        className="border-2"
-                      >
-                        <XCircle className="mr-2" size={18} />
-                        Cancel
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          {activeSection === 'school-page' && (
+            // This is the added section with your comments
+            <div>
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                  School Page Preview
+                </h2>
+                <p className="text-muted-foreground text-lg">
+                  View your public school page and control its visibility
+                </p>
+              </div>
+              <SchoolPagePreview schoolId={user?.schoolId || null} />
             </div>
           )}
 
-          {/* Profile Management Sections */}
           {activeSection === 'basic-info' && (
             <BasicInfoSection
               profile={profile}
@@ -947,109 +1304,17 @@ export default function SchoolDashboard() {
                     <p className="text-muted-foreground">Loading statistics...</p>
                   </div>
                 ) : reviewStats ? (
-                  <>
-                    <Card className="border-0 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-lg hover:shadow-xl transition-shadow">
-                      <CardContent className="p-6 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                          <Star className="text-white" size={32} />
-                        </div>
-                        <div className="text-5xl font-bold text-yellow-600 mb-2">
-                          {reviewStats.averageRating.toFixed(1)}
-                        </div>
-                        <div className="text-sm text-muted-foreground font-semibold">
-                          Average Rating
-                        </div>
-                        <div className="flex justify-center mt-3">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={16}
-                              className={
-                                i < Math.floor(reviewStats.averageRating)
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : i < reviewStats.averageRating
-                                  ? 'fill-yellow-400/50 text-yellow-400'
-                                  : 'fill-gray-200 text-gray-200'
-                              }
-                            />
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-lg hover:shadow-xl transition-shadow">
-                      <CardContent className="p-6 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                          <MessageSquare className="text-white" size={32} />
-                        </div>
-                        <div className="text-5xl font-bold text-blue-600 mb-2">
-                          {reviewStats.totalReviews}
-                        </div>
-                        <div className="text-sm text-muted-foreground font-semibold">
-                          Total Reviews
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-0 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg hover:shadow-xl transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                          <BarChart3 className="text-white" size={32} />
-                        </div>
-                        <h3 className="font-semibold mb-3 text-center text-sm">Rating Distribution</h3>
-                        <div className="space-y-2">
-                          {[5, 4, 3, 2, 1].map((rating) => {
-                            const count = reviewStats.ratingDistribution[rating] || 0;
-                            const percentage = reviewStats.totalReviews > 0
-                              ? (count / reviewStats.totalReviews) * 100
-                              : 0;
-                            return (
-                              <div key={rating} className="flex items-center gap-2">
-                                <span className="text-xs font-medium w-3">{rating}</span>
-                                <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-400"
-                                    style={{ width: `${percentage}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs text-muted-foreground w-6 text-right">
-                                  {count}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </>
+                  <></>
                 ) : null}
               </div>
-
-              {/* Reviews Management */}
               <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
                 <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                        <Star className="text-white" size={20} />
-                      </div>
-                      Review Management
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Select value={reviewFilterStatus} onValueChange={setReviewFilterStatus}>
-                        <SelectTrigger className="w-40 bg-white">
-                          <Filter size={16} className="mr-2" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                      <Star className="text-white" size={20} />
                     </div>
-                  </div>
+                    Review Management
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {reviewsLoading ? (
@@ -1172,8 +1437,28 @@ export default function SchoolDashboard() {
             </div>
           )}
 
+          {/* Results Section */}
+          {activeSection === 'results' && (
+            <ResultsSection schoolId={user?.schoolId || 0} />
+          )}
+
+          {/* Alumni Section */}
+          {activeSection === 'alumini' && (
+            <AlumniSection schoolId={user?.schoolId || 0} />
+          )}
+
+          {/* News Section */}
+          {activeSection === 'news' && (
+            <NewsSection schoolId={user?.schoolId || 0} />
+          )}
+
+          {/* Analytics Section */}
+          {activeSection === 'analytics' && (
+            <AnalyticsSection schoolId={user?.schoolId || 0} />
+          )}
+
           {/* Other sections - Coming Soon */}
-          {!['dashboard', 'enquiry', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review'].includes(activeSection) && (
+          {!['dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page'].includes(activeSection) && (
             <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="p-16">
                 <div className="text-center text-muted-foreground">
@@ -1190,9 +1475,7 @@ export default function SchoolDashboard() {
             </Card>
           )}
         </div>
-      </main>
-      
-      <AIChat />
-    </div>
-  );
-}
+        </main>
+      </div>
+    );
+  }

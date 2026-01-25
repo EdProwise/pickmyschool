@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { reviews } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { Review } from '@/lib/models';
+import { updateSchoolStats } from '@/lib/schoolsHelper';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 interface JwtPayload {
-  userId: number;
+  userId: string;
   role: string;
   email: string;
 }
@@ -31,22 +31,13 @@ function extractAndVerifyToken(request: NextRequest): JwtPayload | null {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    await connectToDatabase();
+    
+    const { id } = await params;
 
-    // Validate ID format
-    if (!id || isNaN(parseInt(id))) {
-      return NextResponse.json(
-        { error: 'Valid ID is required', code: 'INVALID_ID' },
-        { status: 400 }
-      );
-    }
-
-    const reviewId = parseInt(id);
-
-    // Extract and verify JWT token
     const tokenPayload = extractAndVerifyToken(request);
     
     if (!tokenPayload) {
@@ -56,7 +47,6 @@ export async function PUT(
       );
     }
 
-    // Validate user role is 'student'
     if (tokenPayload.role !== 'student') {
       return NextResponse.json(
         { error: 'Only students can update reviews', code: 'FORBIDDEN' },
@@ -64,35 +54,25 @@ export async function PUT(
       );
     }
 
-    // Query review by ID
-    const existingReview = await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.id, reviewId))
-      .limit(1);
+    const review = await Review.findById(id);
 
-    if (existingReview.length === 0) {
+    if (!review) {
       return NextResponse.json(
         { error: 'Review not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const review = existingReview[0];
-
-    // Verify review ownership
-    if (review.userId !== tokenPayload.userId) {
+    if (review.userId.toString() !== tokenPayload.userId) {
       return NextResponse.json(
         { error: 'Not authorized to update this review', code: 'FORBIDDEN' },
         { status: 403 }
       );
     }
 
-    // Parse request body
     const body = await request.json();
     const { rating, reviewText, photos } = body;
 
-    // Validate rating if provided
     if (rating !== undefined) {
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
         return NextResponse.json(
@@ -102,7 +82,6 @@ export async function PUT(
       }
     }
 
-    // Validate reviewText if provided
     if (reviewText !== undefined) {
       if (typeof reviewText !== 'string' || reviewText.trim() === '') {
         return NextResponse.json(
@@ -112,10 +91,8 @@ export async function PUT(
       }
     }
 
-    // Build update object with only provided fields
     const updateData: any = {
-      updatedAt: new Date().toISOString(),
-      approvalStatus: 'approved' // Keep approved status - no approval workflow needed
+      approvalStatus: 'approved'
     };
 
     if (rating !== undefined) {
@@ -130,21 +107,22 @@ export async function PUT(
       updateData.photos = photos;
     }
 
-    // Update review
-    const updatedReview = await db
-      .update(reviews)
-      .set(updateData)
-      .where(eq(reviews.id, reviewId))
-      .returning();
+    const updatedReview = await Review.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
 
-    if (updatedReview.length === 0) {
+    if (!updatedReview) {
       return NextResponse.json(
         { error: 'Failed to update review', code: 'UPDATE_FAILED' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(updatedReview[0], { status: 200 });
+    await updateSchoolStats(review.schoolId);
+
+    return NextResponse.json({ ...updatedReview.toObject(), id: updatedReview._id }, { status: 200 });
 
   } catch (error) {
     console.error('PUT error:', error);
@@ -157,22 +135,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    await connectToDatabase();
+    
+    const { id } = await params;
 
-    // Validate ID format
-    if (!id || isNaN(parseInt(id))) {
-      return NextResponse.json(
-        { error: 'Valid ID is required', code: 'INVALID_ID' },
-        { status: 400 }
-      );
-    }
-
-    const reviewId = parseInt(id);
-
-    // Extract and verify JWT token
     const tokenPayload = extractAndVerifyToken(request);
     
     if (!tokenPayload) {
@@ -182,7 +151,6 @@ export async function DELETE(
       );
     }
 
-    // Validate user role is 'student'
     if (tokenPayload.role !== 'student') {
       return NextResponse.json(
         { error: 'Only students can delete reviews', code: 'FORBIDDEN' },
@@ -190,47 +158,32 @@ export async function DELETE(
       );
     }
 
-    // Query review by ID
-    const existingReview = await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.id, reviewId))
-      .limit(1);
+    const review = await Review.findById(id);
 
-    if (existingReview.length === 0) {
+    if (!review) {
       return NextResponse.json(
         { error: 'Review not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const review = existingReview[0];
-
-    // Verify review ownership
-    if (review.userId !== tokenPayload.userId) {
+    if (review.userId.toString() !== tokenPayload.userId) {
       return NextResponse.json(
         { error: 'Not authorized to delete this review', code: 'FORBIDDEN' },
         { status: 403 }
       );
     }
 
-    // Delete review
-    const deletedReview = await db
-      .delete(reviews)
-      .where(eq(reviews.id, reviewId))
-      .returning();
+    const schoolId = review.schoolId;
 
-    if (deletedReview.length === 0) {
-      return NextResponse.json(
-        { error: 'Failed to delete review', code: 'DELETE_FAILED' },
-        { status: 500 }
-      );
-    }
+    await Review.findByIdAndDelete(id);
+
+    await updateSchoolStats(schoolId);
 
     return NextResponse.json(
       { 
         message: 'Review deleted successfully', 
-        reviewId: reviewId 
+        reviewId: id 
       },
       { status: 200 }
     );

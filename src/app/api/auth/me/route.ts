@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import connectToDatabase from '@/lib/mongodb';
+import { User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract Authorization header
     const authHeader = request.headers.get('Authorization');
     
     if (!authHeader) {
@@ -18,7 +16,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate token format
     if (!authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Invalid token format', code: 'INVALID_FORMAT' },
@@ -26,13 +23,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Extract token
     const token = authHeader.substring(7);
 
-    // Verify and decode JWT token
-    let decoded: { userId: number; email: string; role: string };
+    let decoded: { userId: string; email: string; role: string };
     try {
-      decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; role: string };
+      decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
     } catch (error) {
       console.error('JWT verification error:', error);
       return NextResponse.json(
@@ -41,7 +36,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Extract userId from decoded token
     const userId = decoded.userId;
 
     if (!userId) {
@@ -51,28 +45,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Query database for user
-    const userRecords = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
+    await connectToDatabase();
 
-    if (userRecords.length === 0) {
+    const user = await User.findById(userId).lean();
+
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found', code: 'USER_NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    const user = userRecords[0];
-
-    // Remove password field from user object
     const { password, ...userWithoutPassword } = user;
 
-    // Return user object
     return NextResponse.json(
-      { user: userWithoutPassword },
+      { user: { ...userWithoutPassword, id: user._id } },
       { status: 200 }
     );
 

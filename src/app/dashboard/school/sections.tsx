@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { 
+  DropdownMenu, 
+  DropdownMenuCheckboxItem, 
+  DropdownMenuContent, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { 
   Save, MapPin, Globe, Facebook, Instagram, Linkedin,
   Youtube, Phone, Mail, Info, Contact2, Building,
   Image, DollarSign, Link, FileText, Download, School,
   BookOpen, Laptop, Wifi, Video, Shield, Bus, Heart,
-  Home, Coffee, Trophy, Upload, GraduationCap
+  Home, Coffee, Trophy, Upload, GraduationCap, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { Combobox } from '@/components/ui/combobox';
+import { CITY_OPTIONS } from '@/lib/indian-cities';
 
 interface SchoolProfile {
   // Basic Info
@@ -31,15 +40,16 @@ interface SchoolProfile {
   languages?: string;
   totalStudents?: string;
   totalTeachers?: number;
+  studentTeacherRatio?: string; // NEW
   logoUrl?: string;
   aboutSchool?: string;
   bannerImageUrl?: string;
-  
+
   // Contact Info
   address?: string;
   city: string;
-  state?: string;
-  country?: string;
+  state: string;
+  country: string;
   website?: string;
   contactNumber?: string;
   whatsappNumber?: string;
@@ -48,9 +58,11 @@ interface SchoolProfile {
   instagramUrl?: string;
   linkedinUrl?: string;
   youtubeUrl?: string;
-  googleMapUrl?: string;
+    googleMapUrl?: string;
+    latitude?: number;
+    longitude?: number;
   
-  // Academic Facilities
+    // Academic Facilities
   classroomType?: string;
   hasLibrary?: boolean;
   hasComputerLab?: boolean;
@@ -63,7 +75,7 @@ interface SchoolProfile {
   hasRoboticsLab?: boolean;
   hasStemLab?: boolean;
   hasAuditorium?: boolean;
-  
+
   // Sports & Fitness
   hasPlayground?: boolean;
   sportsFacilities?: string;
@@ -73,7 +85,7 @@ interface SchoolProfile {
   hasMartialArts?: boolean;
   hasMusicDance?: boolean;
   hasHorseRiding?: boolean;
-  
+
   // Technology & Digital
   hasSmartBoard?: boolean;
   hasWifi?: boolean;
@@ -81,13 +93,13 @@ interface SchoolProfile {
   hasElearning?: boolean;
   hasAcClassrooms?: boolean;
   hasAiTools?: boolean;
-  
+
   // Transport
   hasTransport?: boolean;
   hasGpsBuses?: boolean;
   hasCctvBuses?: boolean;
   hasBusCaretaker?: boolean;
-  
+
   // Health & Safety
   hasMedicalRoom?: boolean;
   hasDoctorNurse?: boolean;
@@ -95,13 +107,13 @@ interface SchoolProfile {
   hasCleanWater?: boolean;
   hasSecurityGuards?: boolean;
   hasAirPurifier?: boolean;
-  
+
   // Boarding
   hasHostel?: boolean;
   hasMess?: boolean;
   hasHostelStudyRoom?: boolean;
   hasAcHostel?: boolean;
-  
+
   // Others
   hasCafeteria?: boolean;
   galleryImages?: string[];
@@ -126,6 +138,12 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [bannerPreview, setBannerPreview] = useState<string>('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [pendingLogoUrl, setPendingLogoUrl] = useState<string>('');
+  const [pendingBannerUrl, setPendingBannerUrl] = useState<string>('');
+
+  const hasExistingProfile = profile?.id != null;
 
   useEffect(() => {
     if (profile) {
@@ -139,62 +157,189 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
     }
   }, [profile]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadImage = async (dataUrl: string, field: 'logoUrl' | 'bannerImageUrl') => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to upload images');
+      return false;
+    }
+
+    try {
+      const res = await fetch('/api/schools/profile/logo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ [field]: dataUrl }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (err.code === 'PROFILE_NOT_FOUND') {
+          return 'pending';
+        }
+        throw new Error(err.error || 'Failed to upload image');
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('Image upload error:', error);
+      toast.error(error.message || 'Failed to upload image');
+      return false;
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
         toast.error('Please upload an image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
 
+      setUploadingLogo(true);
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const dataUrl = reader.result as string;
         setLogoPreview(dataUrl);
-        setFormData({ ...formData, logoUrl: dataUrl });
-        toast.success('Logo uploaded successfully');
+
+        if (hasExistingProfile) {
+          const result = await uploadImage(dataUrl, 'logoUrl');
+          if (result === true) {
+            setFormData({ ...formData, logoUrl: dataUrl });
+            toast.success('Logo uploaded successfully');
+          } else if (result === 'pending') {
+            setPendingLogoUrl(dataUrl);
+            toast.info('Logo will be saved when you save Basic Info');
+          } else {
+            setLogoPreview(profile?.logoUrl || '');
+          }
+        } else {
+          setPendingLogoUrl(dataUrl);
+          toast.info('Logo will be saved when you save Basic Info');
+        }
+        setUploadingLogo(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
         toast.error('Please upload an image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
 
+      setUploadingBanner(true);
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const dataUrl = reader.result as string;
         setBannerPreview(dataUrl);
-        setFormData({ ...formData, bannerImageUrl: dataUrl });
-        toast.success('Banner image uploaded successfully');
+
+        if (hasExistingProfile) {
+          const result = await uploadImage(dataUrl, 'bannerImageUrl');
+          if (result === true) {
+            setFormData({ ...formData, bannerImageUrl: dataUrl });
+            toast.success('Banner image uploaded successfully');
+          } else if (result === 'pending') {
+            setPendingBannerUrl(dataUrl);
+            toast.info('Banner will be saved when you save Basic Info');
+          } else {
+            setBannerPreview(profile?.bannerImageUrl || '');
+          }
+        } else {
+          setPendingBannerUrl(dataUrl);
+          toast.info('Banner will be saved when you save Basic Info');
+        }
+        setUploadingBanner(false);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (pendingLogoUrl) {
+      setPendingLogoUrl('');
+      setLogoPreview('');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch('/api/schools/profile/logo', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ field: 'logoUrl' }),
+      });
+
+      if (res.ok) {
+        setLogoPreview('');
+        setFormData({ ...formData, logoUrl: '' });
+        toast.success('Logo removed');
+      }
+    } catch (error) {
+      toast.error('Failed to remove logo');
+    }
+  };
+
+  const handleRemoveBanner = async () => {
+    if (pendingBannerUrl) {
+      setPendingBannerUrl('');
+      setBannerPreview('');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch('/api/schools/profile/logo', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ field: 'bannerImageUrl' }),
+      });
+
+      if (res.ok) {
+        setBannerPreview('');
+        setFormData({ ...formData, bannerImageUrl: '' });
+        toast.success('Banner removed');
+      }
+    } catch (error) {
+      toast.error('Failed to remove banner');
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Include required fields from existing profile to ensure validation passes
+    // DEBUG: Log the values being submitted
+    console.log('[BasicInfo Submit] gender:', formData.gender);
+    console.log('[BasicInfo Submit] totalStudents:', formData.totalStudents);
+    // Merged from comment: include all relevant fields for basic info
     const basicInfoData: Partial<SchoolProfile> = {
       name: formData.name,
       board: formData.board,
-      city: profile?.city || formData.city,
+      city: formData.city,
       establishmentYear: formData.establishmentYear,
       schoolType: formData.schoolType,
       k12Level: formData.k12Level,
@@ -204,12 +349,18 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
       languages: formData.languages,
       totalStudents: formData.totalStudents,
       totalTeachers: formData.totalTeachers,
-      logoUrl: formData.logoUrl,
+      studentTeacherRatio: formData.studentTeacherRatio,
       aboutSchool: formData.aboutSchool,
-      bannerImageUrl: formData.bannerImageUrl,
     };
-    
+    if (pendingLogoUrl) {
+      basicInfoData.logoUrl = pendingLogoUrl;
+    }
+    if (pendingBannerUrl) {
+      basicInfoData.bannerImageUrl = pendingBannerUrl;
+    }
     onSave(basicInfoData);
+    setPendingLogoUrl('');
+    setPendingBannerUrl('');
   };
 
   if (profileLoading) {
@@ -252,11 +403,13 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
 
             <div className="space-y-2">
               <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
-              <Input
-                id="city"
+              <Combobox
+                options={CITY_OPTIONS}
                 value={formData.city || ''}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Enter city"
+                onChange={(value) => setFormData({ ...formData, city: value })}
+                placeholder="Select city"
+                searchPlaceholder="Search city..."
+                emptyMessage="No city found."
                 required
               />
             </div>
@@ -266,7 +419,6 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
               <Select
                 value={formData.board || ''}
                 onValueChange={(value) => setFormData({ ...formData, board: value })}
-                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Board" />
@@ -278,20 +430,21 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                   <SelectItem value="Others">Others</SelectItem>
                   <SelectItem value="Unregistered">Unregistered</SelectItem>
                 </SelectContent>
-              </Select>
-            </div>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="establishmentYear">Establishment Year</Label>
-              <Input
-                id="establishmentYear"
-                type="number"
-                value={formData.establishmentYear || ''}
-                onChange={(e) => setFormData({ ...formData, establishmentYear: parseInt(e.target.value) })}
-                placeholder="e.g., 1990"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="establishmentYear">Establishment Year</Label>
+                <Input
+                  id="establishmentYear"
+                  type="number"
+                  value={formData.establishmentYear || ''}
+                  onChange={(e) => setFormData({ ...formData, establishmentYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                  placeholder="e.g. 1995"
+                />
+              </div>
 
+              {/* MODIFIED: Changed this block as per the comment */}
             <div className="space-y-2">
               <Label htmlFor="schoolType">School Type</Label>
               <Select
@@ -302,14 +455,17 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                   <SelectValue placeholder="Select Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Private">Private</SelectItem>
-                  <SelectItem value="Govt">Govt.</SelectItem>
+                  <SelectItem value="Day School">Day School</SelectItem>
+                  <SelectItem value="Boarding">Boarding</SelectItem>
+                  <SelectItem value="Day School & Boarding">Day School & Boarding</SelectItem>
+                  <SelectItem value="Govenrment">Govenrment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="k12Level">K-12 School</Label>
+              <Label htmlFor="k12Level">K-12 School Type</Label>
+              {/* changed here */}
               <Select
                 value={formData.k12Level || ''}
                 onValueChange={(value) => setFormData({ ...formData, k12Level: value })}
@@ -318,10 +474,11 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                   <SelectValue placeholder="Select Level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Foundational">Foundational (Till Class 2)</SelectItem>
-                  <SelectItem value="Preparatory">Preparatory (Class 3 to 5)</SelectItem>
-                  <SelectItem value="Middle">Middle (Class 6 to 8)</SelectItem>
-                  <SelectItem value="Secondary">Secondary (Class 9 to 12)</SelectItem>
+                  <SelectItem value="Play School">Play School</SelectItem>
+                  <SelectItem value="KG School">KG School</SelectItem>
+                  <SelectItem value="Middle School (Till Class 8)">Middle School (Till Class 8)</SelectItem>
+                  <SelectItem value="Secondary (Till Class 10)">Secondary (Till Class 10)</SelectItem>
+                  <SelectItem value="Higher Secondary (Till Class 12)">Higher Secondary (Till Class 12)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -360,25 +517,89 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
 
             <div className="space-y-2">
               <Label htmlFor="streamsAvailable">Stream Available</Label>
-              <Input
-                id="streamsAvailable"
-                value={formData.streamsAvailable || ''}
-                onChange={(e) => setFormData({ ...formData, streamsAvailable: e.target.value })}
-                placeholder="e.g., Science, Arts, Commerce"
-              />
-              <p className="text-xs text-muted-foreground">Separate multiple streams with commas</p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                {['Arts', 'Commerce', 'Science'].map((stream) => {
+                  const currentStreams = formData.streamsAvailable?.split(',').map(s => s.trim()).filter(Boolean) || [];
+                  const isSelected = currentStreams.includes(stream);
+                  return (
+                    <label
+                      key={stream}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-cyan-500 border-cyan-500 text-white'
+                          : 'bg-white border-gray-200 hover:border-cyan-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          let newStreams = [...currentStreams];
+                          if (e.target.checked) {
+                            newStreams.push(stream);
+                          } else {
+                            newStreams = newStreams.filter(s => s !== stream);
+                          }
+                          setFormData({ ...formData, streamsAvailable: newStreams.join(', ') });
+                        }}
+                        className="sr-only"
+                      />
+                      <span className="font-medium">{stream}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="languages">Language</Label>
-              <Input
-                id="languages"
-                value={formData.languages || ''}
-                onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
-                placeholder="e.g., English, Hindi, Regional Language"
-              />
-              <p className="text-xs text-muted-foreground">Separate multiple languages with commas</p>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="languages">Languages</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between h-auto min-h-10 py-2 px-3 hover:bg-white border-2 border-gray-200 focus:border-cyan-500">
+                      <div className="flex flex-wrap gap-1 items-center">
+                        {formData.languages ? (
+                          formData.languages.split(',').map((lang) => (
+                            <Badge key={lang.trim()} variant="secondary" className="bg-cyan-100 text-cyan-700 border-0">
+                              {lang.trim()}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground">Select Languages</span>
+                        )}
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
+                    {[
+                      'English', 'Hindi', 'Assamese', 'Bengali', 'Bodo', 'Dogri', 'Gujarati', 
+                      'Kannada', 'Kashmiri', 'Konkani', 'Maithili', 'Malayalam', 'Manipuri', 
+                      'Marathi', 'Nepali', 'Odia', 'Punjabi', 'Sanskrit', 'Santali', 'Sindhi', 
+                      'Tamil', 'Telugu', 'Urdu'
+                    ].map((lang) => {
+                      const currentLangs = formData.languages?.split(',').map(l => l.trim()).filter(Boolean) || [];
+                      const isSelected = currentLangs.includes(lang);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={lang}
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            let newLangs = [...currentLangs];
+                            if (checked) {
+                              if (!newLangs.includes(lang)) newLangs.push(lang);
+                            } else {
+                              newLangs = newLangs.filter(l => l !== lang);
+                            }
+                            setFormData({ ...formData, languages: newLangs.join(', ') });
+                          }}
+                        >
+                          {lang}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <p className="text-xs text-muted-foreground">Select all languages taught at your school</p>
+              </div>
 
             <div className="space-y-2">
               <Label htmlFor="totalStudents">No. of Students</Label>
@@ -413,6 +634,17 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="studentTeacherRatio">Student-Teacher Ratio</Label>
+              <Input
+                id="studentTeacherRatio"
+                value={formData.studentTeacherRatio || ''}
+                onChange={(e) => setFormData({ ...formData, studentTeacherRatio: e.target.value })}
+                placeholder="e.g., 20:1 or 25:1"
+              />
+              <p className="text-xs text-muted-foreground">Format: Students per Teacher (e.g., 20:1)</p>
+            </div>
+
             <div className="md:col-span-2 space-y-2">
               <Label htmlFor="logoUpload">Logo of School</Label>
               <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border-2 border-dashed border-cyan-200">
@@ -429,24 +661,24 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                       accept="image/*"
                       onChange={handleLogoUpload}
                       className="hidden"
+                      disabled={uploadingLogo}
                     />
                     <Button
                       type="button"
                       onClick={() => document.getElementById('logoUpload')?.click()}
                       className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                      disabled={uploadingLogo}
                     >
                       <Upload className="mr-2" size={16} />
-                      {logoPreview ? 'Change Logo' : 'Upload Logo Image'}
+                      {uploadingLogo ? 'Uploading...' : logoPreview ? 'Change Logo' : 'Upload Logo Image'}
                     </Button>
                     {logoPreview && (
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          setLogoPreview('');
-                          setFormData({ ...formData, logoUrl: '' });
-                        }}
+                        onClick={handleRemoveLogo}
                         className="shrink-0"
+                        disabled={uploadingLogo}
                       >
                         Remove
                       </Button>
@@ -486,31 +718,31 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
                       accept="image/*"
                       onChange={handleBannerUpload}
                       className="hidden"
+                      disabled={uploadingBanner}
                     />
                     <Button
                       type="button"
                       onClick={() => document.getElementById('bannerImageUrl')?.click()}
                       className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                      disabled={uploadingBanner}
                     >
                       <Upload className="mr-2" size={16} />
-                      {bannerPreview ? 'Change Banner' : 'Upload Banner Image'}
+                      {uploadingBanner ? 'Uploading...' : bannerPreview ? 'Change Banner' : 'Upload Banner Image'}
                     </Button>
                     {bannerPreview && (
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          setBannerPreview('');
-                          setFormData({ ...formData, bannerImageUrl: '' });
-                        }}
+                        onClick={handleRemoveBanner}
                         className="shrink-0"
+                        disabled={uploadingBanner}
                       >
                         Remove
                       </Button>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    Upload PNG, JPG or WEBP (Max 5MB) • Recommended: Wide format image (e.g., 1920x600)
+                    Upload PNG, JPG or WEBP (Max 5MB) - Recommended: Wide format image (e.g., 1920x600)
                   </p>
                 </div>
               </div>
@@ -520,14 +752,11 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploadingLogo || uploadingBanner}
               className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
             >
               {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <>
                   <Save className="mr-2" size={18} />
@@ -542,38 +771,82 @@ export function BasicInfoSection({ profile, profileLoading, saving, onSave }: Se
   );
 }
 
-// Contact Info Section  
+/* Contact Info Section */
 export function ContactInfoSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
+  const [mapPreviewUrl, setMapPreviewUrl] = useState('');
 
   useEffect(() => {
     if (profile) {
       setFormData(profile);
+      if (profile.googleMapUrl) {
+        setMapPreviewUrl(profile.googleMapUrl);
+      }
     }
   }, [profile]);
 
+  const handleMapSearch = async () => {
+    if (!mapSearchQuery.trim()) {
+      toast.error('Please enter a location to search');
+      return;
+    }
+
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      
+      // 1. Fetch Geocoding data
+      const geocodeRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(mapSearchQuery)}&key=${apiKey}`);
+      const geocodeData = await geocodeRes.json();
+
+      if (geocodeData.status !== 'OK') {
+        throw new Error(geocodeData.error_message || 'Could not find location on Google Maps');
+      }
+
+      const location = geocodeData.results[0].geometry.location;
+      const lat = location.lat;
+      const lng = location.lng;
+
+      // 2. Create embed URL with search query
+      const embedUrl = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(mapSearchQuery)}`;
+      
+      setMapPreviewUrl(embedUrl);
+      setFormData({ 
+        ...formData, 
+        googleMapUrl: embedUrl,
+        latitude: lat,
+        longitude: lng
+      });
+      
+      toast.success(`Location set at ${lat.toFixed(4)}, ${lng.toFixed(4)}! Click "Save Contact Info" to save changes.`);
+    } catch (error: any) {
+      console.error('Map search error:', error);
+      toast.error(error.message || 'Failed to set location');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     // Include required fields from existing profile to ensure validation passes
     const contactInfoData: Partial<SchoolProfile> = {
       name: profile?.name || formData.name, // Include required name
       board: profile?.board || formData.board, // Include required board
       city: formData.city,
-      address: formData.address,
-      state: formData.state,
-      country: formData.country,
-      website: formData.website,
-      contactNumber: formData.contactNumber,
-      whatsappNumber: formData.whatsappNumber,
-      email: formData.email,
-      facebookUrl: formData.facebookUrl,
-      instagramUrl: formData.instagramUrl,
-      linkedinUrl: formData.linkedinUrl,
-      youtubeUrl: formData.youtubeUrl,
-      googleMapUrl: formData.googleMapUrl,
+      address: formData.address || null,
+      state: formData.state || null,
+      country: formData.country || null,
+      website: formData.website || null,
+      contactNumber: formData.contactNumber || null,
+      whatsappNumber: formData.whatsappNumber || null,
+      email: formData.email || null,
+      facebookUrl: formData.facebookUrl || null,
+      instagramUrl: formData.instagramUrl || null,
+      linkedinUrl: formData.linkedinUrl || null,
+      youtubeUrl: formData.youtubeUrl || null,
+      googleMapUrl: formData.googleMapUrl || null,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
     };
-    
     onSave(contactInfoData);
   };
 
@@ -617,24 +890,66 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
 
             <div className="space-y-2">
               <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
-              <Input
-                id="city"
+              <Combobox
+                options={CITY_OPTIONS}
                 value={formData.city || ''}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Enter city"
+                onChange={(value) => setFormData({ ...formData, city: value })}
+                placeholder="Select city"
+                searchPlaceholder="Search city..."
+                emptyMessage="No city found."
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              <Input
-                id="state"
-                value={formData.state || ''}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                placeholder="Enter state"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Select
+                  value={formData.state || ''}
+                  onValueChange={(value) => setFormData({ ...formData, state: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                    <SelectItem value="Arunachal Pradesh">Arunachal Pradesh</SelectItem>
+                    <SelectItem value="Assam">Assam</SelectItem>
+                    <SelectItem value="Bihar">Bihar</SelectItem>
+                    <SelectItem value="Chhattisgarh">Chhattisgarh</SelectItem>
+                    <SelectItem value="Goa">Goa</SelectItem>
+                    <SelectItem value="Gujarat">Gujarat</SelectItem>
+                    <SelectItem value="Haryana">Haryana</SelectItem>
+                    <SelectItem value="Himachal Pradesh">Himachal Pradesh</SelectItem>
+                    <SelectItem value="Jharkhand">Jharkhand</SelectItem>
+                    <SelectItem value="Karnataka">Karnataka</SelectItem>
+                    <SelectItem value="Kerala">Kerala</SelectItem>
+                    <SelectItem value="Madhya Pradesh">Madhya Pradesh</SelectItem>
+                    <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                    <SelectItem value="Manipur">Manipur</SelectItem>
+                    <SelectItem value="Meghalaya">Meghalaya</SelectItem>
+                    <SelectItem value="Mizoram">Mizoram</SelectItem>
+                    <SelectItem value="Nagaland">Nagaland</SelectItem>
+                    <SelectItem value="Odisha">Odisha</SelectItem>
+                    <SelectItem value="Punjab">Punjab</SelectItem>
+                    <SelectItem value="Rajasthan">Rajasthan</SelectItem>
+                    <SelectItem value="Sikkim">Sikkim</SelectItem>
+                    <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                    <SelectItem value="Telangana">Telangana</SelectItem>
+                    <SelectItem value="Tripura">Tripura</SelectItem>
+                    <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
+                    <SelectItem value="Uttarakhand">Uttarakhand</SelectItem>
+                    <SelectItem value="West Bengal">West Bengal</SelectItem>
+                    <SelectItem value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</SelectItem>
+                    <SelectItem value="Chandigarh">Chandigarh</SelectItem>
+                    <SelectItem value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</SelectItem>
+                    <SelectItem value="Delhi">Delhi</SelectItem>
+                    <SelectItem value="Jammu and Kashmir">Jammu and Kashmir</SelectItem>
+                    <SelectItem value="Ladakh">Ladakh</SelectItem>
+                    <SelectItem value="Lakshadweep">Lakshadweep</SelectItem>
+                    <SelectItem value="Puducherry">Puducherry</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>
@@ -759,17 +1074,77 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
               </div>
             </div>
 
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="googleMapUrl">Google Map</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-                <Input
-                  id="googleMapUrl"
-                  value={formData.googleMapUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, googleMapUrl: e.target.value })}
-                  placeholder="https://maps.google.com/..."
-                  className="pl-10"
-                />
+            {/* NEW: Google Maps Location Picker */}
+            <div className="md:col-span-2 space-y-3">
+              <Label htmlFor="mapLocation">
+                <MapPin className="inline mr-2" size={18} />
+                School Location on Google Maps
+              </Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Search for your school's location to display an interactive map on your public page
+              </p>
+              
+              <div className="space-y-4">
+                {/* Search Input */}
+                <div className="flex gap-2">
+                  <Input
+                    id="mapLocation"
+                    value={mapSearchQuery}
+                    onChange={(e) => setMapSearchQuery(e.target.value)}
+                    placeholder="Enter school name and address (e.g., 'XYZ School, City Name')"
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleMapSearch();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleMapSearch}
+                    className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                  >
+                    <MapPin className="mr-2" size={16} />
+                    Set Location
+                  </Button>
+                </div>
+
+                {/* Map Preview */}
+                {mapPreviewUrl && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-green-600">✓ Location Preview</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setMapPreviewUrl('');
+                          setMapSearchQuery('');
+                          setFormData({ ...formData, googleMapUrl: '' });
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        Clear Location
+                      </Button>
+                    </div>
+                    <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden border-2 border-purple-300">
+                      <iframe
+                        src={mapPreviewUrl}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This map will be displayed on your school's public page under the "Location" tab
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -781,10 +1156,7 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
               className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
             >
               {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <>
                   <Save className="mr-2" size={18} />
@@ -799,13 +1171,13 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
   );
 }
 
-// Comprehensive Facilities Section with Tabs
+/* Comprehensive Facilities Section with Tabs */
 export function FacilitiesSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
+  const [uploadingFacility, setUploadingFacility] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
-      // Ensure facilityImages is always an object, never null
       setFormData({
         ...profile,
         facilityImages: profile.facilityImages || {}
@@ -815,14 +1187,11 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required basic fields first
+    // Validate required fields
     if (!profile?.name || !profile?.city || !profile?.board) {
       toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first before adding facilities');
       return;
     }
-    
-    // Include required fields from existing profile to ensure validation passes
     const facilitiesData: Partial<SchoolProfile> = {
       name: profile.name,
       board: profile.board,
@@ -868,16 +1237,11 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       hasHostelStudyRoom: formData.hasHostelStudyRoom,
       hasAcHostel: formData.hasAcHostel,
       hasCafeteria: formData.hasCafeteria,
-      // CRITICAL: Ensure facility images are included in the save
-      facilityImages: formData.facilityImages || {},
     };
-    
-    console.log('Saving facilities with images:', facilitiesData.facilityImages);
     onSave(facilitiesData);
   };
 
-  // Handle facility image upload
-  const handleFacilityImageUpload = (facilityName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFacilityImageUpload = async (facilityName: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const validFiles = Array.from(files).filter(file => {
@@ -894,34 +1258,83 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
 
       if (validFiles.length === 0) return;
 
-      const readers = validFiles.map(file => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-      });
+      setUploadingFacility(facilityName);
 
-      Promise.all(readers).then(dataUrls => {
-        const currentFacilityImages = formData.facilityImages || {};
-        const currentImages = currentFacilityImages[facilityName] || [];
-        const updatedFacilityImages = {
-          ...currentFacilityImages,
-          [facilityName]: [...currentImages, ...dataUrls]
-        };
-        setFormData({ ...formData, facilityImages: updatedFacilityImages });
+      try {
+        const readers = validFiles.map(file => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+        });
+
+        const dataUrls = await Promise.all(readers);
+
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/schools/profile/facility-images', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ facilityName, imageUrls: dataUrls }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to upload images');
+        }
+
+        const data = await res.json();
+        setFormData(prev => ({
+          ...prev,
+          facilityImages: data.facilityImages || {}
+        }));
         toast.success(`${dataUrls.length} image(s) uploaded for ${facilityName}`);
-      });
+      } catch (error: any) {
+        console.error('Facility image upload error:', error);
+        toast.error(error.message || 'Failed to upload images');
+      } finally {
+        setUploadingFacility(null);
+      }
     }
   };
 
-  // Render facility with image upload
+  const handleRemoveFacilityImage = async (facilityName: string, imageUrl: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/schools/profile/facility-images', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ facilityName, imageUrl }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to delete image');
+      }
+
+      const data = await res.json();
+      setFormData(prev => ({
+        ...prev,
+        facilityImages: data.facilityImages || {}
+      }));
+      toast.success('Image removed');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove image');
+    }
+  };
+
   const renderFacilityWithUpload = (
     facilityKey: keyof SchoolProfile,
     facilityLabel: string,
     facilityName: string
   ) => {
     const isEnabled = formData[facilityKey] as boolean || false;
+    const isUploading = uploadingFacility === facilityName;
 
     return (
       <div className="md:col-span-2 space-y-3">
@@ -943,6 +1356,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 multiple
                 onChange={(e) => handleFacilityImageUpload(facilityName, e)}
                 className="hidden"
+                disabled={isUploading}
               />
               <Button
                 type="button"
@@ -950,17 +1364,26 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 variant="outline"
                 onClick={() => document.getElementById(`${facilityName}-upload`)?.click()}
                 className="flex-1"
+                disabled={isUploading}
               >
                 <Upload className="mr-2" size={14} />
-                Upload Images for {facilityLabel}
+                {isUploading ? 'Uploading...' : `Upload Images for ${facilityLabel}`}
               </Button>
             </div>
-            {/* Thumb previews for this facility */}
             {formData.facilityImages?.[facilityName] && formData.facilityImages[facilityName]!.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {formData.facilityImages[facilityName]!.map((img, idx) => (
-                  <div key={idx} className="aspect-square rounded-md overflow-hidden border">
+                  <div key={idx} className="relative group aspect-square rounded-md overflow-hidden border">
                     <img src={img} alt={`${facilityLabel} ${idx + 1}`} className="w-full h-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemoveFacilityImage(facilityName, img)}
+                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -998,7 +1421,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs defaultValue="academic" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2" >
               <TabsTrigger value="academic">Academic</TabsTrigger>
               <TabsTrigger value="sports">Sports</TabsTrigger>
               <TabsTrigger value="technology">Technology</TabsTrigger>
@@ -1012,23 +1435,6 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
             <TabsContent value="academic" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="classroomType">Classroom Type</Label>
-                  <Select
-                    value={formData.classroomType || ''}
-                    onValueChange={(value) => setFormData({ ...formData, classroomType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Smart Class">Smart Class</SelectItem>
-                      <SelectItem value="Digital Class">Digital Class</SelectItem>
-                      <SelectItem value="Traditional">Traditional</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="computerCount">No. of Computers</Label>
                   <Input
                     id="computerCount"
@@ -1038,6 +1444,8 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                     placeholder="Enter number"
                   />
                 </div>
+
+                <div className="space-y-2" />
 
                 {renderFacilityWithUpload('hasLibrary', 'Library', 'Library')}
                 {renderFacilityWithUpload('hasComputerLab', 'Computer Lab', 'ComputerLab')}
@@ -1134,13 +1542,10 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
             <Button
               type="submit"
               disabled={saving}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emergreen-700 text-white px-8"
             >
               {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <>
                   <Save className="mr-2" size={18} />
@@ -1155,7 +1560,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
   );
 }
 
-// Gallery & Documents Section - Keeping it simple without validation for now
+/* Gallery & Documents Section - Keeping it simple without validation for now */
 export function GallerySection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [newAwardText, setNewAwardText] = useState('');
@@ -1169,13 +1574,11 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required basic fields first
+    // Validate required fields
     if (!profile?.name || !profile?.city || !profile?.board) {
       toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first before adding gallery');
       return;
     }
-
     // Don't upload images here, they're already uploaded via handleGalleryImagesUpload
     // Just save metadata
     const galleryData: Partial<SchoolProfile> = {
@@ -1186,7 +1589,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       awards: formData.awards,
       newsletterUrl: formData.newsletterUrl,
     };
-    
     onSave(galleryData);
   };
 
@@ -1232,12 +1634,10 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
             },
             body: JSON.stringify({ imageUrls: chunk }),
           });
-          
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.error || 'Failed to upload images');
           }
-          
           // Update local formData with response
           const updatedProfile = await res.json();
           setFormData(prev => ({
@@ -1245,7 +1645,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
             galleryImages: updatedProfile.galleryImages || []
           }));
         }
-        
         toast.success(`${dataUrls.length} image(s) uploaded successfully`);
       } catch (err: any) {
         toast.error(err.message || 'Failed to upload images');
@@ -1258,7 +1657,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
   const handleRemoveGalleryImage = async (index: number) => {
     const currentImages = formData.galleryImages || [];
     const imageToRemove = currentImages[index];
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/schools/profile/images', {
@@ -1269,11 +1668,11 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
         },
         body: JSON.stringify({ imageUrl: imageToRemove }),
       });
-      
+
       if (!res.ok) {
         throw new Error('Failed to delete image');
       }
-      
+
       setFormData(prev => ({
         ...prev,
         galleryImages: currentImages.filter((_, i) => i !== index)
@@ -1291,7 +1690,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
         toast.error('Please upload an image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
@@ -1398,7 +1797,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               <Label className="text-base font-semibold">Images of School</Label>
             </div>
             <p className="text-sm text-muted-foreground">Upload multiple images of your school campus</p>
-            
             <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border-2 border-dashed border-blue-300">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
@@ -1427,7 +1825,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 </p>
               </div>
             </div>
-
             {formData.galleryImages && formData.galleryImages.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">{formData.galleryImages.length} image(s) uploaded</p>
@@ -1452,16 +1849,13 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               </div>
             )}
           </div>
-
           <div className="border-t-2 pt-8" />
-
           {/* Documents Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <FileText className="text-green-600" size={20} />
               <Label className="text-base font-semibold">Documents</Label>
             </div>
-
             <div className="space-y-6">
               {/* Prospectus Upload */}
               <div className="space-y-3">
@@ -1508,7 +1902,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                   )}
                 </div>
               </div>
-
               {/* Newsletter Upload */}
               <div className="space-y-3">
                 <Label>Newsletter / Magazine (PDF/Image)</Label>
@@ -1556,16 +1949,13 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               </div>
             </div>
           </div>
-
           <div className="border-t-2 pt-8" />
-
           {/* Awards */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Trophy className="text-yellow-600" size={20} />
               <Label className="text-base font-semibold">Awards & Achievements</Label>
             </div>
-            
             <div className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border-2 border-dashed border-yellow-300 space-y-4">
               <div className="space-y-3">
                 <Input
@@ -1595,7 +1985,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                 </div>
               </div>
             </div>
-
             {formData.awards && formData.awards.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">{formData.awards.length} award(s) added</p>
@@ -1628,7 +2017,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               </div>
             )}
           </div>
-
           <div className="flex justify-end gap-3 pt-6 border-t-2">
             <Button
               type="submit"
@@ -1637,10 +2025,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               size="lg"
             >
               {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <>
                   <Save className="mr-2" size={18} />
@@ -1655,7 +2040,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
   );
 }
 
-// Virtual Tour Section
+/* Virtual Tour Section */
 export function VirtualTourSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [uploading, setUploading] = useState(false);
@@ -1669,20 +2054,17 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     // Validate required basic fields first
     if (!profile?.name || !profile?.city || !profile?.board) {
       toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first');
       return;
     }
-    
     const virtualTourData: Partial<SchoolProfile> = {
       name: profile.name,
       board: profile.board,
       city: profile.city,
       virtualTourVideos: formData.virtualTourVideos || [],
     };
-    
     onSave(virtualTourData);
   };
 
@@ -1693,7 +2075,6 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
       toast.error('Please enter a video URL');
       return;
     }
-
     // Basic URL validation
     try {
       new URL(url);
@@ -1701,7 +2082,6 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
       toast.error('Please enter a valid URL');
       return;
     }
-
     setUploading(true);
     try {
       const token = localStorage.getItem('token');
@@ -1713,12 +2093,10 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
         },
         body: JSON.stringify({ videoUrl: url }),
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to add video');
       }
-
       const updated = await res.json();
       setFormData((prev) => ({ ...prev, virtualTourVideos: (updated.virtualTourVideos as string[]) || [] }));
       setNewVideoUrl('');
@@ -1741,12 +2119,10 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
         },
         body: JSON.stringify({ videoUrl: url }),
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to delete video');
+        throw new new Error(err.error || 'Failed to delete video');
       }
-
       const updated = await res.json();
       setFormData((prev) => ({ ...prev, virtualTourVideos: (updated.virtualTourVideos as string[]) || [] }));
       toast.success('Video removed');
@@ -1787,7 +2163,6 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
                   <Video className="text-white" size={28} />
                 </div>
-                
                 <div className="w-full max-w-2xl space-y-3">
                   <Label htmlFor="videoUrl">Add Video URL</Label>
                   <div className="flex gap-3">
@@ -1823,7 +2198,6 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
                   </p>
                 </div>
               </div>
-
               {/* Preview uploaded videos */}
               {formData.virtualTourVideos && formData.virtualTourVideos.length > 0 && (
                 <div className="mt-6 space-y-3">
@@ -1859,7 +2233,6 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
                 </div>
               )}
             </div>
-
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-2">How to add videos:</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
@@ -1870,7 +2243,6 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
               </ul>
             </div>
           </div>
-
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               type="submit"
@@ -1878,10 +2250,7 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
               className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
             >
               {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <>
                   <Save className="mr-2" size={18} />
@@ -1896,10 +2265,11 @@ export function VirtualTourSection({ profile, profileLoading, saving, onSave }: 
   );
 }
 
-// Fees Structure Section
+/* Fees Structure Section */
 export function FeesSection({ profile, profileLoading, saving, onSave }: SectionProps) {
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [fees, setFees] = useState<any>({
+    kg: '',
     class1: '',
     class2: '',
     class3: '',
@@ -1919,6 +2289,7 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
       setFormData(profile);
       if (profile.feesStructure) {
         setFees({
+          kg: profile.feesStructure.kg || '',
           class1: profile.feesStructure.class1 || '',
           class2: profile.feesStructure.class2 || '',
           class3: profile.feesStructure.class3 || '',
@@ -1946,69 +2317,107 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required basic fields first
+    // DEBUG: Log the values being submitted
+    console.log('[Fees Submit] fees:', fees);
+    // Validate required fields
     if (!profile?.name || !profile?.city || !profile?.board) {
       toast.error('Please complete Basic Info (Name, Board) and Contact Info (City) sections first before adding fees');
       return;
     }
-    
     const feesStructure: any = {};
-    
+    const allFeeValues: number[] = [];
+
+    if (fees.kg && fees.kg.toString().trim() !== '') {
+      const feeValue = parseFloat(fees.kg);
+      feesStructure.kg = feeValue;
+      allFeeValues.push(feeValue);
+    }
+
     for (let i = 1; i <= 10; i++) {
       const classKey = `class${i}`;
       const value = fees[classKey];
       if (value && value.toString().trim() !== '') {
-        feesStructure[classKey] = parseFloat(value);
+        const feeValue = parseFloat(value);
+        feesStructure[classKey] = feeValue;
+        allFeeValues.push(feeValue);
       }
     }
-    
+
     if (fees.class11.commerce || fees.class11.arts || fees.class11.science) {
       feesStructure.class11 = {};
-      if (fees.class11.commerce) feesStructure.class11.commerce = parseFloat(fees.class11.commerce);
-      if (fees.class11.arts) feesStructure.class11.arts = parseFloat(fees.class11.arts);
-      if (fees.class11.science) feesStructure.class11.science = parseFloat(fees.class11.science);
+      if (fees.class11.commerce) {
+        const feeValue = parseFloat(fees.class11.commerce);
+        feesStructure.class11.commerce = feeValue;
+        allFeeValues.push(feeValue);
+      }
+      if (fees.class11.arts) {
+        const feeValue = parseFloat(fees.class11.arts);
+        feesStructure.class11.arts = feeValue;
+        allFeeValues.push(feeValue);
+      }
+      if (fees.class11.science) {
+        const feeValue = parseFloat(fees.class11.science);
+        feesStructure.class11.science = feeValue;
+        allFeeValues.push(feeValue);
+      }
     }
-    
+
     if (fees.class12.commerce || fees.class12.arts || fees.class12.science) {
       feesStructure.class12 = {};
-      if (fees.class12.commerce) feesStructure.class12.commerce = parseFloat(fees.class12.commerce);
-      if (fees.class12.arts) feesStructure.class12.arts = parseFloat(fees.class12.arts);
-      if (fees.class12.science) feesStructure.class12.science = parseFloat(fees.class12.science);
+      if (fees.class12.commerce) {
+        const feeValue = parseFloat(fees.class12.commerce);
+        feesStructure.class12.commerce = feeValue;
+        allFeeValues.push(feeValue);
+      }
+      if (fees.class12.arts) {
+        const feeValue = parseFloat(fees.class12.arts);
+        feesStructure.class12.arts = feeValue;
+        allFeeValues.push(feeValue);
+      }
+      if (fees.class12.science) {
+        const feeValue = parseFloat(fees.class12.science);
+        feesStructure.class12.science = feeValue;
+        allFeeValues.push(feeValue);
+      }
     }
+
+    // Calculate feesMin and feesMax from all entered fees
+    let feesMin = null;
+    let feesMax = null;
     
+    if (allFeeValues.length > 0) {
+      feesMin = Math.min(...allFeeValues);
+      feesMax = Math.max(...allFeeValues);
+    }
+
     // Include required fields from existing profile to ensure validation passes
     const feesData: Partial<SchoolProfile> = {
       name: profile.name,
       board: profile.board,
       city: profile.city,
-      feesStructure
+      feesStructure,
+      feesMin,
+      feesMax
     };
-    
     onSave(feesData);
   };
 
-  const handleFeeChange = (classKey: string, value: string, stream?: string) => {
+  const handleFeeChange = (key: string, value: string, stream?: string) => {
     if (stream) {
-      setFees({ ...fees, [classKey]: { ...fees[classKey], [stream]: value } });
+      setFees(prev => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [stream]: value
+        }
+      }));
     } else {
-      setFees({ ...fees, [classKey]: value });
+      setFees(prev => ({
+        ...prev,
+        [key]: value
+      }));
     }
   };
-
-  if (profileLoading) {
-    return (
-      <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
-        <CardContent className="p-8">
-          <div className="animate-pulse space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-12 bg-gray-200 rounded" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
@@ -2022,6 +2431,29 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <School className="text-cyan-600" size={20} />
+              KG / Kindergarten
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="kg">KG</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">₹</span>
+                  <Input
+                    id="kg"
+                    type="number"
+                    value={fees.kg}
+                    onChange={(e) => handleFeeChange('kg', e.target.value)}
+                    placeholder="Annual fees"
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="border-t-2 pt-8" />
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <School className="text-cyan-600" size={20} />
@@ -2046,9 +2478,7 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
               ))}
             </div>
           </div>
-
           <div className="border-t-2 pt-8" />
-
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Class 11 (Stream-wise)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -2069,9 +2499,7 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
               ))}
             </div>
           </div>
-
           <div className="border-t-2 pt-8" />
-
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Class 12 (Stream-wise)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -2092,7 +2520,6 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
               ))}
             </div>
           </div>
-
           <div className="flex justify-end gap-3 pt-6 border-t-2">
             <Button
               type="submit"
@@ -2101,10 +2528,7 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
               size="lg"
             >
               {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <>
                   <Save className="mr-2" size={18} />

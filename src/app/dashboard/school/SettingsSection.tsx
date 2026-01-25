@@ -1,13 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Lock, UserCircle, Save, Eye, EyeOff } from 'lucide-react';
+import { Settings, Lock, UserCircle, Save, Eye, EyeOff, Trash2, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { User } from '@/lib/api';
 
 interface SettingsSectionProps {
@@ -16,15 +28,17 @@ interface SettingsSectionProps {
 }
 
 export function SettingsSection({ user, onUserUpdate }: SettingsSectionProps) {
+  const router = useRouter();
+  
   // Account Details State
   const [accountDetails, setAccountDetails] = useState({
     name: user.name || '',
     email: user.email || '',
     phone: user.phone || '',
     city: user.city || '',
-    board: user.board || '',
   });
   const [savingAccount, setSavingAccount] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Password Change State
   const [passwordData, setPasswordData] = useState({
@@ -143,6 +157,40 @@ export function SettingsSection({ user, onUserUpdate }: SettingsSectionProps) {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    toast.success('Logged out successfully');
+    router.push('/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/profile', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete account');
+      }
+
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast.success('Account deleted successfully');
+      router.push('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete account');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Account Details Card */}
@@ -213,20 +261,6 @@ export function SettingsSection({ user, onUserUpdate }: SettingsSectionProps) {
                 value={accountDetails.city}
                 onChange={(e) => handleAccountDetailsChange('city', e.target.value)}
                 placeholder="Enter city"
-                className="bg-white/50"
-              />
-            </div>
-
-            {/* Board */}
-            <div className="space-y-2">
-              <Label htmlFor="board" className="text-sm font-semibold">
-                Board
-              </Label>
-              <Input
-                id="board"
-                value={accountDetails.board}
-                onChange={(e) => handleAccountDetailsChange('board', e.target.value)}
-                placeholder="e.g., CBSE, ICSE, State Board"
                 className="bg-white/50"
               />
             </div>
@@ -354,6 +388,77 @@ export function SettingsSection({ user, onUserUpdate }: SettingsSectionProps) {
             >
               <Lock className="mr-2" size={18} />
               {savingPassword ? 'Changing...' : 'Change Password'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone Card */}
+      <Card className="border-2 border-red-100 shadow-xl bg-white/80 backdrop-blur-sm">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+              <Trash2 className="text-red-600" size={20} />
+            </div>
+            <div>
+              <CardTitle className="text-red-600">Danger Zone</CardTitle>
+              <CardDescription>Irreversible account actions</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-red-50/50 border border-red-100">
+            <div>
+              <h3 className="font-semibold text-red-900 mb-1">Delete Account</h3>
+              <p className="text-sm text-red-700">Permanently delete your account and all associated data. This action cannot be undone.</p>
+            </div>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700 shadow-lg shadow-red-200"
+                  disabled={deletingAccount}
+                >
+                  <Trash2 className="mr-2" size={18} />
+                  Delete Account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your
+                    account and remove all your data (school profile, enquiries, news, results, and alumni) from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {deletingAccount ? "Deleting..." : "Yes, Delete My Account"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
+          <Separator className="bg-red-100" />
+
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <h3 className="font-semibold text-lg mb-1 text-gray-700">Sign Out</h3>
+              <p className="text-sm text-muted-foreground">Sign out from your account</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="border-gray-200 hover:bg-gray-100"
+            >
+              <LogOut className="mr-2" size={18} />
+              Logout
             </Button>
           </div>
         </CardContent>
