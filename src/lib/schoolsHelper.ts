@@ -245,21 +245,26 @@ export async function updateSchool(id: number, data: any) {
   
   console.log('updateSchool: Updating school with $set:', JSON.stringify(data).substring(0, 500));
   
-  const updated = await School.findOneAndUpdate(
+  const db = mongoose.connection.db;
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+  
+  const result = await db.collection('schools').findOneAndUpdate(
     { id }, 
     { $set: data },
-    { new: true }
-  ).lean();
+    { returnDocument: 'after' }
+  );
   
-  console.log('updateSchool: Updated result whatsappWebhookUrl:', updated?.whatsappWebhookUrl);
+  console.log('updateSchool: Updated result whatsappWebhookUrl:', result?.whatsappWebhookUrl);
   
-  if (!updated) {
+  if (!result) {
     return getSchool(id);
   }
   
   return {
-    ...updated,
-    id: Number(updated.id),
+    ...result,
+    id: Number(result.id),
   };
 }
 
