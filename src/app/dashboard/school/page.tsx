@@ -109,8 +109,6 @@ export default function SchoolDashboard() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewStats, setReviewStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  // Updated reviewFilterStatus default value from 'approved' to 'pending' for better moderation UX
-  const [reviewFilterStatus, setReviewFilterStatus] = useState('pending');
 
   useEffect(() => {
     loadSchoolData();
@@ -136,7 +134,7 @@ export default function SchoolDashboard() {
       loadReviews();
       loadReviewStats();
     }
-  }, [activeSection, user, reviewFilterStatus]);
+  }, [activeSection, user]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -381,7 +379,7 @@ export default function SchoolDashboard() {
     setReviewsLoading(true);
     try {
       const response = await fetch(
-        `/api/reviews?schoolId=${user.schoolId}&status=${reviewFilterStatus}&limit=100`,
+        `/api/reviews?schoolId=${user.schoolId}&limit=100`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -1319,59 +1317,33 @@ export default function SchoolDashboard() {
                           </div>
                         </CardContent>
                       </Card>
-                      <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
-                              <CheckCircle2 className="text-white" size={24} />
+                        <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                                <CheckCircle2 className="text-white" size={24} />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground">Total Reviews</p>
+                                <p className="text-2xl font-bold">{reviewStats.counts?.approved + (reviewStats.counts?.pending || 0) + (reviewStats.counts?.rejected || 0) || 0}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground">Approved Reviews</p>
-                              <p className="text-2xl font-bold">{reviewStats.counts?.approved || 0}</p>
-                            </div>
+                          </CardContent>
+                        </Card>
+                      </>
+                    ) : null}
+                  </div>
+                  <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                            <Star className="text-white" size={20} />
                           </div>
-                        </CardContent>
-                      </Card>
-                      <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onClick={() => setReviewFilterStatus('pending')}>
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-lg">
-                              <Clock className="text-white" size={24} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground">Pending Moderation</p>
-                              <p className="text-2xl font-bold text-orange-600">{reviewStats.counts?.pending || 0}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </>
-                  ) : null}
-                </div>
-                <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                          <Star className="text-white" size={20} />
-                        </div>
-                        Review Management
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground hidden sm:block">Filter by status:</span>
-                        <Select value={reviewFilterStatus} onValueChange={setReviewFilterStatus}>
-                          <SelectTrigger className="w-[140px] bg-white/50 border-gray-200">
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="approved">Approved</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          Review Management
+                        </CardTitle>
                       </div>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
                 <CardContent>
                   {reviewsLoading ? (
                     <div className="text-center py-12">
@@ -1379,13 +1351,13 @@ export default function SchoolDashboard() {
                       <p className="text-muted-foreground">Loading reviews...</p>
                     </div>
                   ) : reviews.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
-                        <Star className="opacity-50" size={48} />
+                      <div className="text-center py-16 text-muted-foreground">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
+                          <Star className="opacity-50" size={48} />
+                        </div>
+                        <p className="text-xl font-semibold mb-2">No reviews found</p>
+                        <p>Reviews will appear here once students submit them</p>
                       </div>
-                      <p className="text-xl font-semibold mb-2">No {reviewFilterStatus} reviews</p>
-                      <p>Reviews will appear here once students submit them</p>
-                    </div>
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review) => (
