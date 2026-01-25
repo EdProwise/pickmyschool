@@ -3153,12 +3153,12 @@ export default function SchoolDetailPage() {
                             </div>
                             Phone Number *
                           </Label>
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
                             <Select 
                               value={enquiryForm.studentPhoneCode} 
                               onValueChange={(value) => setEnquiryForm({ ...enquiryForm, studentPhoneCode: value })}
                             >
-                              <SelectTrigger className="w-[120px] h-12 border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-xl">
+                              <SelectTrigger className="w-[120px] h-12 border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-xl flex items-center">
                                 <SelectValue>
                                   {phoneCountryCodes.find(c => c.code === enquiryForm.studentPhoneCode)?.flag} {enquiryForm.studentPhoneCode}
                                 </SelectValue>

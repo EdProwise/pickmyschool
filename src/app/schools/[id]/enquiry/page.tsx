@@ -146,9 +146,9 @@ export default function PublicEnquiryPage() {
           <Label htmlFor={field.id} className="text-xs sm:text-sm font-bold text-gray-700 mb-1.5 sm:mb-2 block px-1">
             {field.label} {field.required && <span className="text-red-500">*</span>}
           </Label>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Select value={phoneCode} onValueChange={setPhoneCode}>
-              <SelectTrigger className="w-[110px] h-11 sm:h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl">
+              <SelectTrigger className="w-[110px] h-11 sm:h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl flex items-center">
                 <SelectValue>
                   {phoneCountryCodes.find(c => c.code === phoneCode)?.flag} {phoneCode}
                 </SelectValue>
