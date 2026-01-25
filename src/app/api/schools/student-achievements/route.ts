@@ -18,11 +18,9 @@ export async function GET(request: NextRequest) {
 
     let numericSchoolId: number;
     
-    // Check if it's a numeric ID or an ObjectId
     if (/^\d+$/.test(schoolIdParam)) {
       numericSchoolId = parseInt(schoolIdParam);
     } else {
-      // It might be an ObjectId, resolve it to numeric ID
       const school = await School.findById(schoolIdParam);
       if (!school) {
         return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -73,7 +71,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get numeric schoolId from user's school
     const userWithSchool = await User.findById(decoded.userId).populate('schoolId');
     if (!userWithSchool || !userWithSchool.schoolId) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -121,7 +118,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get numeric schoolId from user's school
     const userWithSchool = await User.findById(decoded.userId).populate('schoolId');
     if (!userWithSchool || !userWithSchool.schoolId) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -186,7 +182,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get numeric schoolId from user's school
     const userWithSchool = await User.findById(decoded.userId).populate('schoolId');
     if (!userWithSchool || !userWithSchool.schoolId) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
