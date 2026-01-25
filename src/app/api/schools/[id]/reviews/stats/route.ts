@@ -5,12 +5,12 @@ import { getSchool } from '@/lib/schoolsHelper';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
     
-    const { id: schoolId } = await params;
+    const { id: schoolId } = params;
 
     // Validate ID is valid integer
     if (!schoolId || isNaN(parseInt(schoolId))) {
@@ -38,32 +38,11 @@ export async function GET(
       );
     }
 
-    // Get counts for all statuses
-    const statusCounts = await Review.aggregate([
-      { $match: { schoolId: id } },
-      {
-        $group: {
-          _id: '$approvalStatus',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const counts: { [key: string]: number } = {
-      pending: 0,
-      approved: 0,
-      rejected: 0,
-    };
-
-    statusCounts.forEach((row) => {
-      if (row._id && counts.hasOwnProperty(row._id)) {
-        counts[row._id] = row.count;
-      }
-    });
-
-    // Query approved reviews for rating distribution
-    const ratingStatsResult = await Review.aggregate([
-      { $match: { schoolId: id, approvalStatus: 'approved' } },
+    // Query approved reviews for statistics
+    const query = { schoolId: id, approvalStatus: 'approved' };
+    
+    const statsResult = await Review.aggregate([
+      { $match: query },
       {
         $group: {
           _id: '$rating',
@@ -81,26 +60,26 @@ export async function GET(
       '5': 0,
     };
 
+    let totalReviews = 0;
     let totalScore = 0;
-    const totalApproved = counts.approved;
 
-    ratingStatsResult.forEach((row) => {
+    statsResult.forEach((row) => {
       const rating = row._id.toString();
       const count = row.count;
       if (ratingDistribution.hasOwnProperty(rating)) {
         ratingDistribution[rating] = count;
       }
+      totalReviews += count;
       totalScore += (row._id * count);
     });
 
-    const averageRating = totalApproved > 0 ? parseFloat((totalScore / totalApproved).toFixed(2)) : 0;
+    const averageRating = totalReviews > 0 ? parseFloat((totalScore / totalReviews).toFixed(2)) : 0;
 
     return NextResponse.json(
       {
         averageRating,
-        totalReviews: totalApproved, // Maintain backward compatibility if needed, but we have counts now
+        totalReviews,
         ratingDistribution,
-        counts,
       },
       { status: 200 }
     );

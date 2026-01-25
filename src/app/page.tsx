@@ -13,8 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getFeaturedSchools, getTrendingSchools, type School } from '@/lib/api';
 
 interface Testimonial {
-  id: string;
-  _id?: string;
+  id: number;
   parentName: string;
   location: string;
   rating: number;
@@ -960,9 +959,9 @@ export default function HomePage() {
               <div className="overflow-hidden -mx-3 sm:mx-0">
                 <div className="testimonials-scroll flex gap-4 sm:gap-8 px-3 sm:px-0">
                   {/* Only top 6 testimonials, single set */}
-                    {testimonials.slice(0, 6).map((testimonial) => (
-                      <Card 
-                        key={testimonial.id || testimonial._id}
+                  {testimonials.slice(0, 6).map((testimonial) => (
+                    <Card 
+                      key={testimonial.id}
                       className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.02] sm:hover:scale-[1.03] hover:-translate-y-1 flex-shrink-0 w-[280px] sm:w-[400px]"
                     >
                       <CardContent className="p-4 sm:p-6 relative">

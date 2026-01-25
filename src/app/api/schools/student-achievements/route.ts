@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { StudentAchievement, User, School } from '@/lib/models';
+import { StudentAchievement, User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -10,25 +10,13 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     
     const { searchParams } = new URL(request.url);
-    const schoolIdParam = searchParams.get('schoolId');
+    const schoolId = searchParams.get('schoolId');
 
-    if (!schoolIdParam) {
+    if (!schoolId) {
       return NextResponse.json({ error: 'School ID is required' }, { status: 400 });
     }
 
-    let numericSchoolId: number;
-    
-    if (/^\d+$/.test(schoolIdParam)) {
-      numericSchoolId = parseInt(schoolIdParam);
-    } else {
-      const school = await School.findById(schoolIdParam);
-      if (!school) {
-        return NextResponse.json({ error: 'School not found' }, { status: 404 });
-      }
-      numericSchoolId = school.id;
-    }
-
-    const achievements = await StudentAchievement.find({ schoolId: numericSchoolId })
+    const achievements = await StudentAchievement.find({ schoolId: parseInt(schoolId) })
       .sort({ year: -1, createdAt: -1 })
       .lean();
 
@@ -61,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+      const body = await request.json();
     const { year, studentName, marks, classLevel, section, achievement, images } = body;
 
     if (!year || !studentName || !classLevel || !achievement) {
@@ -71,11 +59,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userWithSchool = await User.findById(decoded.userId).populate('schoolId');
-    if (!userWithSchool || !userWithSchool.schoolId) {
-      return NextResponse.json({ error: 'School not found' }, { status: 404 });
-    }
-    const numericSchoolId = (userWithSchool.schoolId as any).id;
+    // Get numeric schoolId from user's school
+    const school = await (user as any).populate('schoolId');
+    const numericSchoolId = school.schoolId.id;
 
     const newAchievement = await StudentAchievement.create({
       schoolId: numericSchoolId,
@@ -112,17 +98,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const userRecord = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId);
 
-    if (!userRecord || userRecord.role !== 'school' || !userRecord.schoolId) {
+    if (!user || user.role !== 'school' || !user.schoolId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const userWithSchool = await User.findById(decoded.userId).populate('schoolId');
-    if (!userWithSchool || !userWithSchool.schoolId) {
-      return NextResponse.json({ error: 'School not found' }, { status: 404 });
-    }
-    const numericSchoolId = (userWithSchool.schoolId as any).id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -133,11 +113,6 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const { year, studentName, marks, classLevel, section, achievement, images } = body;
-
-    const existingAchievement = await StudentAchievement.findById(id);
-    if (!existingAchievement || existingAchievement.schoolId !== numericSchoolId) {
-      return NextResponse.json({ error: 'Achievement not found or unauthorized' }, { status: 404 });
-    }
 
     const updated = await StudentAchievement.findByIdAndUpdate(
       id,
@@ -152,6 +127,10 @@ export async function PUT(request: NextRequest) {
       },
       { new: true }
     ).lean();
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Achievement not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ ...updated, id: updated._id });
   } catch (error) {
@@ -176,28 +155,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const userRecord = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId);
 
-    if (!userRecord || userRecord.role !== 'school' || !userRecord.schoolId) {
+    if (!user || user.role !== 'school' || !user.schoolId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const userWithSchool = await User.findById(decoded.userId).populate('schoolId');
-    if (!userWithSchool || !userWithSchool.schoolId) {
-      return NextResponse.json({ error: 'School not found' }, { status: 404 });
-    }
-    const numericSchoolId = (userWithSchool.schoolId as any).id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
       return NextResponse.json({ error: 'Achievement ID is required' }, { status: 400 });
-    }
-
-    const existingAchievement = await StudentAchievement.findById(id);
-    if (!existingAchievement || existingAchievement.schoolId !== numericSchoolId) {
-      return NextResponse.json({ error: 'Achievement not found or unauthorized' }, { status: 404 });
     }
 
     await StudentAchievement.findByIdAndDelete(id);

@@ -215,9 +215,8 @@ function CompareSchoolsContent() {
   const hasFacility = (school: School, facilityKey: string): boolean => {
     if ((school as any)[facilityKey] === true) return true;
     const facilityLabel = facilityMapping[facilityKey]?.toLowerCase();
-    if (!facilityLabel) return false;
     if (school.facilities && Array.isArray(school.facilities)) {
-      return school.facilities.some(f => f && f.toLowerCase() === facilityLabel);
+      return school.facilities.some(f => f.toLowerCase() === facilityLabel);
     }
     return false;
   };

@@ -198,26 +198,24 @@ export async function createSchool(data: any) {
     newsletterUrl: data.newsletterUrl,
     feesStructure: data.feesStructure,
     facilityImages: data.facilityImages,
-      logo: data.logo,
-      bannerImage: data.bannerImage,
-      studentTeacherRatio: data.studentTeacherRatio,
-      feesMin: data.feesMin,
-      feesMax: data.feesMax,
-      facilities: data.facilities,
-      description: data.description,
-      gallery: data.gallery,
-      rating: data.rating || 0,
-      reviewCount: data.reviewCount || 0,
-      profileViews: data.profileViews || 0,
-      featured: data.featured || false,
-      isPublic: data.isPublic !== undefined ? data.isPublic : true,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      whatsappWebhookUrl: data.whatsappWebhookUrl,
-      whatsappApiKey: data.whatsappApiKey,
-      createdAt: now,
-      updatedAt: now,
-    });
+    logo: data.logo,
+    bannerImage: data.bannerImage,
+    studentTeacherRatio: data.studentTeacherRatio,
+    feesMin: data.feesMin,
+    feesMax: data.feesMax,
+    facilities: data.facilities,
+    description: data.description,
+    gallery: data.gallery,
+    rating: data.rating || 0,
+    reviewCount: data.reviewCount || 0,
+    profileViews: data.profileViews || 0,
+    featured: data.featured || false,
+    isPublic: data.isPublic !== undefined ? data.isPublic : true,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    createdAt: now,
+    updatedAt: now,
+  });
   
   await school.save();
   
@@ -227,12 +225,9 @@ export async function createSchool(data: any) {
 export async function updateSchool(id: number, data: any) {
   await connectToDatabase();
   
-  console.log('updateSchool called with id:', id, 'data keys:', Object.keys(data));
-  
   const existingSchool = await School.findOne({ id });
   
   if (!existingSchool) {
-    console.log('updateSchool: School not found, creating new one');
     data.id = id;
     data.createdAt = new Date().toISOString();
     data.updatedAt = new Date().toISOString();
@@ -243,29 +238,9 @@ export async function updateSchool(id: number, data: any) {
   
   data.updatedAt = new Date().toISOString();
   
-  console.log('updateSchool: Updating school with $set:', JSON.stringify(data).substring(0, 500));
+  await School.findOneAndUpdate({ id }, { $set: data });
   
-  const db = mongoose.connection.db;
-  if (!db) {
-    throw new Error('Database connection not available');
-  }
-  
-  const result = await db.collection('schools').findOneAndUpdate(
-    { id }, 
-    { $set: data },
-    { returnDocument: 'after' }
-  );
-  
-  console.log('updateSchool: Updated result whatsappWebhookUrl:', result?.whatsappWebhookUrl);
-  
-  if (!result) {
-    return getSchool(id);
-  }
-  
-  return {
-    ...result,
-    id: Number(result.id),
-  };
+  return getSchool(id);
 }
 
 export async function deleteSchool(id: number) {

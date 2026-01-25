@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -78,35 +75,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-      // Save files to local storage
-      const imageUrls: string[] = [];
-      
-      for (const file of files) {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        
-        // Generate unique filename
-        const timestamp = Date.now();
-        const randomString = Math.random().toString(36).substring(2, 8);
-        const extension = file.name.split('.').pop() || 'jpg';
-        const filename = `${timestamp}-${randomString}.${extension}`;
-        
-        // Upload directory for achievements
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'achievements');
-        
-        // Ensure directory exists
-        if (!existsSync(uploadDir)) {
-          await mkdir(uploadDir, { recursive: true });
-        }
-        
-        // Write file to disk
-        const filePath = path.join(uploadDir, filename);
-        await writeFile(filePath, buffer);
-        
-        // Return public URL
-        const publicUrl = `/uploads/achievements/${filename}`;
-        imageUrls.push(publicUrl);
-      }
+    // Convert files to base64 data URLs for now
+    // In production, you'd upload to a cloud storage service (S3, Cloudflare R2, etc.)
+    const imageUrls: string[] = [];
+    
+    for (const file of files) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${file.type};base64,${base64}`;
+      imageUrls.push(dataUrl);
+    }
 
     return NextResponse.json({ 
       success: true,

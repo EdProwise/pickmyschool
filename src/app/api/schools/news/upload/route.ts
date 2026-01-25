@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -102,32 +99,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-        // Save file to local storage
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        
-        // Generate unique filename
-        const timestamp = Date.now();
-        const randomString = Math.random().toString(36).substring(2, 8);
-        const extension = file.name.split('.').pop() || 'bin';
-        const filename = `${timestamp}-${randomString}.${extension}`;
-        
-        // Determine upload directory based on type
-        const typeFolder = type === 'image' ? 'images' : type === 'document' ? 'documents' : 'videos';
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'news', typeFolder);
-        
-        // Ensure directory exists
-        if (!existsSync(uploadDir)) {
-          await mkdir(uploadDir, { recursive: true });
-        }
-        
-        // Write file to disk
-        const filePath = path.join(uploadDir, filename);
-        await writeFile(filePath, buffer);
-        
-        // Return public URL
-        const publicUrl = `/uploads/news/${typeFolder}/${filename}`;
-        fileUrls.push(publicUrl);
+      // Convert file to base64 data URL
+      // In production, upload to cloud storage (S3, Cloudflare R2, etc.)
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${file.type};base64,${base64}`;
+      fileUrls.push(dataUrl);
     }
 
     return NextResponse.json({ 

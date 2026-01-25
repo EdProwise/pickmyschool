@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Enquiry, User, Notification, School } from '@/lib/models';
+import { Enquiry, User, Notification } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const VALID_STATUSES = ['New', 'In Progress', 'Converted', 'Lost'];
@@ -52,16 +52,6 @@ export async function PUT(
 
     const userSchoolId = userRecord.schoolId;
 
-    // Get the numeric school ID from the school record
-    const school = await School.findById(userSchoolId);
-    if (!school) {
-      return NextResponse.json(
-        { error: 'Associated school not found', code: 'SCHOOL_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-    const numericSchoolId = school.id;
-
     const enquiryRecord = await Enquiry.findById(paramId);
 
     if (!enquiryRecord) {
@@ -71,7 +61,7 @@ export async function PUT(
       );
     }
 
-    if (Number(enquiryRecord.schoolId) !== Number(numericSchoolId)) {
+    if (enquiryRecord.schoolId !== userSchoolId) {
       return NextResponse.json(
         { error: 'Not authorized to update this enquiry', code: 'NOT_AUTHORIZED' },
         { status: 403 }

@@ -172,11 +172,8 @@ export async function GET(request: NextRequest) {
       query.schoolId = schoolId;
     }
 
-    if (isSchoolUser) {
-      if (statusParam && ['pending', 'approved', 'rejected'].includes(statusParam)) {
-        query.approvalStatus = statusParam;
-      }
-      // If statusParam is missing or not in the list, return all reviews for schools
+    if (isSchoolUser && statusParam && ['pending', 'approved', 'rejected'].includes(statusParam)) {
+      query.approvalStatus = statusParam;
     } else {
       query.approvalStatus = 'approved';
     }

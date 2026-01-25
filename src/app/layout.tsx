@@ -9,13 +9,6 @@ import { AIChat } from "@/components/AIChat";
 export const metadata: Metadata = {
   title: "PickMySchool - Find the Perfect School for Your Child",
   description: "Discover and compare the best schools in your area. A comprehensive school discovery platform for parents and students.",
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
-  },
 };
 
 export default function RootLayout({

@@ -12,8 +12,8 @@ export interface IUser extends Document {
   schoolId?: mongoose.Types.ObjectId;
   savedSchools?: number[];
   emailVerified: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -27,7 +27,9 @@ const UserSchema = new Schema<IUser>({
   schoolId: { type: Schema.Types.ObjectId, ref: 'School' },
   savedSchools: [{ type: Number }],
   emailVerified: { type: Boolean, default: false },
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface ISchool extends Document {
   _id: mongoose.Types.ObjectId;
@@ -129,8 +131,8 @@ export interface ISchool extends Document {
   isPublic: boolean;
   latitude?: number;
   longitude?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const SchoolSchema = new Schema<ISchool>({
@@ -232,7 +234,9 @@ const SchoolSchema = new Schema<ISchool>({
   isPublic: { type: Boolean, default: true },
   latitude: { type: Number },
   longitude: { type: Number },
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 SchoolSchema.index({ city: 1 });
 SchoolSchema.index({ board: 1 });
@@ -256,8 +260,8 @@ export interface IEnquiry extends Document {
   studentState?: string;
   studentAge?: string;
   studentGender?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const EnquirySchema = new Schema<IEnquiry>({
@@ -274,8 +278,10 @@ const EnquirySchema = new Schema<IEnquiry>({
   studentAddress: { type: String },
   studentState: { type: String },
   studentAge: { type: String },
-    studentGender: { type: String },
-  }, { timestamps: true });
+  studentGender: { type: String },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IEnquiryFormSettings extends Document {
   _id: mongoose.Types.ObjectId;
@@ -287,8 +293,8 @@ export interface IEnquiryFormSettings extends Document {
   buttonText: string;
   themeColor: string;
   isActive: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const EnquiryFormSettingsSchema = new Schema<IEnquiryFormSettings>({
@@ -299,8 +305,10 @@ const EnquiryFormSettingsSchema = new Schema<IEnquiryFormSettings>({
   successMessage: { type: String, default: 'Thank you for your enquiry! We will get back to you soon.' },
   buttonText: { type: String, default: 'Submit Enquiry' },
   themeColor: { type: String, default: '#04d3d3' },
-    isActive: { type: Boolean, default: true },
-  }, { timestamps: true });
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IChat extends Document {
   _id: mongoose.Types.ObjectId;
@@ -308,44 +316,48 @@ export interface IChat extends Document {
   role: string;
   messages?: unknown[];
   lastMessageAt?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ChatSchema = new Schema<IChat>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   role: { type: String, required: true },
   messages: [{ type: Schema.Types.Mixed }],
-    lastMessageAt: { type: String },
-  }, { timestamps: true });
+  lastMessageAt: { type: String },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface ISuperAdmin extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
   password: string;
   name: string;
-  isSuperAdmin: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const SuperAdminSchema = new Schema<ISuperAdmin>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String, required: true },
-  isSuperAdmin: { type: Boolean, default: false },
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface ISiteSettings extends Document {
   _id: mongoose.Types.ObjectId;
   spotlightSchoolId?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const SiteSettingsSchema = new Schema<ISiteSettings>({
-    spotlightSchoolId: { type: Number },
-  }, { timestamps: true });
+  spotlightSchoolId: { type: Number },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface ITestimonial extends Document {
   _id: mongoose.Types.ObjectId;
@@ -356,8 +368,8 @@ export interface ITestimonial extends Document {
   avatarUrl?: string;
   featured: boolean;
   displayOrder?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const TestimonialSchema = new Schema<ITestimonial>({
@@ -368,7 +380,9 @@ const TestimonialSchema = new Schema<ITestimonial>({
   avatarUrl: { type: String },
   featured: { type: Boolean, default: false },
   displayOrder: { type: Number },
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IReview extends Document {
   _id: mongoose.Types.ObjectId;
@@ -378,8 +392,8 @@ export interface IReview extends Document {
   reviewText: string;
   photos?: string[];
   approvalStatus: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ReviewSchema = new Schema<IReview>({
@@ -387,9 +401,11 @@ const ReviewSchema = new Schema<IReview>({
   schoolId: { type: Number, required: true },
   rating: { type: Number, required: true },
   reviewText: { type: String, required: true },
-    photos: [{ type: String }],
-    approvalStatus: { type: String, required: true, default: 'pending' },
-  }, { timestamps: true });
+  photos: [{ type: String }],
+  approvalStatus: { type: String, required: true, default: 'pending' },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IResult extends Document {
   _id: mongoose.Types.ObjectId;
@@ -404,8 +420,8 @@ export interface IResult extends Document {
   toppers?: unknown[];
   achievements?: string;
   certificateImages?: string[];
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ResultSchema = new Schema<IResult>({
@@ -420,7 +436,9 @@ const ResultSchema = new Schema<IResult>({
   toppers: [{ type: Schema.Types.Mixed }],
   achievements: { type: String },
   certificateImages: [{ type: String }],
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IStudentAchievement extends Document {
   _id: mongoose.Types.ObjectId;
@@ -434,8 +452,8 @@ export interface IStudentAchievement extends Document {
   images?: string[];
   featured: boolean;
   displayOrder?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const StudentAchievementSchema = new Schema<IStudentAchievement>({
@@ -449,7 +467,9 @@ const StudentAchievementSchema = new Schema<IStudentAchievement>({
   images: [{ type: String }],
   featured: { type: Boolean, default: false },
   displayOrder: { type: Number },
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IAlumni extends Document {
   _id: mongoose.Types.ObjectId;
@@ -466,8 +486,8 @@ export interface IAlumni extends Document {
   quote?: string;
   featured: boolean;
   displayOrder?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const AlumniSchema = new Schema<IAlumni>({
@@ -484,7 +504,9 @@ const AlumniSchema = new Schema<IAlumni>({
   quote: { type: String },
   featured: { type: Boolean, default: false },
   displayOrder: { type: Number },
-}, { timestamps: true });
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface INews extends Document {
   _id: mongoose.Types.ObjectId;
@@ -499,8 +521,8 @@ export interface INews extends Document {
   video?: string;
   isPublished: boolean;
   featured: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const NewsSchema = new Schema<INews>({
@@ -513,32 +535,36 @@ const NewsSchema = new Schema<INews>({
   images: [{ type: String }],
   pdf: { type: String },
   video: { type: String },
-    isPublished: { type: Boolean, default: true },
-    featured: { type: Boolean, default: false },
-  }, { timestamps: true });
+  isPublished: { type: Boolean, default: true },
+  featured: { type: Boolean, default: false },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
-  recipientId: mongoose.Types.ObjectId;
+  recipientId: number;
   recipientType: string;
   title: string;
   message: string;
   type: string;
-  relatedId?: mongoose.Types.ObjectId;
+  relatedId?: number;
   isRead: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const NotificationSchema = new Schema<INotification>({
-  recipientId: { type: Schema.Types.ObjectId, required: true },
+  recipientId: { type: Number, required: true },
   recipientType: { type: String, required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
-    type: { type: String, required: true },
-    relatedId: { type: Schema.Types.ObjectId },
-    isRead: { type: Boolean, default: false },
-  }, { timestamps: true });
+  type: { type: String, required: true },
+  relatedId: { type: Number },
+  isRead: { type: Boolean, default: false },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IContactSubmission extends Document {
   _id: mongoose.Types.ObjectId;
@@ -553,8 +579,8 @@ export interface IContactSubmission extends Document {
   status: string;
   notes?: string;
   assignedTo?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ContactSubmissionSchema = new Schema<IContactSubmission>({
@@ -566,10 +592,12 @@ const ContactSubmissionSchema = new Schema<IContactSubmission>({
   message: { type: String },
   subject: { type: String },
   interestedClass: { type: String },
-    status: { type: String, required: true, default: 'new' },
-    notes: { type: String },
-    assignedTo: { type: Number },
-  }, { timestamps: true });
+  status: { type: String, required: true, default: 'new' },
+  notes: { type: String },
+  assignedTo: { type: Number },
+  createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+});
 
 export interface IEmailVerificationToken extends Document {
   _id: mongoose.Types.ObjectId;
@@ -582,8 +610,9 @@ export interface IEmailVerificationToken extends Document {
 const EmailVerificationTokenSchema = new Schema<IEmailVerificationToken>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   token: { type: String, required: true, unique: true },
-    expiresAt: { type: String, required: true },
-  }, { timestamps: { createdAt: true, updatedAt: false } });
+  expiresAt: { type: String, required: true },
+  createdAt: { type: String, required: true },
+});
 
 export interface IPasswordResetToken extends Document {
   _id: mongoose.Types.ObjectId;
@@ -596,8 +625,9 @@ export interface IPasswordResetToken extends Document {
 const PasswordResetTokenSchema = new Schema<IPasswordResetToken>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   token: { type: String, required: true, unique: true },
-    expiresAt: { type: String, required: true },
-  }, { timestamps: { createdAt: true, updatedAt: false } });
+  expiresAt: { type: String, required: true },
+  createdAt: { type: String, required: true },
+});
 
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 export const School: Model<ISchool> = mongoose.models.School || mongoose.model<ISchool>('School', SchoolSchema);
@@ -616,19 +646,3 @@ export const Notification: Model<INotification> = mongoose.models.Notification |
 export const ContactSubmission: Model<IContactSubmission> = mongoose.models.ContactSubmission || mongoose.model<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
 export const EmailVerificationToken: Model<IEmailVerificationToken> = mongoose.models.EmailVerificationToken || mongoose.model<IEmailVerificationToken>('EmailVerificationToken', EmailVerificationTokenSchema);
 export const PasswordResetToken: Model<IPasswordResetToken> = mongoose.models.PasswordResetToken || mongoose.model<IPasswordResetToken>('PasswordResetToken', PasswordResetTokenSchema);
-
-export interface IAdminPasswordResetToken extends Document {
-  _id: mongoose.Types.ObjectId;
-  adminId: mongoose.Types.ObjectId;
-  token: string;
-  expiresAt: Date;
-  createdAt: Date;
-}
-
-const AdminPasswordResetTokenSchema = new Schema<IAdminPasswordResetToken>({
-  adminId: { type: Schema.Types.ObjectId, ref: 'SuperAdmin', required: true },
-  token: { type: String, required: true, unique: true },
-  expiresAt: { type: Date, required: true },
-}, { timestamps: { createdAt: true, updatedAt: false } });
-
-export const AdminPasswordResetToken: Model<IAdminPasswordResetToken> = mongoose.models.AdminPasswordResetToken || mongoose.model<IAdminPasswordResetToken>('AdminPasswordResetToken', AdminPasswordResetTokenSchema);

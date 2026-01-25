@@ -202,23 +202,9 @@ export default function SchoolDetailPage() {
     studentName: '',
     studentEmail: '',
     studentPhone: '',
-    studentPhoneCode: '+91',
     studentClass: '',
     message: '',
   });
-
-  const phoneCountryCodes = [
-    { code: '+91', country: 'India', flag: '🇮🇳' },
-    { code: '+1', country: 'USA', flag: '🇺🇸' },
-    { code: '+44', country: 'UK', flag: '🇬🇧' },
-    { code: '+971', country: 'UAE', flag: '🇦🇪' },
-    { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-    { code: '+61', country: 'Australia', flag: '🇦🇺' },
-    { code: '+49', country: 'Germany', flag: '🇩🇪' },
-    { code: '+33', country: 'France', flag: '🇫🇷' },
-    { code: '+81', country: 'Japan', flag: '🇯🇵' },
-    { code: '+86', country: 'China', flag: '🇨🇳' },
-  ];
 
   // Load saved schools on mount
   const loadSavedSchools = async () => {
@@ -556,11 +542,6 @@ export default function SchoolDetailPage() {
   const handleEnquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (enquiryForm.studentPhone.length !== 10) {
-      toast.error('Please enter a valid 10-digit phone number');
-      return;
-    }
-
     const token = localStorage.getItem('token');
 
     setSubmittingEnquiry(true);
@@ -574,18 +555,12 @@ export default function SchoolDetailPage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const fullPhoneNumber = `${enquiryForm.studentPhoneCode}${enquiryForm.studentPhone}`;
-
       const response = await fetch('/api/enquiries', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           schoolId,
-          studentName: enquiryForm.studentName,
-          studentEmail: enquiryForm.studentEmail,
-          studentPhone: fullPhoneNumber,
-          studentClass: enquiryForm.studentClass,
-          message: enquiryForm.message,
+          ...enquiryForm,
         }),
       });
 
@@ -596,7 +571,6 @@ export default function SchoolDetailPage() {
         studentName: '',
         studentEmail: '',
         studentPhone: '',
-        studentPhoneCode: '+91',
         studentClass: '',
         message: '',
       });
@@ -680,7 +654,7 @@ export default function SchoolDetailPage() {
 
     // Add legacy facilities if present
     if (school.facilities && Array.isArray(school.facilities)) {
-      facilities.push(...school.facilities.filter((f): f is string => typeof f === 'string' && f !== null && f !== undefined));
+      facilities.push(...school.facilities);
     }
 
     return [...new Set(facilities)]; // Remove duplicates
@@ -3153,43 +3127,17 @@ export default function SchoolDetailPage() {
                             </div>
                             Phone Number *
                           </Label>
-                          <div className="flex items-center gap-2">
-                            <Select 
-                              value={enquiryForm.studentPhoneCode} 
-                              onValueChange={(value) => setEnquiryForm({ ...enquiryForm, studentPhoneCode: value })}
-                            >
-                              <SelectTrigger className="w-[120px] h-12 border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-xl flex items-center">
-                                <SelectValue>
-                                  {phoneCountryCodes.find(c => c.code === enquiryForm.studentPhoneCode)?.flag} {enquiryForm.studentPhoneCode}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {phoneCountryCodes.map((country) => (
-                                  <SelectItem key={country.code} value={country.code}>
-                                    <span className="flex items-center gap-2">
-                                      <span>{country.flag}</span>
-                                      <span>{country.code}</span>
-                                      <span className="text-muted-foreground text-xs">({country.country})</span>
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              id="studentPhone"
-                              type="tel"
-                              required
-                              maxLength={10}
-                              className="flex-1 h-12 text-base border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-xl transition-colors shadow-sm"
-                              placeholder="9876543210"
-                              value={enquiryForm.studentPhone}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                setEnquiryForm({ ...enquiryForm, studentPhone: value });
-                              }}
-                            />
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">Enter 10-digit mobile number</p>
+                          <Input
+                            id="studentPhone"
+                            type="tel"
+                            required
+                            className="h-12 text-base border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-xl transition-colors shadow-sm"
+                            placeholder="+91 98765 43210"
+                            value={enquiryForm.studentPhone}
+                            onChange={(e) =>
+                              setEnquiryForm({ ...enquiryForm, studentPhone: e.target.value })
+                            }
+                          />
                         </div>
 
                         {/* Class */}

@@ -125,27 +125,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-      // Forward to EdproWise Booster Webhook (use school's configured webhook or default)
-      const webhookUrl = school.whatsappWebhookUrl || 'https://edprowisebooster.edprowise.com/api/webhooks/external-enquiry';
-      const apiKey = school.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
-      
-      try {
-        const webhookResponse = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            apiKey: apiKey,
-            name: studentName.trim(),
-            phone: studentPhone.trim(),
-            email: trimmedEmail,
-            message: message ? message.trim() : `Interested in admission for class ${studentClass.trim()}`,
-            source: 'PickMySchool'
-          })
-        });
-        console.log('Enquiry forwarded to EdproWise Booster:', webhookUrl, 'Response status:', webhookResponse.status);
-      } catch (webhookError) {
-        console.error('Failed to forward enquiry to EdproWise Booster:', webhookError);
-      }
+    // Forward to EdproWise Booster Webhook
+    try {
+      await fetch('https://edprowise-booster-1.vercel.app/api/webhooks/external-enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4',
+          name: studentName.trim(),
+          phone: studentPhone.trim(),
+          email: trimmedEmail,
+          message: message ? message.trim() : `Interested in admission for class ${studentClass.trim()}`,
+          source: 'PickMySchool'
+        })
+      });
+      console.log('Enquiry forwarded to EdproWise Booster successfully');
+    } catch (webhookError) {
+      console.error('Failed to forward enquiry to EdproWise Booster:', webhookError);
+    }
 
     return NextResponse.json(
       {

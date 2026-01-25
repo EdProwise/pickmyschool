@@ -71,8 +71,8 @@ export async function searchSchools(criteria: SchoolSearchCriteria): Promise<Sea
         if (school.facilities && Array.isArray(school.facilities)) {
           return criteria.facilities!.some(facility =>
             school.facilities.some((f: string) =>
-              f && facility && (f.toLowerCase().includes(facility.toLowerCase()) ||
-              facility.toLowerCase().includes(f.toLowerCase()))
+              f.toLowerCase().includes(facility.toLowerCase()) ||
+              facility.toLowerCase().includes(f.toLowerCase())
             )
           );
         }

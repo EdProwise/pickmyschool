@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Result, User, School } from '@/lib/models';
+import { Result, User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -10,28 +10,14 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     
     const { searchParams } = new URL(request.url);
-    const schoolIdParam = searchParams.get('schoolId');
+    const schoolId = searchParams.get('schoolId');
     const year = searchParams.get('year');
     
-    if (!schoolIdParam) {
+    if (!schoolId) {
       return NextResponse.json({ error: 'School ID is required' }, { status: 400 });
     }
 
-    let numericSchoolId: number;
-    
-    // Check if it's a numeric ID or an ObjectId
-    if (/^\d+$/.test(schoolIdParam)) {
-      numericSchoolId = parseInt(schoolIdParam);
-    } else {
-      // It might be an ObjectId, resolve it to numeric ID
-      const school = await School.findById(schoolIdParam);
-      if (!school) {
-        return NextResponse.json({ error: 'School not found' }, { status: 404 });
-      }
-      numericSchoolId = school.id;
-    }
-
-    const query: any = { schoolId: numericSchoolId };
+    const query: any = { schoolId: parseInt(schoolId) };
     if (year) {
       query.year = parseInt(year);
     }
@@ -60,37 +46,31 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     
     const user = await User.findById(decoded.userId);
-      
-      if (!user || user.role !== 'school' || !user.schoolId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-      }
+    
+    if (!user || user.role !== 'school' || !user.schoolId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
-      const school = await School.findById(user.schoolId);
-      if (!school) {
-        return NextResponse.json({ error: 'School not found' }, { status: 404 });
-      }
-      const numericSchoolId = school.id;
+    const body = await request.json();
+    const {
+      year,
+      examType,
+      classLevel,
+      passPercentage,
+      totalStudents,
+      distinction,
+      firstClass,
+      toppers,
+      achievements,
+      certificateImages
+    } = body;
 
-      const body = await request.json();
-      const {
-        year,
-        examType,
-        classLevel,
-        passPercentage,
-        totalStudents,
-        distinction,
-        firstClass,
-        toppers,
-        achievements,
-        certificateImages
-      } = body;
-
-      if (!year || !examType) {
-        return NextResponse.json({ error: 'Year and exam type are required' }, { status: 400 });
-      }
-      
-      const newResult = await Result.create({
-        schoolId: numericSchoolId,
+    if (!year || !examType) {
+      return NextResponse.json({ error: 'Year and exam type are required' }, { status: 400 });
+    }
+    
+    const newResult = await Result.create({
+      schoolId: user.schoolId,
       year,
       examType,
       classLevel: classLevel || null,
@@ -123,30 +103,24 @@ export async function PUT(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     
     const user = await User.findById(decoded.userId);
-      
-      if (!user || user.role !== 'school' || !user.schoolId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-      }
+    
+    if (!user || user.role !== 'school' || !user.schoolId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
-      const school = await School.findById(user.schoolId);
-      if (!school) {
-        return NextResponse.json({ error: 'School not found' }, { status: 404 });
-      }
-      const numericSchoolId = school.id;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-      const { searchParams } = new URL(request.url);
-      const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Result ID is required' }, { status: 400 });
+    }
 
-      if (!id) {
-        return NextResponse.json({ error: 'Result ID is required' }, { status: 400 });
-      }
+    const body = await request.json();
+    const { id: _id, ...payload } = body;
 
-      const body = await request.json();
-      const { id: _id, ...payload } = body;
-
-      const existingResult = await Result.findById(id);
-      
-      if (!existingResult || existingResult.schoolId !== numericSchoolId) {
+    const existingResult = await Result.findById(id);
+    
+    if (!existingResult || existingResult.schoolId !== user.schoolId) {
       return NextResponse.json({ error: 'Result not found or unauthorized' }, { status: 404 });
     }
 
@@ -176,27 +150,21 @@ export async function DELETE(request: NextRequest) {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     
     const user = await User.findById(decoded.userId);
-      
-      if (!user || user.role !== 'school' || !user.schoolId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-      }
+    
+    if (!user || user.role !== 'school' || !user.schoolId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
-      const school = await School.findById(user.schoolId);
-      if (!school) {
-        return NextResponse.json({ error: 'School not found' }, { status: 404 });
-      }
-      const numericSchoolId = school.id;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-      const { searchParams } = new URL(request.url);
-      const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Result ID is required' }, { status: 400 });
+    }
 
-      if (!id) {
-        return NextResponse.json({ error: 'Result ID is required' }, { status: 400 });
-      }
-
-      const existingResult = await Result.findById(id);
-      
-      if (!existingResult || existingResult.schoolId !== numericSchoolId) {
+    const existingResult = await Result.findById(id);
+    
+    if (!existingResult || existingResult.schoolId !== user.schoolId) {
       return NextResponse.json({ error: 'Result not found or unauthorized' }, { status: 404 });
     }
 

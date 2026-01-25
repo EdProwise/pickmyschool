@@ -4,12 +4,12 @@ import { Review, User } from '@/lib/models';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
     
-    const { id } = await params;
+    const { id } = params;
     const schoolId = parseInt(id);
 
     // Validate schoolId

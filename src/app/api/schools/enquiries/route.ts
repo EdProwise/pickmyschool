@@ -1,147 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Enquiry, User, School, Notification } from '@/lib/models';
+import { Enquiry, User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-
-interface JWTPayload {
-  userId: string;
-  role: string;
-}
-
-function verifySchoolToken(request: NextRequest): { user: JWTPayload | null; error: NextResponse | null } {
-  const authHeader = request.headers.get('Authorization');
-  
-  if (!authHeader?.startsWith('Bearer ')) {
-    return {
-      user: null,
-      error: NextResponse.json(
-        { error: 'No authorization token provided', code: 'NO_TOKEN' },
-        { status: 401 }
-      )
-    };
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-    if (decoded.role !== 'school') {
-      return {
-        user: null,
-        error: NextResponse.json(
-          { error: 'Only school admins can access this endpoint', code: 'FORBIDDEN' },
-          { status: 403 }
-        )
-      };
-    }
-    return { user: decoded, error: null };
-  } catch (error) {
-    return {
-      user: null,
-      error: NextResponse.json(
-        { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
-        { status: 401 }
-      )
-    };
-  }
-}
-
-// POST - Create a new enquiry manually from school dashboard
-export async function POST(request: NextRequest) {
-  try {
-    const { user, error } = verifySchoolToken(request);
-    if (error) return error;
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required', code: 'AUTHENTICATION_REQUIRED' },
-        { status: 401 }
-      );
-    }
-
-    await connectToDatabase();
-
-    // Get school admin's schoolId
-    const userRecord = await User.findById(user.userId);
-    if (!userRecord) {
-      return NextResponse.json(
-        { error: 'User not found', code: 'USER_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-
-    const userSchoolId = userRecord.schoolId;
-    if (!userSchoolId) {
-      return NextResponse.json(
-        { error: 'School admin not associated with any school', code: 'NO_SCHOOL_ASSOCIATED' },
-        { status: 400 }
-      );
-    }
-
-    const school = await School.findById(userSchoolId);
-    if (!school) {
-      return NextResponse.json(
-        { error: 'School not found', code: 'SCHOOL_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-
-    const body = await request.json();
-    const { studentName, studentEmail, studentPhone, studentClass, message, studentAddress, studentState, studentAge, studentGender } = body;
-
-    // Validate required fields
-    if (!studentName || !studentEmail || !studentPhone || !studentClass) {
-      return NextResponse.json(
-        { 
-          error: 'studentName, studentEmail, studentPhone, and studentClass are required',
-          code: 'MISSING_FIELDS'
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const trimmedEmail = studentEmail.trim().toLowerCase();
-    if (!emailRegex.test(trimmedEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format', code: 'INVALID_EMAIL' },
-        { status: 400 }
-      );
-    }
-
-    // Create the enquiry
-    const newEnquiry = await Enquiry.create({
-      schoolId: school.id,
-      studentName: studentName.trim(),
-      studentEmail: trimmedEmail,
-      studentPhone: studentPhone.trim(),
-      studentClass: studentClass.trim(),
-      message: message ? message.trim() : null,
-      status: 'New',
-      studentAddress: studentAddress ? studentAddress.trim() : null,
-      studentState: studentState || null,
-      studentAge: studentAge || null,
-      studentGender: studentGender || null,
-    });
-
-    return NextResponse.json(
-      {
-        enquiry: { ...newEnquiry.toObject(), id: newEnquiry._id },
-        message: 'Enquiry created successfully'
-      },
-      { status: 201 }
-    );
-
-  } catch (error) {
-    console.error('POST schools/enquiries error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error: ' + (error as Error).message },
-      { status: 500 }
-    );
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -188,24 +48,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userSchoolId = userRecord.schoolId;
+    const schoolId = userRecord.schoolId;
 
-    if (!userSchoolId) {
+    if (!schoolId) {
       return NextResponse.json(
         { error: 'School admin not associated with any school', code: 'NO_SCHOOL_ASSOCIATED' },
         { status: 400 }
       );
     }
-
-    // Get the numeric school ID
-    const school = await School.findById(userSchoolId);
-    if (!school) {
-      return NextResponse.json(
-        { error: 'School not found', code: 'SCHOOL_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-    const schoolId = school.id;
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;

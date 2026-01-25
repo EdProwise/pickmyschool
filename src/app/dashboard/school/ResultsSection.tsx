@@ -745,22 +745,22 @@ export function ResultsSection({ schoolId }: ResultsSectionProps) {
                           </p>
                         </div>
                         
-                          {achievement.images && Array.isArray(achievement.images) && achievement.images.length > 0 && (
-                            <div className="flex flex-wrap gap-3">
-                              {achievement.images.map((img: string, i: number) => (
-                                <div
-                                  key={i}
-                                  className="w-[132px] h-[170px] rounded-lg overflow-hidden border-2 border-purple-100 bg-gray-100"
-                                >
-                                  <img
-                                    src={img}
-                                    alt={`Achievement ${i + 1}`}
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                        {achievement.images && typeof achievement.images === 'string' && JSON.parse(achievement.images).length > 0 && (
+                          <div className="flex flex-wrap gap-3">
+                            {JSON.parse(achievement.images).map((img: string, i: number) => (
+                              <div
+                                key={i}
+                                className="w-[132px] h-[170px] rounded-lg overflow-hidden border-2 border-purple-100 bg-gray-100"
+                              >
+                                <img
+                                  src={img}
+                                  alt={`Achievement ${i + 1}`}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex gap-2 ml-4">

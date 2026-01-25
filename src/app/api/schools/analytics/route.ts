@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { User, Enquiry, Review, School } from '@/lib/models';
+import { User, Enquiry, Review } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -51,11 +51,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
 
-    const school = await School.findById(userRecord.schoolId);
-    if (!school) {
-      return NextResponse.json({ error: 'School not found' }, { status: 404 });
-    }
-    const schoolId = school.id;
+    const schoolId = userRecord.schoolId;
 
     // Build date filters for enquiries and reviews
     const enquiryQuery: any = { schoolId };

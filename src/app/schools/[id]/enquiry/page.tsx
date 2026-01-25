@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { 
   Send, CheckCircle2, AlertCircle, Loader2,
-  User, Mail, Phone, GraduationCap, MessageSquare
+  User, Mail, Phone, graduationCap, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 interface FormField {
@@ -32,19 +31,6 @@ interface EnquirySettings {
   isActive: boolean;
 }
 
-const phoneCountryCodes = [
-  { code: '+91', country: 'India', flag: '🇮🇳' },
-  { code: '+1', country: 'USA', flag: '🇺🇸' },
-  { code: '+44', country: 'UK', flag: '🇬🇧' },
-  { code: '+971', country: 'UAE', flag: '🇦🇪' },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-  { code: '+61', country: 'Australia', flag: '🇦🇺' },
-  { code: '+49', country: 'Germany', flag: '🇩🇪' },
-  { code: '+33', country: 'France', flag: '🇫🇷' },
-  { code: '+81', country: 'Japan', flag: '🇯🇵' },
-  { code: '+86', country: 'China', flag: '🇨🇳' },
-];
-
 export default function PublicEnquiryPage() {
   const params = useParams();
   const schoolId = params.id as string;
@@ -54,7 +40,6 @@ export default function PublicEnquiryPage() {
   const [submitted, setSubmitted] = useState(false);
   const [settings, setSettings] = useState<EnquirySettings | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
-  const [phoneCode, setPhoneCode] = useState('+91');
 
   useEffect(() => {
     if (schoolId) {
@@ -69,6 +54,7 @@ export default function PublicEnquiryPage() {
         const data = await response.json();
         setSettings(data);
         
+        // Initialize form data
         const initialData: Record<string, string> = {};
         data.fields.forEach((field: FormField) => {
           if (field.enabled) {
@@ -88,32 +74,19 @@ export default function PublicEnquiryPage() {
   };
 
   const handleInputChange = (fieldId: string, value: string) => {
-    if (fieldId === 'phone') {
-      const cleanValue = value.replace(/\D/g, '').slice(0, 10);
-      setFormData(prev => ({ ...prev, [fieldId]: cleanValue }));
-    } else {
-      setFormData(prev => ({ ...prev, [fieldId]: value }));
-    }
+    setFormData(prev => ({ ...prev, [fieldId]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.phone && formData.phone.length !== 10) {
-      toast.error('Please enter a valid 10-digit phone number');
-      return;
-    }
-
     setSubmitting(true);
 
     try {
-      const fullPhoneNumber = formData.phone ? `${phoneCode}${formData.phone}` : '';
-      
       const submissionData = {
         schoolId: parseInt(schoolId),
         studentName: formData.name || '',
         studentEmail: formData.email || '',
-        studentPhone: fullPhoneNumber,
+        studentPhone: formData.phone || '',
         studentClass: formData.class || '',
         message: formData.message || '',
       };
@@ -137,87 +110,6 @@ export default function PublicEnquiryPage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const renderField = (field: FormField) => {
-    if (field.id === 'phone') {
-      return (
-        <div key={field.id}>
-          <Label htmlFor={field.id} className="text-xs sm:text-sm font-bold text-gray-700 mb-1.5 sm:mb-2 block px-1">
-            {field.label} {field.required && <span className="text-red-500">*</span>}
-          </Label>
-          <div className="flex items-center gap-2">
-            <Select value={phoneCode} onValueChange={setPhoneCode}>
-              <SelectTrigger className="w-[110px] h-11 sm:h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl flex items-center">
-                <SelectValue>
-                  {phoneCountryCodes.find(c => c.code === phoneCode)?.flag} {phoneCode}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {phoneCountryCodes.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
-                    <span className="flex items-center gap-2">
-                      <span>{country.flag}</span>
-                      <span>{country.code}</span>
-                      <span className="text-muted-foreground text-xs">({country.country})</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              id={field.id}
-              type="tel"
-              required={field.required}
-              maxLength={10}
-              value={formData[field.id] || ''}
-              onChange={(e) => handleInputChange(field.id, e.target.value)}
-              placeholder="9876543210"
-              className="flex-1 h-11 sm:h-12 text-sm sm:text-base focus:ring-2 bg-gray-50/50 border-gray-200 rounded-xl"
-              style={{ '--tw-ring-color': settings?.themeColor } as any}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 px-1">Enter 10-digit mobile number</p>
-        </div>
-      );
-    }
-
-    if (field.type === 'textarea') {
-      return (
-        <div key={field.id} className="md:col-span-2">
-          <Label htmlFor={field.id} className="text-xs sm:text-sm font-bold text-gray-700 mb-1.5 sm:mb-2 block px-1">
-            {field.label} {field.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Textarea
-            id={field.id}
-            required={field.required}
-            value={formData[field.id] || ''}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
-            placeholder={`Enter your ${field.label.toLowerCase()}`}
-            className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base focus:ring-2 bg-gray-50/50 border-gray-200 rounded-xl"
-            style={{ '--tw-ring-color': settings?.themeColor } as any}
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div key={field.id}>
-        <Label htmlFor={field.id} className="text-xs sm:text-sm font-bold text-gray-700 mb-1.5 sm:mb-2 block px-1">
-          {field.label} {field.required && <span className="text-red-500">*</span>}
-        </Label>
-        <Input
-          id={field.id}
-          type={field.type}
-          required={field.required}
-          value={formData[field.id] || ''}
-          onChange={(e) => handleInputChange(field.id, e.target.value)}
-          placeholder={`Enter your ${field.label.toLowerCase()}`}
-          className="h-11 sm:h-12 text-sm sm:text-base focus:ring-2 bg-gray-50/50 border-gray-200 rounded-xl"
-          style={{ '--tw-ring-color': settings?.themeColor } as any}
-        />
-      </div>
-    );
   };
 
   if (loading) {
@@ -254,11 +146,7 @@ export default function PublicEnquiryPage() {
             {settings.successMessage}
           </p>
           <Button 
-            onClick={() => {
-              setSubmitted(false);
-              setFormData({});
-              setPhoneCode('+91');
-            }}
+            onClick={() => setSubmitted(false)}
             className="w-full h-12 text-white font-bold rounded-xl shadow-lg"
             style={{ backgroundColor: settings.themeColor }}
           >
@@ -287,7 +175,35 @@ export default function PublicEnquiryPage() {
         <CardContent className="p-4 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {settings.fields.filter(f => f.enabled).map((field) => renderField(field))}
+              {settings.fields.filter(f => f.enabled).map((field) => (
+                <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                  <Label htmlFor={field.id} className="text-xs sm:text-sm font-bold text-gray-700 mb-1.5 sm:mb-2 block px-1">
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                  </Label>
+                  {field.type === 'textarea' ? (
+                    <Textarea
+                      id={field.id}
+                      required={field.required}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      placeholder={`Enter your ${field.label.toLowerCase()}`}
+                      className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base focus:ring-2 bg-gray-50/50 border-gray-200 rounded-xl"
+                      style={{ '--tw-ring-color': settings.themeColor } as any}
+                    />
+                  ) : (
+                    <Input
+                      id={field.id}
+                      type={field.type}
+                      required={field.required}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      placeholder={`Enter your ${field.label.toLowerCase()}`}
+                      className="h-11 sm:h-12 text-sm sm:text-base focus:ring-2 bg-gray-50/50 border-gray-200 rounded-xl"
+                      style={{ '--tw-ring-color': settings.themeColor } as any}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
 
             <Button
