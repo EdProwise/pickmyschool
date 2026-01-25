@@ -51,46 +51,63 @@ export const WhatsappAPISection: React.FC<WhatsappAPISectionProps> = ({ profile 
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
-    if (!editWebhookUrl.trim()) {
-      toast.error('Webhook URL is required');
-      return;
-    }
-    if (!editApiKey.trim()) {
-      toast.error('API Key is required');
-      return;
-    }
+    const handleSave = async () => {
+        if (!editWebhookUrl.trim()) {
+          toast.error('Webhook URL is required');
+          return;
+        }
+        if (!editApiKey.trim()) {
+          toast.error('API Key is required');
+          return;
+        }
 
-    setSaving(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/schools/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          whatsappWebhookUrl: editWebhookUrl,
-          whatsappApiKey: editApiKey,
-        }),
-      });
+        setSaving(true);
+        try {
+          const token = localStorage.getItem('token');
+          
+          const profileResponse = await fetch('/api/schools/profile', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (!profileResponse.ok) {
+            throw new Error('Failed to fetch profile');
+          }
+          
+          const currentProfile = await profileResponse.json();
+          
+          const response = await fetch('/api/schools/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              ...currentProfile,
+              whatsappWebhookUrl: editWebhookUrl.trim(),
+              whatsappApiKey: editApiKey.trim(),
+            }),
+          });
 
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
+          const data = await response.json();
 
-      setWebhookUrl(editWebhookUrl);
-      setApiKey(editApiKey);
-      setIsEditing(false);
-      toast.success('WhatsApp API settings saved successfully');
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save settings');
-    } finally {
-      setSaving(false);
-    }
-  };
+          if (!response.ok) {
+            console.error('API Error:', data);
+            throw new Error(data.error || 'Failed to save settings');
+          }
+
+          setWebhookUrl(editWebhookUrl.trim());
+          setApiKey(editApiKey.trim());
+          setIsEditing(false);
+          toast.success('WhatsApp API settings saved successfully');
+        } catch (error: any) {
+          console.error('Save error:', error);
+          toast.error(error.message || 'Failed to save settings');
+        } finally {
+          setSaving(false);
+        }
+      };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
