@@ -116,25 +116,25 @@ export default function SchoolDashboard() {
 
   useEffect(() => {
     // Load review stats for header rating display
-    if (user?.schoolId) {
+    if (profile?.id) {
       loadReviewStats();
     }
-  }, [user]);
+  }, [profile?.id]);
 
   useEffect(() => {
     // Load profile when switching to profile-related sections
-    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings'].includes(activeSection) && !profile) {
+    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings', 'review'].includes(activeSection) && !profile) {
       loadSchoolProfile();
     }
-  }, [activeSection]);
+  }, [activeSection, profile]);
 
   // Load reviews when switching to review section
   useEffect(() => {
-    if (activeSection === 'review' && user?.schoolId) {
+    if (activeSection === 'review' && profile?.id) {
       loadReviews();
       loadReviewStats();
     }
-  }, [activeSection, user]);
+  }, [activeSection, profile?.id]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -374,12 +374,13 @@ export default function SchoolDashboard() {
 
   const loadReviews = async () => {
     const token = localStorage.getItem('token');
-    if (!token || !user?.schoolId) return;
+    const schoolId = profile?.id;
+    if (!token || !schoolId) return;
 
     setReviewsLoading(true);
     try {
       const response = await fetch(
-        `/api/reviews?schoolId=${user.schoolId}&limit=100`,
+        `/api/reviews?schoolId=${schoolId}&limit=100`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -401,11 +402,12 @@ export default function SchoolDashboard() {
 
   const loadReviewStats = async () => {
     const token = localStorage.getItem('token');
-    if (!token || !user?.schoolId) return;
+    const schoolId = profile?.id;
+    if (!token || !schoolId) return;
 
     setStatsLoading(true);
     try {
-      const response = await fetch(`/api/schools/${user.schoolId}/reviews/stats`, {
+      const response = await fetch(`/api/schools/${schoolId}/reviews/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
