@@ -1,0 +1,1069 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, GraduationCap, Users, Award, TrendingUp, ChevronRight, MapPin, BookOpen, Shield, Star, Flame } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import SchoolCard from '@/components/SchoolCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { getFeaturedSchools, getTrendingSchools, type School } from '@/lib/api';
+
+interface Testimonial {
+  id: number;
+  parentName: string;
+  location: string;
+  rating: number;
+  testimonialText: string;
+  avatarUrl: string | null;
+  featured: boolean;
+  displayOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function HomePage() {
+  const router = useRouter();
+  const [featuredSchools, setFeaturedSchools] = useState<School[]>([]);
+  const [trendingSchools, setTrendingSchools] = useState<School[]>([]);
+  const [spotlightSchool, setSpotlightSchool] = useState<School | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [spotlightLoading, setSpotlightLoading] = useState(true);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+  const [cityStats, setCityStats] = useState<Record<string, number>>({});
+  
+  // Search state
+  const [searchName, setSearchName] = useState('');
+  const [searchCity, setSearchCity] = useState('');
+  const [searchBoard, setSearchBoard] = useState('');
+  const [searchK12Level, setSearchK12Level] = useState('');
+  const [searchSchoolType, setSearchSchoolType] = useState('');
+  const [searchBudget, setSearchBudget] = useState('');
+
+  // Dynamic options
+  const [availableCities, setAvailableCities] = useState<{ name: string; count: number }[]>([]);
+  const [availableBoards, setAvailableBoards] = useState<{ name: string; count: number }[]>([]);
+  const [availableK12Levels, setAvailableK12Levels] = useState<{ name: string; count: number }[]>([]);
+  const [availableSchoolTypes, setAvailableSchoolTypes] = useState<{ name: string; count: number }[]>([]);
+
+  useEffect(() => {
+    const loadFeaturedSchools = async () => {
+      try {
+        const schools = await getFeaturedSchools(8);
+        setFeaturedSchools(schools);
+      } catch (error) {
+        console.error('Failed to load featured schools:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const loadTrendingSchools = async () => {
+      try {
+        const schools = await getTrendingSchools(4);
+        setTrendingSchools(schools);
+      } catch (error) {
+        console.error('Failed to load trending schools:', error);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    const loadSpotlightSchool = async () => {
+      try {
+        const response = await fetch('/api/schools/spotlight');
+        if (response.ok) {
+          const data = await response.json();
+          setSpotlightSchool(data.school);
+        }
+      } catch (error) {
+        console.error('Failed to load spotlight school:', error);
+      } finally {
+        setSpotlightLoading(false);
+      }
+    };
+
+    const loadTestimonials = async () => {
+      try {
+        const response = await fetch('/api/testimonials');
+        if (response.ok) {
+          const data = await response.json();
+          setTestimonials(Array.isArray(data) ? data.slice(0, 6) : []);
+        }
+      } catch (error) {
+        console.error('Failed to load testimonials:', error);
+      } finally {
+        setTestimonialsLoading(false);
+      }
+    };
+
+    const loadCityStats = async () => {
+      try {
+        const response = await fetch('/api/cities/stats');
+        if (response.ok) {
+          const data = await response.json();
+          const stats: Record<string, number> = {};
+          data.forEach((city: { name: string; count: number }) => {
+            stats[city.name] = city.count;
+          });
+          setCityStats(stats);
+          setAvailableCities(data.filter((c: { name: string }) => c.name && c.name.trim()));
+        }
+      } catch (error) {
+        console.error('Failed to load city stats:', error);
+      }
+    };
+
+    const loadFilterOptions = async () => {
+      try {
+        const res = await fetch('/api/schools/filter-options');
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableBoards(data.boards || []);
+          setAvailableK12Levels(data.k12Levels || []);
+          setAvailableSchoolTypes(data.schoolTypes || []);
+        }
+      } catch (error) {
+        console.error('Failed to load filter options:', error);
+      }
+    };
+
+    loadFeaturedSchools();
+    loadTrendingSchools();
+    loadSpotlightSchool();
+    loadTestimonials();
+    loadCityStats();
+    loadFilterOptions();
+  }, []);
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchName) params.append('search', searchName);
+    if (searchCity && searchCity !== 'all') params.append('city', searchCity);
+    if (searchBoard && searchBoard !== 'all') params.append('board', searchBoard);
+    if (searchK12Level && searchK12Level !== 'all') params.append('k12Level', searchK12Level);
+    if (searchSchoolType && searchSchoolType !== 'all') params.append('schoolType', searchSchoolType);
+    if (searchBudget) {
+      const budget = parseInt(searchBudget);
+      params.append('feesMax', budget.toString());
+    }
+    router.push(`/schools?${params.toString()}`);
+  };
+
+  const cityImages: Record<string, string> = {
+    'Delhi': 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800',
+    'Mumbai': 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=800',
+    'Bangalore': 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800',
+    'Ahmedabad': 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800',
+    'Pune': 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=800',
+    'Chennai': 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800',
+    'Hyderabad': 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=800',
+    'Kolkata': 'https://images.unsplash.com/photo-1558431382-bb7499d5d54a?w=800',
+    'Jaipur': 'https://images.unsplash.com/photo-1524230507669-5ff97982bb5e?w=800',
+    'Surat': 'https://images.unsplash.com/photo-1580216167151-54bc7e47a51d?w=800',
+  };
+
+  const defaultCityImage = 'https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?w=800';
+
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+
+      {/* Hero Section - Modern Split Layout */}
+      <section className="relative bg-gradient-to-br from-gray-50 via-white to-blue-50/40 pt-20 sm:pt-24 pb-12 sm:pb-24 px-3 sm:px-4 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-20 right-10 w-48 sm:w-72 h-48 sm:h-72 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-64 sm:w-96 h-64 sm:h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10 max-w-7xl">
+          {/* Split Layout: 75% (left) / 25% (right) on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-10 items-stretch">
+            {/* Left: Hero + Search (75%) */}
+            <div className="lg:col-span-3">
+              {/* Heading Section */}
+              <div className="text-center space-y-4 sm:space-y-6 mb-6 sm:mb-10">
+                <div className="inline-block">
+                  <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-cyan-50 border border-cyan-200 rounded-full text-xs sm:text-sm font-semibold text-cyan-700 mb-2 sm:mb-4">
+                    🎓 India's Premier School Discovery Platform
+                  </span>
+                </div>
+                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
+                  Find Your Child's
+                  <br />
+                  <span className="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Perfect School
+                  </span>
+                </h1>
+                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2">
+                  Discover, compare, and connect with schools near you.
+                </p>
+              </div>
+
+              {/* Premium Search Card */}
+              <div className="max-w-6xl mx-auto mb-4">
+                <Card className="shadow-2xl border-0 rounded-2xl sm:rounded-3xl overflow-hidden bg-white/95 backdrop-blur-xl">
+                  <CardContent className="p-4 sm:p-8 md:p-10">
+                    <div className="flex flex-col gap-4 sm:gap-6">
+                      {/* Search Filters Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                        {/* School Name Filter */}
+                        <div className="col-span-2 sm:col-span-1 space-y-1.5 sm:space-y-2">
+                          <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                            <Search className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-600" />
+                            School Name
+                          </label>
+                          <Input 
+                            placeholder="Type name..."
+                            value={searchName}
+                            onChange={(e) => setSearchName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSearch();
+                            }}
+                            className="h-11 sm:h-14 px-3 sm:px-4 text-sm sm:text-base font-medium border-2 border-gray-200 rounded-lg sm:rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                        </div>
+
+                        {/* Location Filter */}
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="hidden sm:inline">Location</span>
+                            <span className="sm:hidden">City</span>
+                          </label>
+                          <Select value={searchCity} onValueChange={setSearchCity}>
+                            <SelectTrigger className="!h-11 sm:!h-14 px-3 sm:px-4 text-sm sm:text-base font-medium border-2 border-gray-200 rounded-lg sm:rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Cities</SelectItem>
+                              {availableCities.map(city => (
+                                <SelectItem key={city.name} value={city.name}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span>{city.name}</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{city.count}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Board Filter */}
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            Board
+                          </label>
+                          <Select value={searchBoard} onValueChange={setSearchBoard}>
+                            <SelectTrigger className="!h-11 sm:!h-14 px-3 sm:px-4 text-sm sm:text-base font-medium border-2 border-gray-200 rounded-lg sm:rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Boards</SelectItem>
+                              {availableBoards.map(board => (
+                                <SelectItem key={board.name} value={board.name}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span>{board.name}</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{board.count}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Class Filter */}
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Class
+                          </label>
+                          <Select value={searchK12Level} onValueChange={setSearchK12Level}>
+                            <SelectTrigger className="!h-11 sm:!h-14 px-3 sm:px-4 text-sm sm:text-base font-medium border-2 border-gray-200 rounded-lg sm:rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Classes</SelectItem>
+                              {availableK12Levels.map(level => (
+                                <SelectItem key={level.name} value={level.name}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span>{level.name}</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{level.count}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* School Type Filter */}
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                            <GraduationCap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
+                            <span className="hidden sm:inline">School Type</span>
+                            <span className="sm:hidden">Type</span>
+                          </label>
+                          <Select value={searchSchoolType} onValueChange={setSearchSchoolType}>
+                            <SelectTrigger className="!h-11 sm:!h-14 px-3 sm:px-4 text-sm sm:text-base font-medium border-2 border-gray-200 rounded-lg sm:rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Types</SelectItem>
+                              {availableSchoolTypes.map(type => (
+                                <SelectItem key={type.name} value={type.name}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span>{type.name}</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{type.count}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Budget Filter */}
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <label className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Budget
+                          </label>
+                          <Select value={searchBudget} onValueChange={setSearchBudget}>
+                            <SelectTrigger className="!h-11 sm:!h-14 px-3 sm:px-4 text-sm sm:text-base font-medium border-2 border-gray-200 rounded-lg sm:rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all bg-white focus:ring-2 focus:ring-cyan-500/20">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Any Budget</SelectItem>
+                              <SelectItem value="50000">Under ₹50,000</SelectItem>
+                              <SelectItem value="100000">Under ₹1,00,000</SelectItem>
+                              <SelectItem value="150000">Under ₹1,50,000</SelectItem>
+                              <SelectItem value="200000">Under ₹2,00,000</SelectItem>
+                              <SelectItem value="999999">Above ₹2,00,000</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Search Button - Full Width */}
+                      <Button
+                        onClick={handleSearch}
+                        size="lg"
+                        className="h-12 sm:h-16 text-base sm:text-lg font-bold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white rounded-lg sm:rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group"
+                      >
+                        <Search className="mr-2 sm:mr-3 group-hover:scale-110 transition-transform" size={20} />
+                        Search Schools
+                        <svg className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Right: Featured School (25%)) */}
+            <div className="lg:col-span-1 self-center">
+              {!spotlightLoading && spotlightSchool && (
+                <div className="flex flex-col gap-5">
+                  <Card
+                    className="overflow-hidden border-0 rounded-3xl shadow-2xl bg-white hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 group relative cursor-pointer"
+                    onClick={() => router.push(`/schools/${spotlightSchool.id}`)}
+                  >
+                    {/* Premium Top Accent Border with animated gradient */}
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 animate-gradient" />
+                    
+                    {/* Decorative Corner Accent */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/10 to-orange-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    <CardContent className="p-6 relative">
+                      <div className="relative">
+                        {/* Premium Featured Badge */}
+                        <div className="mb-4 flex items-center justify-between">
+                          <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-100 text-yellow-700 text-xs font-bold border-2 border-yellow-300 shadow-md animate-pulse">
+                            <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500 text-yellow-500" />
+                            Featured School
+                          </span>
+                        </div>
+                        
+                        {/* Premium Logo & Name Container */}
+                        <div className="flex items-start gap-4 mb-4">
+                          {/* Enhanced Logo Frame */}
+                          <div className="relative flex-shrink-0">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-100 via-blue-100 to-purple-100 flex items-center justify-center overflow-hidden ring-2 ring-cyan-300/50 shadow-lg group-hover:ring-cyan-400 group-hover:scale-105 transition-all duration-300">
+                              {spotlightSchool.logo ? (
+                                <img src={spotlightSchool.logo} alt={spotlightSchool.name} className="w-14 h-14 object-contain" />
+                              ) : (
+                                <span className="text-lg font-bold bg-gradient-to-br from-cyan-600 to-purple-600 bg-clip-text text-transparent">
+                                  {spotlightSchool.name?.charAt(0) || 'S'}
+                                </span>
+                              )}
+                            </div>
+                            {/* Decorative dot */}
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-white shadow-md" />
+                          </div>
+
+                          {/* School Name */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-lg md:text-xl font-bold text-foreground leading-tight break-words group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-300">
+                              {spotlightSchool.name}
+                            </h4>
+                          </div>
+                        </div>
+
+                        {/* Premium Location Badge */}
+                        <div className="flex items-center mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200/50 w-fit">
+                          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2 shadow-sm">
+                            <MapPin className="w-3.5 h-3.5 text-white" />
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">
+                            {spotlightSchool.city}
+                            {spotlightSchool.state ? `, ${spotlightSchool.state}` : ''}
+                          </span>
+                        </div>
+
+                        {/* Premium Tags/Badges */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-300/50 shadow-sm">
+                            {spotlightSchool.board}
+                          </span>
+                          {spotlightSchool.schoolType && (
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-xl text-xs font-bold border border-purple-300/50 shadow-sm">
+                              {spotlightSchool.schoolType}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Premium Fees Display */}
+                        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-bold text-green-700">Annual Fees</span>
+                          </div>
+                          <p className="text-sm font-bold text-foreground">
+                            {spotlightSchool.feesMin !== null && spotlightSchool.feesMax !== null
+                              ? `₹${spotlightSchool.feesMin.toLocaleString('en-IN')} – ₹${spotlightSchool.feesMax.toLocaleString('en-IN')}`
+                              : 'Fee info not available'}
+                          </p>
+                        </div>
+
+                        {/* Premium Rating Badge */}
+                        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200/50 w-fit shadow-sm">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
+                            <span className="text-base font-bold bg-gradient-to-r from-yellow-700 to-orange-700 bg-clip-text text-transparent">
+                              {spotlightSchool.rating.toFixed(1)}
+                            </span>
+                          </div>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            ({spotlightSchool.reviewCount} reviews)
+                          </span>
+                        </div>
+
+                        {/* Premium Facilities */}
+                        <div className="flex flex-wrap gap-2 mb-5">
+                          {Array.isArray(spotlightSchool.facilities) && spotlightSchool.facilities.slice(0, 3).map((fac) => (
+                            <span key={fac} className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 text-foreground text-xs font-medium border border-gray-200/50 shadow-sm">
+                              {fac}
+                            </span>
+                          ))}
+                          {Array.isArray(spotlightSchool.facilities) && spotlightSchool.facilities.length > 3 && (
+                            <span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-xs font-bold border border-cyan-200/50 shadow-sm">
+                              +{spotlightSchool.facilities.length - 3} more
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Premium Action Button */}
+                        <Button 
+                          className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn relative overflow-hidden"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/schools/${spotlightSchool.id}`);
+                          }}
+                        >
+                          {/* Button shine effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            View Details
+                            <svg className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          </span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Cities Section */}
+      <section className="py-10 sm:py-16 px-3 sm:px-4 bg-gradient-to-br from-blue-50 via-cyan-50 to-purple-50/30">
+        <div className="container mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+              Explore Schools by City
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground px-2">
+              Find the best schools in top cities across India
+            </p>
+          </div>
+
+          <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+            <div className="flex gap-3 sm:gap-4 pb-4 min-w-max">
+              {availableCities.slice(0, 10).map((city) => (
+                <Card
+                  key={city.name}
+                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex-shrink-0 w-[150px] sm:w-[200px]"
+                  onClick={() => router.push(`/schools?city=${city.name}`)}
+                >
+                  <div className="relative h-24 sm:h-32">
+                    <img
+                      src={cityImages[city.name] || defaultCityImage}
+                      alt={city.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
+                      <MapPin size={20} className="mb-1 sm:mb-2 sm:w-6 sm:h-6" />
+                      <h3 className="font-bold text-base sm:text-lg">{city.name}</h3>
+                      <p className="text-xs sm:text-sm">
+                        {city.count} Schools
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Rated Schools Section */}
+      <section className="relative py-12 sm:py-20 px-3 sm:px-4 bg-gradient-to-br from-gray-50 via-white to-cyan-50/30 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-10 right-20 w-64 sm:w-96 h-64 sm:h-96 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-64 sm:w-96 h-64 sm:h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-block mb-3 sm:mb-4">
+              <span className="inline-block px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-200 rounded-full text-xs sm:text-sm font-bold text-yellow-700">
+                ⭐ Parent's Choice
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground mb-3 sm:mb-4">
+              Top Rated Schools
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
+              Highest rated schools based on parent reviews
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[...Array(8)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="h-36 sm:h-48 bg-gray-200" />
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="h-5 sm:h-6 bg-gray-200 rounded mb-2 sm:mb-3" />
+                    <div className="h-4 bg-gray-200 rounded mb-2" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {featuredSchools.map((school) => (
+                <SchoolCard key={school.id} school={school} />
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-8 sm:mt-12">
+            <Button
+              size="lg"
+              onClick={() => router.push('/schools')}
+              className="h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-bold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group"
+            >
+              View All Schools
+              <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section - Premium Design */}
+      <section className="relative py-12 sm:py-24 px-3 sm:px-4 bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-10 right-20 w-48 sm:w-72 h-48 sm:h-72 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-64 sm:w-96 h-64 sm:h-96 bg-blue-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-block mb-3 sm:mb-4">
+              <span className="inline-block px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-100 to-blue-100 border border-cyan-200 rounded-full text-xs sm:text-sm font-bold text-cyan-700">
+                Simple & Effective Process
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+              How PickMySchool Works
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2">
+              Finding the right school has never been easier. Follow these simple steps to discover your child's perfect educational journey.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 max-w-7xl mx-auto">
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-3 sm:top-6 right-3 sm:right-6 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-sm sm:text-xl font-bold shadow-lg">
+                1
+              </div>
+              <CardContent className="p-4 sm:p-8">
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Search className="text-white" size={24} />
+                </div>
+                <h3 className="text-lg sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center">Search</h3>
+                <p className="text-muted-foreground leading-relaxed text-xs sm:text-base text-center">
+                  Search schools by location, board, budget, and facilities
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-3 sm:top-6 right-3 sm:right-6 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm sm:text-xl font-bold shadow-lg">
+                2
+              </div>
+              <CardContent className="p-4 sm:p-8">
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <GraduationCap className="text-white" size={24} />
+                </div>
+                <h3 className="text-lg sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center">Compare</h3>
+                <p className="text-muted-foreground leading-relaxed text-xs sm:text-base text-center">
+                  Compare schools based on fees, facilities, and ratings
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-3 sm:top-6 right-3 sm:right-6 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm sm:text-xl font-bold shadow-lg">
+                3
+              </div>
+              <CardContent className="p-4 sm:p-8">
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Users className="text-white" size={24} />
+                </div>
+                <h3 className="text-lg sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center">Connect</h3>
+                <p className="text-muted-foreground leading-relaxed text-xs sm:text-base text-center">
+                  Submit enquiries and connect directly with schools
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative group hover:shadow-2xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+              {/* Step Number Badge */}
+              <div className="absolute top-3 sm:top-6 right-3 sm:right-6 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-sm sm:text-xl font-bold shadow-lg">
+                4
+              </div>
+              <CardContent className="p-4 sm:p-8">
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Award className="text-white" size={24} />
+                </div>
+                <h3 className="text-lg sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center">Enroll</h3>
+                <p className="text-muted-foreground leading-relaxed text-xs sm:text-base text-center">
+                  Get guidance through the admission process
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Trending Schools Section */}
+      <section className="relative py-12 sm:py-24 px-3 sm:px-4 bg-white overflow-hidden">
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-block mb-3 sm:mb-4">
+              <span className="inline-block px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-orange-100 to-red-100 border border-orange-200 rounded-full text-xs sm:text-sm font-bold text-orange-700">
+                <Flame className="inline-block w-3 h-3 sm:w-4 sm:h-4 mr-1 text-orange-600" />
+                Trending Schools
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+              Most Popular Schools
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2">
+              Check out the schools that are currently capturing everyone's attention
+            </p>
+          </div>
+
+          {trendingLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="h-36 sm:h-48 bg-gray-200" />
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="h-5 sm:h-6 bg-gray-200 rounded mb-2 sm:mb-3" />
+                    <div className="h-4 bg-gray-200 rounded mb-2" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+              {trendingSchools.map((school) => (
+                <SchoolCard key={school.id} school={school} />
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-8 sm:mt-12">
+            <Button
+              size="lg"
+              onClick={() => router.push('/schools?sort=profileViews')}
+              className="h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-bold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group"
+            >
+              View All Schools
+              <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us Section */}
+      <section className="relative py-12 sm:py-24 px-3 sm:px-4 bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50/30 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-10 left-20 w-64 sm:w-96 h-64 sm:h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-20 w-64 sm:w-96 h-64 sm:h-96 bg-cyan-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-block mb-3 sm:mb-4">
+              <span className="inline-block px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-100 to-blue-100 border border-cyan-200 rounded-full text-xs sm:text-sm font-bold text-cyan-700">
+                ✨ Your Trusted Partner
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+              Why Choose PickMySchool?
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2">
+              We make school selection seamless with verified data, smart technology, and personalized support
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 max-w-7xl mx-auto">
+            {/* Card 1: Comprehensive Database */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.02] sm:hover:scale-[1.05] hover:-translate-y-1 sm:hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 sm:h-1.5 bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-cyan-400/10 to-cyan-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-4 sm:p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <BookOpen className="text-white" size={24} />
+                </div>
+                
+                <h3 className="text-base sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center group-hover:text-cyan-600 transition-colors">
+                  Comprehensive Database
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center text-xs sm:text-base hidden sm:block">
+                  Access detailed profiles of 1000+ schools across India with complete information on academics, facilities, and fees
+                </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-cyan-600 font-semibold text-xs sm:text-sm">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-500 animate-pulse" />
+                    1000+ Schools
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 2: Verified Information */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.02] sm:hover:scale-[1.05] hover:-translate-y-1 sm:hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 sm:h-1.5 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-blue-400/10 to-blue-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-4 sm:p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Shield className="text-white" size={24} />
+                </div>
+                
+                <h3 className="text-base sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center group-hover:text-blue-600 transition-colors">
+                  Verified Information
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center text-xs sm:text-base hidden sm:block">
+                  All school data is verified and regularly updated to ensure accuracy and help you make informed decisions
+                </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-blue-600 font-semibold text-xs sm:text-sm">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse" />
+                    100% Verified
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 3: Smart Recommendations */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.02] sm:hover:scale-[1.05] hover:-translate-y-1 sm:hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 sm:h-1.5 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-purple-400/10 to-purple-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-4 sm:p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <TrendingUp className="text-white" size={24} />
+                </div>
+                
+                <h3 className="text-base sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center group-hover:text-purple-600 transition-colors">
+                  Smart Recommendations
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center text-xs sm:text-base hidden sm:block">
+                  AI-powered intelligent suggestions based on your location, budget, preferences, and your child's needs
+                </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-purple-600 font-semibold text-xs sm:text-sm">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-500 animate-pulse" />
+                    AI-Powered
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Expert Guidance */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.02] sm:hover:scale-[1.05] hover:-translate-y-1 sm:hover:-translate-y-2">
+              {/* Top Gradient Accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 sm:h-1.5 bg-gradient-to-r from-green-400 via-green-500 to-green-600" />
+              
+              {/* Decorative Corner */}
+              <div className="absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-green-400/10 to-green-600/10 rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <CardContent className="p-4 sm:p-8 relative">
+                {/* Premium Icon Container */}
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Users className="text-white" size={24} />
+                </div>
+                
+                <h3 className="text-base sm:text-2xl font-bold mb-2 sm:mb-4 text-foreground text-center group-hover:text-green-600 transition-colors">
+                  Expert Guidance
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-center text-xs sm:text-base hidden sm:block">
+                  Get personalized support from admission experts throughout your school search and application journey
+                </p>
+
+                {/* Premium Feature Badge */}
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-green-600 font-semibold text-xs sm:text-sm">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse" />
+                    24/7 Support
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* What Parents Say Section - Animated with Database Integration */}
+      <section className="relative py-12 sm:py-24 px-3 sm:px-4 bg-gradient-to-br from-white via-cyan-50/30 to-blue-50/50 overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-10 right-20 w-64 sm:w-96 h-64 sm:h-96 bg-cyan-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-64 sm:w-96 h-64 sm:h-96 bg-purple-200/20 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-block mb-3 sm:mb-4">
+              <span className="inline-block px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-200 rounded-full text-xs sm:text-sm font-bold text-yellow-700">
+                💬 Parent Testimonials
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+              What Parents Say
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2">
+              Hear from parents who found their perfect school match through PickMySchool
+            </p>
+          </div>
+
+          {testimonialsLoading ? (
+            <div className="flex gap-4 sm:gap-8 max-w-7xl mx-auto overflow-hidden">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse flex-shrink-0 w-[280px] sm:w-[400px]">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center mb-3 sm:mb-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 mr-2 sm:mr-3" />
+                      <div className="flex-1">
+                        <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2 w-3/4" />
+                        <div className="h-2 sm:h-3 bg-gray-200 rounded w-1/2" />
+                      </div>
+                    </div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2" />
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2" />
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-5/6" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : testimonials.length === 0 ? (
+            <div className="text-center py-8 sm:py-12">
+              <p className="text-muted-foreground text-base sm:text-lg">No testimonials available yet.</p>
+            </div>
+          ) : (
+            <div className="relative">
+              {/* Gradient Overlays for fade effect */}
+              <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-white via-cyan-50/50 to-transparent z-10 pointer-events-none" />
+              <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-white via-cyan-50/50 to-transparent z-10 pointer-events-none" />
+              
+              {/* Auto-scrolling container - single row, left-to-right */}
+              <div className="overflow-hidden -mx-3 sm:mx-0">
+                <div className="testimonials-scroll flex gap-4 sm:gap-8 px-3 sm:px-0">
+                  {/* Only top 6 testimonials, single set */}
+                  {testimonials.slice(0, 6).map((testimonial) => (
+                    <Card 
+                      key={testimonial.id}
+                      className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden hover:scale-[1.02] sm:hover:scale-[1.03] hover:-translate-y-1 flex-shrink-0 w-[280px] sm:w-[400px]"
+                    >
+                      <CardContent className="p-4 sm:p-6 relative">
+                        {/* Top Gradient Accent */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400" />
+                        
+                        <div className="flex items-center mb-3 sm:mb-4">
+                          <div className="relative flex-shrink-0">
+                            {testimonial.avatarUrl ? (
+                              <img
+                                src={testimonial.avatarUrl}
+                                alt={testimonial.parentName}
+                                className="w-10 h-10 sm:w-14 sm:h-14 rounded-full ring-2 ring-cyan-200"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm sm:text-lg ring-2 ring-cyan-200">
+                                {testimonial.parentName.charAt(0)}
+                              </div>
+                            )}
+                            {/* Verified Badge */}
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-green-400 to-green-600 border-2 border-white flex items-center justify-center">
+                              <svg className="w-2 h-2 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex-1 ml-2 sm:ml-0">
+                            <h4 className="font-bold text-foreground text-sm sm:text-lg">
+                              {testimonial.parentName}
+                            </h4>
+                            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                              <MapPin size={12} />
+                              <span>{testimonial.location}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Star Rating */}
+                        <div className="flex gap-0.5 sm:gap-1 mb-3 sm:mb-4">
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400"
+                            />
+                          ))}
+                        </div>
+
+                        {/* Testimonial Text */}
+                        <p className="text-muted-foreground italic leading-relaxed line-clamp-4 sm:line-clamp-6 text-xs sm:text-base">
+                          &quot;{testimonial.testimonialText}&quot;
+                        </p>
+
+                        {/* Decorative Quote Icon */}
+                        <div className="absolute top-12 sm:top-16 right-4 sm:right-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <svg className="w-10 h-10 sm:w-16 sm:h-16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                          </svg>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-10 sm:py-16 px-3 sm:px-4" style={{ backgroundColor: '#04d3d3' }}>
+        <div className="container mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
+            Ready to Find the Perfect School?
+          </h2>
+          <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto px-2">
+            Join thousands of parents who have found their child's ideal school through PickMySchool
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Button
+              size="lg"
+              className="bg-white hover:bg-gray-100 h-11 sm:h-auto text-sm sm:text-base"
+              style={{ color: '#04d3d3' }}
+              onClick={() => router.push('/schools')}
+            >
+              Start Searching
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="bg-transparent border-2 border-white text-white hover:bg-white/10 h-11 sm:h-auto text-sm sm:text-base"
+              onClick={() => router.push('/for-schools')}
+            >
+              List Your School
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+      
+      {/* remove styled-jsx (moved to globals.css) */}
+      {/* ... no inline styles ... */}
+    </div>
+  );
+}

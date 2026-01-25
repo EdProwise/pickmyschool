@@ -1,0 +1,104 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1764165273693,
+      "tag": "0000_smart_charles_xavier",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1764169976607,
+      "tag": "0001_married_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1764173067514,
+      "tag": "0002_steady_major_mapleleaf",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1764175445497,
+      "tag": "0003_fixed_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1764222694662,
+      "tag": "0004_bizarre_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1764349991541,
+      "tag": "0005_sudden_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1764350136660,
+      "tag": "0006_glossy_hedge_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1764350202317,
+      "tag": "0007_legal_amphibian",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1764744557760,
+      "tag": "0008_glorious_toro",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1764956117101,
+      "tag": "0009_fuzzy_sleepwalker",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1765473338049,
+      "tag": "0010_real_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1765486434996,
+      "tag": "0011_uneven_the_captain",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1765739284794,
+      "tag": "0012_young_wrecking_crew",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1765739949891,
+      "tag": "0013_simple_tyrannus",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `schools` ADD `facility_images` text;
