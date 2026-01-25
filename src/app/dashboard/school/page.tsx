@@ -125,7 +125,7 @@ export default function SchoolDashboard() {
 
   useEffect(() => {
     // Load profile when switching to profile-related sections
-    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page'].includes(activeSection) && !profile) {
+    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings'].includes(activeSection) && !profile) {
       loadSchoolProfile();
     }
   }, [activeSection]);
@@ -1213,24 +1213,25 @@ export default function SchoolDashboard() {
             <WhatsappAPISection />
           )}
 
-          {activeSection === 'enquiry-settings' && (
-            <EnquirySettingsSection />
-          )}
+            {activeSection === 'enquiry-settings' && (
+              <EnquirySettingsSection schoolId={profile?.id || null} />
+            )}
 
-          {activeSection === 'school-page' && (
-            // This is the added section with your comments
-            <div>
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                  School Page Preview
-                </h2>
-                <p className="text-muted-foreground text-lg">
-                  View your public school page and control its visibility
-                </p>
+            {activeSection === 'school-page' && (
+              // This is the added section with your comments
+              <div>
+                <div className="mb-8">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                    School Page Preview
+                  </h2>
+                  <p className="text-muted-foreground text-lg">
+                    View your public school page and control its visibility
+                  </p>
+                </div>
+                <SchoolPagePreview schoolId={profile?.id || null} />
               </div>
-              <SchoolPagePreview schoolId={user?.schoolId || null} />
-            </div>
-          )}
+            )}
+
 
           {activeSection === 'basic-info' && (
             <BasicInfoSection
