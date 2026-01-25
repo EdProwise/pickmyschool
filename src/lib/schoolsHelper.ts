@@ -198,24 +198,26 @@ export async function createSchool(data: any) {
     newsletterUrl: data.newsletterUrl,
     feesStructure: data.feesStructure,
     facilityImages: data.facilityImages,
-    logo: data.logo,
-    bannerImage: data.bannerImage,
-    studentTeacherRatio: data.studentTeacherRatio,
-    feesMin: data.feesMin,
-    feesMax: data.feesMax,
-    facilities: data.facilities,
-    description: data.description,
-    gallery: data.gallery,
-    rating: data.rating || 0,
-    reviewCount: data.reviewCount || 0,
-    profileViews: data.profileViews || 0,
-    featured: data.featured || false,
-    isPublic: data.isPublic !== undefined ? data.isPublic : true,
-    latitude: data.latitude,
-    longitude: data.longitude,
-    createdAt: now,
-    updatedAt: now,
-  });
+      logo: data.logo,
+      bannerImage: data.bannerImage,
+      studentTeacherRatio: data.studentTeacherRatio,
+      feesMin: data.feesMin,
+      feesMax: data.feesMax,
+      facilities: data.facilities,
+      description: data.description,
+      gallery: data.gallery,
+      rating: data.rating || 0,
+      reviewCount: data.reviewCount || 0,
+      profileViews: data.profileViews || 0,
+      featured: data.featured || false,
+      isPublic: data.isPublic !== undefined ? data.isPublic : true,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      whatsappWebhookUrl: data.whatsappWebhookUrl,
+      whatsappApiKey: data.whatsappApiKey,
+      createdAt: now,
+      updatedAt: now,
+    });
   
   await school.save();
   
@@ -238,9 +240,20 @@ export async function updateSchool(id: number, data: any) {
   
   data.updatedAt = new Date().toISOString();
   
-  await School.findOneAndUpdate({ id }, { $set: data });
+  const updated = await School.findOneAndUpdate(
+    { id }, 
+    { $set: data },
+    { new: true }
+  ).lean();
   
-  return getSchool(id);
+  if (!updated) {
+    return getSchool(id);
+  }
+  
+  return {
+    ...updated,
+    id: updated.id,
+  };
 }
 
 export async function deleteSchool(id: number) {
