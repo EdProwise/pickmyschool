@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { EnquiryFormSettings, User } from '@/lib/models';
+import { EnquiryFormSettings, User, School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -15,9 +15,12 @@ async function getAuthSchoolId(request: NextRequest) {
     if (decoded.role !== 'school') return null;
 
     const userRecord = await User.findById(decoded.userId);
-    if (!userRecord) return null;
+    if (!userRecord || !userRecord.schoolId) return null;
 
-    return userRecord.schoolId;
+    const school = await School.findById(userRecord.schoolId);
+    if (!school) return null;
+
+    return school.id;
   } catch (error) {
     return null;
   }

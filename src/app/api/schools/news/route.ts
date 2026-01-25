@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { News, User } from '@/lib/models';
+import { News, User, School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -62,6 +62,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const school = await School.findById(user.schoolId);
+    if (!school) {
+      return NextResponse.json({ error: 'School not found' }, { status: 404 });
+    }
+    const schoolId = school.id;
+
     const body = await request.json();
     const {
       title,
@@ -81,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
     
     const newNews = await News.create({
-      schoolId: user.schoolId,
+      schoolId,
       title,
       content,
       category,
@@ -119,6 +125,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const school = await School.findById(user.schoolId);
+    if (!school) {
+      return NextResponse.json({ error: 'School not found' }, { status: 404 });
+    }
+    const schoolId = school.id;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -131,7 +143,7 @@ export async function PUT(request: NextRequest) {
 
     const existingNews = await News.findById(id);
     
-    if (!existingNews || existingNews.schoolId !== user.schoolId) {
+    if (!existingNews || existingNews.schoolId !== schoolId) {
       return NextResponse.json({ error: 'News not found or unauthorized' }, { status: 404 });
     }
 
@@ -166,6 +178,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const school = await School.findById(user.schoolId);
+    if (!school) {
+      return NextResponse.json({ error: 'School not found' }, { status: 404 });
+    }
+    const schoolId = school.id;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -175,7 +193,7 @@ export async function DELETE(request: NextRequest) {
 
     const existingNews = await News.findById(id);
     
-    if (!existingNews || existingNews.schoolId !== user.schoolId) {
+    if (!existingNews || existingNews.schoolId !== schoolId) {
       return NextResponse.json({ error: 'News not found or unauthorized' }, { status: 404 });
     }
 
