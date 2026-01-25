@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-      const body = await request.json();
+    const body = await request.json();
     const { year, studentName, marks, classLevel, section, achievement, images } = body;
 
     if (!year || !studentName || !classLevel || !achievement) {
