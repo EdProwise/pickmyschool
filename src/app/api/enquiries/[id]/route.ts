@@ -52,6 +52,16 @@ export async function PUT(
 
     const userSchoolId = userRecord.schoolId;
 
+    // Get the numeric school ID from the school record
+    const school = await School.findById(userSchoolId);
+    if (!school) {
+      return NextResponse.json(
+        { error: 'Associated school not found', code: 'SCHOOL_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+    const numericSchoolId = school.id;
+
     const enquiryRecord = await Enquiry.findById(paramId);
 
     if (!enquiryRecord) {
@@ -61,7 +71,7 @@ export async function PUT(
       );
     }
 
-    if (enquiryRecord.schoolId !== userSchoolId) {
+    if (enquiryRecord.schoolId !== numericSchoolId) {
       return NextResponse.json(
         { error: 'Not authorized to update this enquiry', code: 'NOT_AUTHORIZED' },
         { status: 403 }
