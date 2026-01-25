@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Enquiry, User } from '@/lib/models';
+import { Enquiry, User, School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 export async function GET(request: NextRequest) {
@@ -48,14 +48,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const schoolId = userRecord.schoolId;
+    const userSchoolId = userRecord.schoolId;
 
-    if (!schoolId) {
+    if (!userSchoolId) {
       return NextResponse.json(
         { error: 'School admin not associated with any school', code: 'NO_SCHOOL_ASSOCIATED' },
         { status: 400 }
       );
     }
+
+    // Get the numeric school ID
+    const school = await School.findById(userSchoolId);
+    if (!school) {
+      return NextResponse.json(
+        { error: 'School not found', code: 'SCHOOL_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+    const schoolId = school.id;
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;

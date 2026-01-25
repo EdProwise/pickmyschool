@@ -12,8 +12,8 @@ export interface IUser extends Document {
   schoolId?: mongoose.Types.ObjectId;
   savedSchools?: number[];
   emailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -129,8 +129,8 @@ export interface ISchool extends Document {
   isPublic: boolean;
   latitude?: number;
   longitude?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const SchoolSchema = new Schema<ISchool>({
@@ -256,8 +256,8 @@ export interface IEnquiry extends Document {
   studentState?: string;
   studentAge?: string;
   studentGender?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const EnquirySchema = new Schema<IEnquiry>({
@@ -287,8 +287,8 @@ export interface IEnquiryFormSettings extends Document {
   buttonText: string;
   themeColor: string;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const EnquiryFormSettingsSchema = new Schema<IEnquiryFormSettings>({
@@ -308,8 +308,8 @@ export interface IChat extends Document {
   role: string;
   messages?: unknown[];
   lastMessageAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ChatSchema = new Schema<IChat>({
@@ -324,8 +324,8 @@ export interface ISuperAdmin extends Document {
   email: string;
   password: string;
   name: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const SuperAdminSchema = new Schema<ISuperAdmin>({
@@ -337,8 +337,8 @@ const SuperAdminSchema = new Schema<ISuperAdmin>({
 export interface ISiteSettings extends Document {
   _id: mongoose.Types.ObjectId;
   spotlightSchoolId?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const SiteSettingsSchema = new Schema<ISiteSettings>({
@@ -354,8 +354,8 @@ export interface ITestimonial extends Document {
   avatarUrl?: string;
   featured: boolean;
   displayOrder?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const TestimonialSchema = new Schema<ITestimonial>({
@@ -376,8 +376,8 @@ export interface IReview extends Document {
   reviewText: string;
   photos?: string[];
   approvalStatus: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ReviewSchema = new Schema<IReview>({
@@ -402,8 +402,8 @@ export interface IResult extends Document {
   toppers?: unknown[];
   achievements?: string;
   certificateImages?: string[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ResultSchema = new Schema<IResult>({
@@ -432,8 +432,8 @@ export interface IStudentAchievement extends Document {
   images?: string[];
   featured: boolean;
   displayOrder?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const StudentAchievementSchema = new Schema<IStudentAchievement>({
@@ -464,8 +464,8 @@ export interface IAlumni extends Document {
   quote?: string;
   featured: boolean;
   displayOrder?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const AlumniSchema = new Schema<IAlumni>({
@@ -497,8 +497,8 @@ export interface INews extends Document {
   video?: string;
   isPublished: boolean;
   featured: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const NewsSchema = new Schema<INews>({
@@ -524,8 +524,8 @@ export interface INotification extends Document {
   type: string;
   relatedId?: number;
   isRead: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const NotificationSchema = new Schema<INotification>({
@@ -551,8 +551,8 @@ export interface IContactSubmission extends Document {
   status: string;
   notes?: string;
   assignedTo?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ContactSubmissionSchema = new Schema<IContactSubmission>({

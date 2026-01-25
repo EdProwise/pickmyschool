@@ -5,12 +5,12 @@ import { getSchool } from '@/lib/schoolsHelper';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { id: schoolId } = params;
+    const { id: schoolId } = await params;
 
     // Validate ID is valid integer
     if (!schoolId || isNaN(parseInt(schoolId))) {
