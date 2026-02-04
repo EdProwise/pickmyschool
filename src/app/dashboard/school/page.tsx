@@ -104,6 +104,15 @@ export default function SchoolDashboard() {
   const [additionalAge, setAdditionalAge] = useState('');
   const [additionalGender, setAdditionalGender] = useState('');
 
+  // Add enquiry modal state
+  const [showAddEnquiryModal, setShowAddEnquiryModal] = useState(false);
+  const [newEnquiryName, setNewEnquiryName] = useState('');
+  const [newEnquiryEmail, setNewEnquiryEmail] = useState('');
+  const [newEnquiryPhone, setNewEnquiryPhone] = useState('');
+  const [newEnquiryClass, setNewEnquiryClass] = useState('');
+  const [newEnquiryMessage, setNewEnquiryMessage] = useState('');
+  const [addingEnquiry, setAddingEnquiry] = useState(false);
+
   // Reviews state
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -313,6 +322,52 @@ export default function SchoolDashboard() {
     }
   };
 
+  const handleAddEnquiry = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    if (!newEnquiryName || !newEnquiryEmail || !newEnquiryPhone || !newEnquiryClass) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setAddingEnquiry(true);
+    try {
+      const response = await fetch('/api/schools/enquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          studentName: newEnquiryName,
+          studentEmail: newEnquiryEmail,
+          studentPhone: newEnquiryPhone,
+          studentClass: newEnquiryClass,
+          message: newEnquiryMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to add enquiry');
+      }
+
+      toast.success('Enquiry added successfully');
+      setShowAddEnquiryModal(false);
+      setNewEnquiryName('');
+      setNewEnquiryEmail('');
+      setNewEnquiryPhone('');
+      setNewEnquiryClass('');
+      setNewEnquiryMessage('');
+      loadSchoolData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add enquiry');
+    } finally {
+      setAddingEnquiry(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'New':
@@ -473,7 +528,14 @@ export default function SchoolDashboard() {
               </div>
               Leads & Enquiries
             </CardTitle>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
+              <Button
+                onClick={() => setShowAddEnquiryModal(true)}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg"
+              >
+                <Plus className="mr-2" size={16} />
+                Add Enquiry
+              </Button>
               <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
                 <Input
@@ -799,28 +861,159 @@ export default function SchoolDashboard() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button
-                onClick={() => additionalDataEnquiry && handleSaveAdditionalData(additionalDataEnquiry.id)}
-                className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white shadow-lg flex-1"
-              >
-                <CheckCircle2 className="mr-2" size={18} />
-                Save Additional Data
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setAdditionalDataEnquiry(null)}
-                className="border-2 flex-1"
-              >
-                <XCircle className="mr-2" size={18} />
-                Cancel
-              </Button>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => additionalDataEnquiry && handleSaveAdditionalData(additionalDataEnquiry.id)}
+                  className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white shadow-lg flex-1"
+                >
+                  <CheckCircle2 className="mr-2" size={18} />
+                  Save Additional Data
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAdditionalDataEnquiry(null)}
+                  className="border-2 flex-1"
+                >
+                  <XCircle className="mr-2" size={18} />
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      </div>
-    );
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Enquiry Modal */}
+        <Dialog open={showAddEnquiryModal} onOpenChange={(open) => !open && setShowAddEnquiryModal(false)}>
+          <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                  <Plus className="text-white" size={20} />
+                </div>
+                Add New Enquiry
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-5 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="studentName" className="text-sm font-semibold">
+                    Student Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="studentName"
+                    value={newEnquiryName}
+                    onChange={(e) => setNewEnquiryName(e.target.value)}
+                    placeholder="Enter student name"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentEmail" className="text-sm font-semibold">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="studentEmail"
+                    type="email"
+                    value={newEnquiryEmail}
+                    onChange={(e) => setNewEnquiryEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentPhone" className="text-sm font-semibold">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="studentPhone"
+                    type="tel"
+                    value={newEnquiryPhone}
+                    onChange={(e) => setNewEnquiryPhone(e.target.value)}
+                    placeholder="Enter phone number"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentClass" className="text-sm font-semibold">
+                    Class <span className="text-red-500">*</span>
+                  </Label>
+                  <Select value={newEnquiryClass} onValueChange={setNewEnquiryClass}>
+                    <SelectTrigger className="bg-white/50">
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Nursery">Nursery</SelectItem>
+                      <SelectItem value="LKG">LKG</SelectItem>
+                      <SelectItem value="UKG">UKG</SelectItem>
+                      <SelectItem value="1st">1st</SelectItem>
+                      <SelectItem value="2nd">2nd</SelectItem>
+                      <SelectItem value="3rd">3rd</SelectItem>
+                      <SelectItem value="4th">4th</SelectItem>
+                      <SelectItem value="5th">5th</SelectItem>
+                      <SelectItem value="6th">6th</SelectItem>
+                      <SelectItem value="7th">7th</SelectItem>
+                      <SelectItem value="8th">8th</SelectItem>
+                      <SelectItem value="9th">9th</SelectItem>
+                      <SelectItem value="10th">10th</SelectItem>
+                      <SelectItem value="11th">11th</SelectItem>
+                      <SelectItem value="12th">12th</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message" className="text-sm font-semibold">
+                  Message (Optional)
+                </Label>
+                <Textarea
+                  id="message"
+                  value={newEnquiryMessage}
+                  onChange={(e) => setNewEnquiryMessage(e.target.value)}
+                  rows={3}
+                  placeholder="Enter any additional notes or message..."
+                  className="bg-white/50 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={handleAddEnquiry}
+                  disabled={addingEnquiry}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg flex-1"
+                >
+                  {addingEnquiry ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2" size={18} />
+                      Add Enquiry
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddEnquiryModal(false);
+                    setNewEnquiryName('');
+                    setNewEnquiryEmail('');
+                    setNewEnquiryPhone('');
+                    setNewEnquiryClass('');
+                    setNewEnquiryMessage('');
+                  }}
+                  className="border-2 flex-1"
+                >
+                  <XCircle className="mr-2" size={18} />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        </div>
+      );
 
   if (loading) {
     return (
