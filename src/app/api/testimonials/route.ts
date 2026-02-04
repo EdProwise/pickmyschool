@@ -11,7 +11,28 @@ export async function GET(request: NextRequest) {
       .limit(6)
       .lean();
 
-    return NextResponse.json(featuredTestimonials, { status: 200 });
+    if (featuredTestimonials.length > 0) {
+      return NextResponse.json(
+        featuredTestimonials.map((testimonial) => ({
+          ...testimonial,
+          id: testimonial._id,
+        })),
+        { status: 200 }
+      );
+    }
+
+    const latestTestimonials = await Testimonial.find({})
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean();
+
+    return NextResponse.json(
+      latestTestimonials.map((testimonial) => ({
+        ...testimonial,
+        id: testimonial._id,
+      })),
+      { status: 200 }
+    );
   } catch (error) {
     console.error('GET error:', error);
     return NextResponse.json({ 
