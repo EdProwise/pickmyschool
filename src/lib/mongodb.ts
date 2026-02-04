@@ -31,25 +31,25 @@ async function initializeDefaultSuperAdmin() {
     
     const existingAdmin = await SuperAdmin.findOne({});
     
-    if (!existingAdmin) {
-      const defaultEmail = 'admin@pickmyschool.com';
-      const defaultPassword = 'Admin@123';
-      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-      const now = new Date().toISOString();
-      
-      await SuperAdmin.create({
-        email: defaultEmail,
-        password: hashedPassword,
-        name: 'Super Admin',
-        createdAt: now,
-        updatedAt: now,
-      });
-      
-      console.log('Default Super Admin created:');
-      console.log('  Email: admin@pickmyschool.com');
-      console.log('  Password: Admin@123');
-      console.log('  Please change the password after first login!');
-    }
+      if (!existingAdmin) {
+        const defaultEmail = 'edprowise@pickmyschool.com';
+        const defaultPassword = 'SuperAdmin@123';
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        const now = new Date().toISOString();
+        
+        await SuperAdmin.create({
+          email: defaultEmail,
+          password: hashedPassword,
+          name: 'EdProwise Admin',
+          createdAt: now,
+          updatedAt: now,
+        });
+        
+        console.log('Default Super Admin created:');
+        console.log('  Email: edprowise@pickmyschool.com');
+        console.log('  Password: SuperAdmin@123');
+        console.log('  Please change the password after first login!');
+      }
     
     cached!.superAdminInitialized = true;
   } catch (error) {

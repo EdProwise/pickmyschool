@@ -33,9 +33,34 @@ export async function POST(request: NextRequest) {
 
     const sanitizedEmail = email.trim().toLowerCase();
 
+    // Debug: Check all admins in database
+    const allAdmins = await SuperAdmin.find({});
+    console.log('All super admins in database:', allAdmins.map(a => ({ email: a.email, name: a.name })));
+
     const admin = await SuperAdmin.findOne({ email: sanitizedEmail });
+    console.log('Looking for admin with email:', sanitizedEmail, 'Found:', admin ? 'Yes' : 'No');
 
     if (!admin) {
+      // If no admin exists at all, create the default one
+      if (allAdmins.length === 0) {
+        console.log('No admins found, creating default admin...');
+        const bcryptLib = await import('bcrypt');
+        const hashedPassword = await bcryptLib.default.hash('SuperAdmin@123', 10);
+        await SuperAdmin.create({
+          email: 'edprowise@pickmyschool.com',
+          password: hashedPassword,
+          name: 'EdProwise Admin',
+        });
+        console.log('Default admin created. Please try logging in again.');
+        return NextResponse.json(
+          { 
+            error: 'Admin account was just created. Please try logging in again with: edprowise@pickmyschool.com / SuperAdmin@123',
+            code: 'ADMIN_CREATED'
+          },
+          { status: 401 }
+        );
+      }
+      
       return NextResponse.json(
         { 
           error: 'Invalid credentials',
