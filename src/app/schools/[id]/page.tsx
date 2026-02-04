@@ -680,7 +680,7 @@ export default function SchoolDetailPage() {
 
     // Add legacy facilities if present
     if (school.facilities && Array.isArray(school.facilities)) {
-      facilities.push(...school.facilities);
+      facilities.push(...school.facilities.filter((f): f is string => typeof f === 'string' && f !== null && f !== undefined));
     }
 
     return [...new Set(facilities)]; // Remove duplicates

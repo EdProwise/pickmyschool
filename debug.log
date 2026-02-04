@@ -1,0 +1,8 @@
+2026-02-04T19:41:12.658Z [network][GET 200] /api/testimonials
+  response: [{"_id":"69839d13625c6f27291541df","parentName":"Kunal SShah","location":"Delhi","rating":5,"testimonialText":"PRJ GyanJaya is a CBSE-affiliated school offering education up to Class 12. Established in 2009, the school brings over 17 years of excellence in education. It provides both Boarding and Day School facilities with modern infrastructure, an English-medium curriculum, and a strong commitment to high-quality education and holistic student development.","avatarUrl":null,"featured":true,"displayOrder":1,"createdAt":"2026-02-04T19:25:07.511Z","updatedAt":"2026-02-04T19:27:40.256Z","__v":0,"id":"69839d13625c6f27291541df"}]
+2026-02-04T19:42:04.296Z [console][log] [Fast Refresh] rebuilding
+2026-02-04T19:42:04.616Z [console][log] [Fast Refresh] done in 435ms
+2026-02-04T19:42:39.807Z [console][log] [Fast Refresh] rebuilding
+2026-02-04T19:42:40.908Z [console][log] [Fast Refresh] done in 1696ms
+2026-02-04T19:42:56.548Z [console][log] [Fast Refresh] rebuilding
+2026-02-04T19:42:59.322Z [console][log] [Fast Refresh] done in 3764ms
