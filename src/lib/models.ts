@@ -324,6 +324,7 @@ export interface ISuperAdmin extends Document {
   email: string;
   password: string;
   name: string;
+  isSuperAdmin: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -331,8 +332,9 @@ export interface ISuperAdmin extends Document {
 const SuperAdminSchema = new Schema<ISuperAdmin>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-    name: { type: String, required: true },
-  }, { timestamps: true });
+  name: { type: String, required: true },
+  isSuperAdmin: { type: Boolean, default: false },
+}, { timestamps: true });
 
 export interface ISiteSettings extends Document {
   _id: mongoose.Types.ObjectId;

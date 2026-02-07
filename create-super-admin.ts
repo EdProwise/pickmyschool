@@ -1,12 +1,13 @@
-import 'dotenv/config';
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import * as readline from 'readline';
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env' });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error('Error: MONGODB_URI environment variable is not set');
+  console.error('MONGODB_URI not found in .env');
   process.exit(1);
 }
 
@@ -14,127 +15,97 @@ const SuperAdminSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String, required: true },
+  isSuperAdmin: { type: Boolean, default: false }, // True for the main super admin
 }, { timestamps: true });
 
 const SuperAdmin = mongoose.models.SuperAdmin || mongoose.model('SuperAdmin', SuperAdminSchema);
 
-function createInterface(): readline.Interface {
-  return readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-}
-
-function prompt(rl: readline.Interface, question: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      resolve(answer.trim());
-    });
-  });
-}
-
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-function validatePassword(password: string): { valid: boolean; message?: string } {
-  if (password.length < 8) {
-    return { valid: false, message: 'Password must be at least 8 characters long' };
-  }
-  if (!/[A-Z]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one uppercase letter' };
-  }
-  if (!/[a-z]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one lowercase letter' };
-  }
-  if (!/[0-9]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one number' };
-  }
-  return { valid: true };
-}
-
 async function createSuperAdmin() {
-  const rl = createInterface();
+  const command = process.argv[2];
   
-  console.log('\n=== Super Admin Creation Tool ===\n');
-  console.log('This tool will create a new super admin account.');
-  console.log('Please provide the following information:\n');
+  // If command is --reset, delete all admins and create the main super admin
+  if (command === '--reset') {
+    const email = process.argv[3];
+    const password = process.argv[4];
+    const name = process.argv[5] || 'Super Admin';
 
-  try {
-    // Get name
-    let name = '';
-    while (!name) {
-      name = await prompt(rl, 'Full Name: ');
-      if (!name) {
-        console.log('Name is required.\n');
-      }
-    }
-
-    // Get and validate email
-    let email = '';
-    while (!email) {
-      email = await prompt(rl, 'Email: ');
-      if (!validateEmail(email)) {
-        console.log('Please enter a valid email address.\n');
-        email = '';
-      }
-    }
-
-    // Get and validate password
-    let password = '';
-    while (!password) {
-      password = await prompt(rl, 'Password (min 8 chars, uppercase, lowercase, number): ');
-      const validation = validatePassword(password);
-      if (!validation.valid) {
-        console.log(`${validation.message}\n`);
-        password = '';
-      }
-    }
-
-    // Confirm password
-    const confirmPassword = await prompt(rl, 'Confirm Password: ');
-    if (password !== confirmPassword) {
-      console.log('\nPasswords do not match. Aborting.');
-      rl.close();
+    if (!email || !password) {
+      console.error('Usage: npx tsx create-super-admin.ts --reset <email> <password> [name]');
       process.exit(1);
     }
 
-    rl.close();
+    try {
+      await mongoose.connect(MONGODB_URI);
+      console.log('Connected to MongoDB');
 
-    // Connect to MongoDB
-    console.log('\nConnecting to database...');
-    await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB.');
+      // Delete ALL existing admins
+      const deleteResult = await SuperAdmin.deleteMany({});
+      console.log(`Deleted ${deleteResult.deletedCount} existing admin(s)`);
 
-    // Check if admin with this email already exists
-    const existingAdmin = await SuperAdmin.findOne({ email });
-    if (existingAdmin) {
-      console.log('\nError: An admin with this email already exists.');
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const admin = await SuperAdmin.create({
+        email: email.trim().toLowerCase(),
+        password: hashedPassword,
+        name: name.trim(),
+        isSuperAdmin: true, // Mark as the main super admin
+      });
+
+      console.log(`\nSuper admin created successfully!`);
+      console.log(`  Email: ${admin.email}`);
+      console.log(`  Name: ${admin.name}`);
+      console.log(`  ID: ${admin._id}`);
+      console.log(`  Is Super Admin: true`);
+
+      await mongoose.disconnect();
+    } catch (error) {
+      console.error('Error:', error);
       await mongoose.disconnect();
       process.exit(1);
     }
+    return;
+  }
 
-    // Hash password and create admin
-    console.log('Creating super admin...');
+  // Original behavior: create admin without deleting others
+  const email = process.argv[2];
+  const password = process.argv[3];
+  const name = process.argv[4] || 'Super Admin';
+
+  if (!email || !password) {
+    console.error('Usage: npx tsx create-super-admin.ts <email> <password> [name]');
+    console.error('       npx tsx create-super-admin.ts --reset <email> <password> [name]  (deletes all existing admins first)');
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log('Connected to MongoDB');
+
+    const existing = await SuperAdmin.findOne({ email: email.trim().toLowerCase() });
+    if (existing) {
+      console.log(`Admin with email "${email}" already exists.`);
+      await mongoose.disconnect();
+      process.exit(0);
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    await SuperAdmin.create({
-      email,
+
+    const admin = await SuperAdmin.create({
+      email: email.trim().toLowerCase(),
       password: hashedPassword,
-      name,
+      name: name.trim(),
+      isSuperAdmin: false,
     });
 
-    console.log('\nSuper admin created successfully!');
-    console.log(`Name: ${name}`);
-    console.log(`Email: ${email}`);
-    
+    console.log(`Admin created successfully!`);
+    console.log(`  Email: ${admin.email}`);
+    console.log(`  Name: ${admin.name}`);
+    console.log(`  ID: ${admin._id}`);
+
     await mongoose.disconnect();
-    process.exit(0);
   } catch (error) {
-    console.error('\nError creating super admin:', error);
-    rl.close();
-    await mongoose.disconnect().catch(() => {});
+    console.error('Error creating admin:', error);
+    await mongoose.disconnect();
     process.exit(1);
   }
 }
