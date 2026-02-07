@@ -7,8 +7,8 @@ const M = mongoose.model('SuperAdmin', S);
 
 async function run() {
   await mongoose.connect(process.env.MONGODB_URI!);
-  await M.updateOne({ email: 'kunalshah@edprowise.com' }, { name: 'Kunal Shah' });
-  const a = await M.findOne({ email: 'kunalshah@edprowise.com' });
+  await M.updateOne({ email: 'kunalshah1165@edprowise.com' }, { name: 'Kunal Shah' });
+  const a = await M.findOne({ email: 'kunalshah1165@edprowise.com' });
   console.log('Verified:', JSON.stringify({ email: a?.email, name: a?.name, id: a?._id }));
   await mongoose.disconnect();
 }
