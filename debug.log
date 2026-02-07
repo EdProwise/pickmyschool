@@ -6,3 +6,519 @@
 2026-02-04T19:42:40.908Z [console][log] [Fast Refresh] done in 1696ms
 2026-02-04T19:42:56.548Z [console][log] [Fast Refresh] rebuilding
 2026-02-04T19:42:59.322Z [console][log] [Fast Refresh] done in 3764ms
+2026-02-07T07:24:48.219Z [console][warn] [Fast Refresh] rebuilding
+2026-02-07T07:24:48.502Z [console][warn] [Fast Refresh] done in 382ms
+2026-02-07T07:24:48.673Z [console][warn] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+2026-02-07T07:24:48.875Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-qtdthb9suu"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-pf1cw7he0a"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-d70ldvjv1i"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-f4t0moh73x"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-1mkug3d6gk"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-f7pvy6kj1o"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-07T07:24:48.877Z [console][log] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-02-07T07:24:54.796Z [console][error] Failed to load spotlight school: TypeError: Failed to fetch
+2026-02-07T07:24:54.797Z [console][error] Failed to load trending schools: TypeError: Failed to fetch
+2026-02-07T07:24:54.887Z [console][warn] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+2026-02-07T07:24:55.002Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-ca1x52b3g9"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-35fvpfvzqe"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-7y6n2e5ax8"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-fabwvl8ttw"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-v80orbawuh"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-wosocv1bhk"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-07T07:24:55.004Z [console][log] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-02-07T07:24:55.267Z [console][warn] [Fast Refresh] rebuilding
+2026-02-07T07:24:55.323Z [console][warn] [Fast Refresh] done in 157ms
+2026-02-07T07:31:28.532Z [console][warn] [Fast Refresh] rebuilding
+2026-02-07T07:31:43.300Z [console][warn] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+2026-02-07T07:31:44.230Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-2l0qbk4z7r"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-gzi6cgjoks"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-remgd18a4z"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-xzacwlta7a"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-g7l4t9to5k"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-y1wmfkel0m"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-07T07:31:44.239Z [console][log] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-02-07T07:31:44.228Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-      ...
+2026-02-07T07:31:44.238Z [console][debug] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-02-07T07:24:48.875Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-qtdthb9suu"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-pf1cw7he0a"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-d70ldvjv1i"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-f4t0moh73x"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-1mkug3d6gk"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-f7pvy6kj1o"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-07T07:24:54.796Z [console][error] Failed to load spotlight school: TypeError: Failed to fetch
+2026-02-07T07:24:54.797Z [console][error] Failed to load trending schools: TypeError: Failed to fetch
+2026-02-07T07:24:55.002Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-ca1x52b3g9"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-35fvpfvzqe"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-7y6n2e5ax8"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-fabwvl8ttw"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-v80orbawuh"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-wosocv1bhk"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-07T07:31:44.230Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-2l0qbk4z7r"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-gzi6cgjoks"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-remgd18a4z"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-xzacwlta7a"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-g7l4t9to5k"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-y1wmfkel0m"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-07T07:31:44.228Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-      ...
