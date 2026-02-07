@@ -109,17 +109,27 @@ export async function POST(request: NextRequest) {
         : [],
       conversationId: conversationId || `conv_${Date.now()}_${userId || 'anon'}`,
     });
-  } catch (error) {
-    console.error('Chat API error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    return NextResponse.json(
-      { 
-        error: 'Failed to process message',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
+    } catch (error: any) {
+      console.error('Chat API error:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('leaked') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('CREDENTIALS_MISSING') || errorMessage.includes('401')) {
+        return NextResponse.json({
+          message: "I'm sorry, but the AI assistant is temporarily unavailable due to a configuration issue. Please try again later or contact support.",
+          schools: [],
+          conversationId: `conv_${Date.now()}_error`,
+        });
+      }
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to process message',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
 }
 
 export async function GET(request: NextRequest) {

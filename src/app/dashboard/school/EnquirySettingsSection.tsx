@@ -33,7 +33,11 @@ interface EnquirySettings {
   isActive: boolean;
 }
 
-export function EnquirySettingsSection() {
+interface EnquirySettingsSectionProps {
+  schoolId?: number | null;
+}
+
+export function EnquirySettingsSection({ schoolId: propSchoolId }: EnquirySettingsSectionProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<EnquirySettings>({
@@ -46,17 +50,29 @@ export function EnquirySettingsSection() {
     isActive: true,
   });
   
-  const [schoolId, setSchoolId] = useState<number | null>(null);
+    const [schoolId, setSchoolId] = useState<number | string | null>(propSchoolId || null);
 
-  useEffect(() => {
-    loadSettings();
-    // Get schoolId from user in localStorage
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setSchoolId(user.schoolId);
-    }
-  }, []);
+    useEffect(() => {
+      loadSettings();
+      
+      if (propSchoolId) {
+        setSchoolId(propSchoolId);
+      } else {
+        // Fallback: Get schoolId from user in localStorage
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          // Only set if it's a number, or if we have no other choice
+          // But ideally we want the numeric ID
+          if (user.numericId) {
+            setSchoolId(user.numericId);
+          } else if (user.schoolId && !isNaN(Number(user.schoolId))) {
+            setSchoolId(Number(user.schoolId));
+          }
+        }
+      }
+    }, [propSchoolId]);
+
 
   const loadSettings = async () => {
     const token = localStorage.getItem('token');

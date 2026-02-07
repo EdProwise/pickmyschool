@@ -129,6 +129,8 @@ export interface ISchool extends Document {
   isPublic: boolean;
   latitude?: number;
   longitude?: number;
+  whatsappWebhookUrl?: string;
+  whatsappApiKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -232,6 +234,8 @@ const SchoolSchema = new Schema<ISchool>({
   isPublic: { type: Boolean, default: true },
   latitude: Number,
   longitude: Number,
+  whatsappWebhookUrl: String,
+  whatsappApiKey: String,
 }, { timestamps: true });
 
 SchoolSchema.index({ city: 1 });
@@ -604,6 +608,20 @@ const PasswordResetTokenSchema = new Schema<IPasswordResetToken>({
   expiresAt: { type: Date, required: true },
 }, { timestamps: true });
 
+export interface IAdminPasswordResetToken extends Document {
+  _id: mongoose.Types.ObjectId;
+  adminId: mongoose.Types.ObjectId;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+const AdminPasswordResetTokenSchema = new Schema<IAdminPasswordResetToken>({
+  adminId: { type: Schema.Types.ObjectId, ref: 'SuperAdmin', required: true },
+  token: { type: String, required: true, unique: true },
+  expiresAt: { type: Date, required: true },
+}, { timestamps: true });
+
 function getModel<T>(name: string, schema: Schema<T>): Model<T> {
   return mongoose.models[name] || mongoose.model<T>(name, schema);
 }
@@ -625,3 +643,4 @@ export const Notification = getModel<INotification>('Notification', Notification
 export const ContactSubmission = getModel<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
 export const EmailVerificationToken = getModel<IEmailVerificationToken>('EmailVerificationToken', EmailVerificationTokenSchema);
 export const PasswordResetToken = getModel<IPasswordResetToken>('PasswordResetToken', PasswordResetTokenSchema);
+export const AdminPasswordResetToken = getModel<IAdminPasswordResetToken>('AdminPasswordResetToken', AdminPasswordResetTokenSchema);

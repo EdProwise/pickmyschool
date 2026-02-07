@@ -99,10 +99,7 @@ export default function SchoolsPage() {
   };
 
   const filteredSchools = schools.filter((school) => {
-    const matchesSearch =
-      school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      school.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      school.state.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCity = !filterCity || filterCity === 'all' || school.city === filterCity;
     const matchesState = !filterState || filterState === 'all' || school.state === filterState;
     const matchesType =

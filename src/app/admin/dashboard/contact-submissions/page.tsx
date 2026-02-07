@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Mail, Phone, MapPin, Building2, User, Calendar,
-  Eye, Edit, Trash2, MessageSquare
+  Eye, Edit, Trash2, MessageSquare, GraduationCap
 } from 'lucide-react';
 import {
   Dialog,

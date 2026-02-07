@@ -33,10 +33,15 @@ export async function generateAIResponse(systemPrompt: string, userMessage: stri
       return response.text;
     }
     throw new Error('No response text from Gemini');
-  } catch (error: any) {
-    console.error(`Gemini model ${modelName} failed:`, error.message || error);
-    throw error;
-  }
+    } catch (error: any) {
+      console.error(`Gemini model ${modelName} failed:`, error.message || error);
+      
+      if (error.message?.includes('leaked') || (error.status === 403 && error.message?.includes('API key'))) {
+        throw new Error('The AI service is currently unavailable due to an API configuration issue (Leaked Key). Please contact support.');
+      }
+      
+      throw error;
+    }
 }
 
 export function extractFiltersFromQuery(query: string): SchoolFilter {

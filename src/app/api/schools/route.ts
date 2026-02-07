@@ -205,7 +205,7 @@ export async function GET(request: NextRequest) {
       const requestedFacilities = facilitiesParam.split(',').map(f => f.trim().toLowerCase());
       filteredResults = filteredResults.filter(school => {
         const arrayFacilities = Array.isArray(school.facilities) 
-          ? (school.facilities as string[]).map(f => f.toLowerCase()) 
+          ? (school.facilities as string[]).filter(f => f).map(f => f.toLowerCase()) 
           : [];
 
         return requestedFacilities.every(rf => {

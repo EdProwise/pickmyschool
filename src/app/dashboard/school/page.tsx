@@ -104,13 +104,20 @@ export default function SchoolDashboard() {
   const [additionalAge, setAdditionalAge] = useState('');
   const [additionalGender, setAdditionalGender] = useState('');
 
+  // Add enquiry modal state
+  const [showAddEnquiryModal, setShowAddEnquiryModal] = useState(false);
+  const [newEnquiryName, setNewEnquiryName] = useState('');
+  const [newEnquiryEmail, setNewEnquiryEmail] = useState('');
+  const [newEnquiryPhone, setNewEnquiryPhone] = useState('');
+  const [newEnquiryClass, setNewEnquiryClass] = useState('');
+  const [newEnquiryMessage, setNewEnquiryMessage] = useState('');
+  const [addingEnquiry, setAddingEnquiry] = useState(false);
+
   // Reviews state
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewStats, setReviewStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  // Updated reviewFilterStatus default value from 'pending' to 'approved'
-  const [reviewFilterStatus, setReviewFilterStatus] = useState('approved');
 
   useEffect(() => {
     loadSchoolData();
@@ -118,25 +125,26 @@ export default function SchoolDashboard() {
 
   useEffect(() => {
     // Load review stats for header rating display
-    if (user?.schoolId) {
+    if (profile?.id) {
       loadReviewStats();
     }
-  }, [user]);
+  }, [profile?.id]);
 
-  useEffect(() => {
-    // Load profile when switching to profile-related sections
-    if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page'].includes(activeSection) && !profile) {
-      loadSchoolProfile();
-    }
-  }, [activeSection]);
+    useEffect(() => {
+      // Load profile when switching to profile-related sections
+      if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings', 'review', 'whatsapp-api'].includes(activeSection) && !profile) {
+        loadSchoolProfile();
+      }
+    }, [activeSection, profile]);
+
 
   // Load reviews when switching to review section
   useEffect(() => {
-    if (activeSection === 'review' && user?.schoolId) {
+    if (activeSection === 'review' && profile?.id) {
       loadReviews();
       loadReviewStats();
     }
-  }, [activeSection, user, reviewFilterStatus]);
+  }, [activeSection, profile?.id]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -314,6 +322,52 @@ export default function SchoolDashboard() {
     }
   };
 
+  const handleAddEnquiry = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    if (!newEnquiryName || !newEnquiryEmail || !newEnquiryPhone || !newEnquiryClass) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setAddingEnquiry(true);
+    try {
+      const response = await fetch('/api/schools/enquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          studentName: newEnquiryName,
+          studentEmail: newEnquiryEmail,
+          studentPhone: newEnquiryPhone,
+          studentClass: newEnquiryClass,
+          message: newEnquiryMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to add enquiry');
+      }
+
+      toast.success('Enquiry added successfully');
+      setShowAddEnquiryModal(false);
+      setNewEnquiryName('');
+      setNewEnquiryEmail('');
+      setNewEnquiryPhone('');
+      setNewEnquiryClass('');
+      setNewEnquiryMessage('');
+      loadSchoolData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add enquiry');
+    } finally {
+      setAddingEnquiry(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'New':
@@ -376,12 +430,13 @@ export default function SchoolDashboard() {
 
   const loadReviews = async () => {
     const token = localStorage.getItem('token');
-    if (!token || !user?.schoolId) return;
+    const schoolId = profile?.id;
+    if (!token || !schoolId) return;
 
     setReviewsLoading(true);
     try {
       const response = await fetch(
-        `/api/reviews?schoolId=${user.schoolId}&status=${reviewFilterStatus}&limit=100`,
+        `/api/reviews?schoolId=${schoolId}&limit=100`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -403,11 +458,12 @@ export default function SchoolDashboard() {
 
   const loadReviewStats = async () => {
     const token = localStorage.getItem('token');
-    if (!token || !user?.schoolId) return;
+    const schoolId = profile?.id;
+    if (!token || !schoolId) return;
 
     setStatsLoading(true);
     try {
-      const response = await fetch(`/api/schools/${user.schoolId}/reviews/stats`, {
+      const response = await fetch(`/api/schools/${schoolId}/reviews/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -472,7 +528,14 @@ export default function SchoolDashboard() {
               </div>
               Leads & Enquiries
             </CardTitle>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
+              <Button
+                onClick={() => setShowAddEnquiryModal(true)}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg"
+              >
+                <Plus className="mr-2" size={16} />
+                Add Enquiry
+              </Button>
               <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
                 <Input
@@ -798,28 +861,159 @@ export default function SchoolDashboard() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button
-                onClick={() => additionalDataEnquiry && handleSaveAdditionalData(additionalDataEnquiry.id)}
-                className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white shadow-lg flex-1"
-              >
-                <CheckCircle2 className="mr-2" size={18} />
-                Save Additional Data
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setAdditionalDataEnquiry(null)}
-                className="border-2 flex-1"
-              >
-                <XCircle className="mr-2" size={18} />
-                Cancel
-              </Button>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => additionalDataEnquiry && handleSaveAdditionalData(additionalDataEnquiry.id)}
+                  className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white shadow-lg flex-1"
+                >
+                  <CheckCircle2 className="mr-2" size={18} />
+                  Save Additional Data
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAdditionalDataEnquiry(null)}
+                  className="border-2 flex-1"
+                >
+                  <XCircle className="mr-2" size={18} />
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      </div>
-    );
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Enquiry Modal */}
+        <Dialog open={showAddEnquiryModal} onOpenChange={(open) => !open && setShowAddEnquiryModal(false)}>
+          <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                  <Plus className="text-white" size={20} />
+                </div>
+                Add New Enquiry
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-5 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="studentName" className="text-sm font-semibold">
+                    Student Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="studentName"
+                    value={newEnquiryName}
+                    onChange={(e) => setNewEnquiryName(e.target.value)}
+                    placeholder="Enter student name"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentEmail" className="text-sm font-semibold">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="studentEmail"
+                    type="email"
+                    value={newEnquiryEmail}
+                    onChange={(e) => setNewEnquiryEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentPhone" className="text-sm font-semibold">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="studentPhone"
+                    type="tel"
+                    value={newEnquiryPhone}
+                    onChange={(e) => setNewEnquiryPhone(e.target.value)}
+                    placeholder="Enter phone number"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentClass" className="text-sm font-semibold">
+                    Class <span className="text-red-500">*</span>
+                  </Label>
+                  <Select value={newEnquiryClass} onValueChange={setNewEnquiryClass}>
+                    <SelectTrigger className="bg-white/50">
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Nursery">Nursery</SelectItem>
+                      <SelectItem value="LKG">LKG</SelectItem>
+                      <SelectItem value="UKG">UKG</SelectItem>
+                      <SelectItem value="1st">1st</SelectItem>
+                      <SelectItem value="2nd">2nd</SelectItem>
+                      <SelectItem value="3rd">3rd</SelectItem>
+                      <SelectItem value="4th">4th</SelectItem>
+                      <SelectItem value="5th">5th</SelectItem>
+                      <SelectItem value="6th">6th</SelectItem>
+                      <SelectItem value="7th">7th</SelectItem>
+                      <SelectItem value="8th">8th</SelectItem>
+                      <SelectItem value="9th">9th</SelectItem>
+                      <SelectItem value="10th">10th</SelectItem>
+                      <SelectItem value="11th">11th</SelectItem>
+                      <SelectItem value="12th">12th</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message" className="text-sm font-semibold">
+                  Message (Optional)
+                </Label>
+                <Textarea
+                  id="message"
+                  value={newEnquiryMessage}
+                  onChange={(e) => setNewEnquiryMessage(e.target.value)}
+                  rows={3}
+                  placeholder="Enter any additional notes or message..."
+                  className="bg-white/50 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={handleAddEnquiry}
+                  disabled={addingEnquiry}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg flex-1"
+                >
+                  {addingEnquiry ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2" size={18} />
+                      Add Enquiry
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddEnquiryModal(false);
+                    setNewEnquiryName('');
+                    setNewEnquiryEmail('');
+                    setNewEnquiryPhone('');
+                    setNewEnquiryClass('');
+                    setNewEnquiryMessage('');
+                  }}
+                  className="border-2 flex-1"
+                >
+                  <XCircle className="mr-2" size={18} />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        </div>
+      );
 
   if (loading) {
     return (
@@ -1209,28 +1403,29 @@ export default function SchoolDashboard() {
 
           {activeSection === 'enquiry' && renderEnquirySection()}
           
-          {activeSection === 'whatsapp-api' && (
-            <WhatsappAPISection />
-          )}
+            {activeSection === 'whatsapp-api' && (
+                <WhatsappAPISection profile={profile} onRefresh={loadSchoolProfile} />
+              )}
 
-          {activeSection === 'enquiry-settings' && (
-            <EnquirySettingsSection />
-          )}
+            {activeSection === 'enquiry-settings' && (
+              <EnquirySettingsSection schoolId={profile?.id || null} />
+            )}
 
-          {activeSection === 'school-page' && (
-            // This is the added section with your comments
-            <div>
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                  School Page Preview
-                </h2>
-                <p className="text-muted-foreground text-lg">
-                  View your public school page and control its visibility
-                </p>
+            {activeSection === 'school-page' && (
+              // This is the added section with your comments
+              <div>
+                <div className="mb-8">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                    School Page Preview
+                  </h2>
+                  <p className="text-muted-foreground text-lg">
+                    View your public school page and control its visibility
+                  </p>
+                </div>
+                <SchoolPagePreview schoolId={profile?.id || null} />
               </div>
-              <SchoolPagePreview schoolId={user?.schoolId || null} />
-            </div>
-          )}
+            )}
+
 
           {activeSection === 'basic-info' && (
             <BasicInfoSection
@@ -1296,26 +1491,55 @@ export default function SchoolDashboard() {
           {/* Review Section */}
           {activeSection === 'review' && (
             <div className="space-y-6">
-              {/* Review Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {statsLoading ? (
-                  <div className="col-span-3 text-center py-8">
-                    <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
-                    <p className="text-muted-foreground">Loading statistics...</p>
-                  </div>
-                ) : reviewStats ? (
-                  <></>
-                ) : null}
-              </div>
-              <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                      <Star className="text-white" size={20} />
+                {/* Review Statistics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {statsLoading ? (
+                    <div className="col-span-3 text-center py-8">
+                      <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4" />
+                      <p className="text-muted-foreground">Loading statistics...</p>
                     </div>
-                    Review Management
-                  </CardTitle>
-                </CardHeader>
+                  ) : reviewStats ? (
+                    <>
+                      <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg">
+                              <Star className="text-white" size={24} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-muted-foreground">Average Rating</p>
+                              <p className="text-2xl font-bold">{reviewStats.averageRating.toFixed(1)} / 5.0</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                        <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                                <CheckCircle2 className="text-white" size={24} />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground">Total Reviews</p>
+                                <p className="text-2xl font-bold">{reviewStats.counts?.approved + (reviewStats.counts?.pending || 0) + (reviewStats.counts?.rejected || 0) || 0}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </>
+                    ) : null}
+                  </div>
+                  <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                            <Star className="text-white" size={20} />
+                          </div>
+                          Review Management
+                        </CardTitle>
+                      </div>
+                    </CardHeader>
                 <CardContent>
                   {reviewsLoading ? (
                     <div className="text-center py-12">
@@ -1323,13 +1547,13 @@ export default function SchoolDashboard() {
                       <p className="text-muted-foreground">Loading reviews...</p>
                     </div>
                   ) : reviews.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
-                        <Star className="opacity-50" size={48} />
+                      <div className="text-center py-16 text-muted-foreground">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-6">
+                          <Star className="opacity-50" size={48} />
+                        </div>
+                        <p className="text-xl font-semibold mb-2">No reviews found</p>
+                        <p>Reviews will appear here once students submit them</p>
                       </div>
-                      <p className="text-xl font-semibold mb-2">No {reviewFilterStatus} reviews</p>
-                      <p>Reviews will appear here once students submit them</p>
-                    </div>
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review) => (
@@ -1439,22 +1663,22 @@ export default function SchoolDashboard() {
 
           {/* Results Section */}
           {activeSection === 'results' && (
-            <ResultsSection schoolId={user?.schoolId || 0} />
+            <ResultsSection schoolId={profile?.id || 0} />
           )}
 
           {/* Alumni Section */}
           {activeSection === 'alumini' && (
-            <AlumniSection schoolId={user?.schoolId || 0} />
+            <AlumniSection schoolId={profile?.id || 0} />
           )}
 
           {/* News Section */}
           {activeSection === 'news' && (
-            <NewsSection schoolId={user?.schoolId || 0} />
+            <NewsSection schoolId={profile?.id || 0} />
           )}
 
           {/* Analytics Section */}
           {activeSection === 'analytics' && (
-            <AnalyticsSection schoolId={user?.schoolId || 0} />
+            <AnalyticsSection schoolId={profile?.id || 0} />
           )}
 
           {/* Other sections - Coming Soon */}
