@@ -614,3 +614,19 @@ export const Notification: Model<INotification> = mongoose.models.Notification |
 export const ContactSubmission: Model<IContactSubmission> = mongoose.models.ContactSubmission || mongoose.model<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
 export const EmailVerificationToken: Model<IEmailVerificationToken> = mongoose.models.EmailVerificationToken || mongoose.model<IEmailVerificationToken>('EmailVerificationToken', EmailVerificationTokenSchema);
 export const PasswordResetToken: Model<IPasswordResetToken> = mongoose.models.PasswordResetToken || mongoose.model<IPasswordResetToken>('PasswordResetToken', PasswordResetTokenSchema);
+
+export interface IAdminPasswordResetToken extends Document {
+  _id: mongoose.Types.ObjectId;
+  adminId: mongoose.Types.ObjectId;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+const AdminPasswordResetTokenSchema = new Schema<IAdminPasswordResetToken>({
+  adminId: { type: Schema.Types.ObjectId, ref: 'SuperAdmin', required: true },
+  token: { type: String, required: true, unique: true },
+  expiresAt: { type: Date, required: true },
+}, { timestamps: { createdAt: true, updatedAt: false } });
+
+export const AdminPasswordResetToken: Model<IAdminPasswordResetToken> = mongoose.models.AdminPasswordResetToken || mongoose.model<IAdminPasswordResetToken>('AdminPasswordResetToken', AdminPasswordResetTokenSchema);

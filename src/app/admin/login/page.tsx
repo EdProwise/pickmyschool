@@ -113,21 +113,31 @@ export default function AdminLoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center space-y-3">
-              <p className="text-sm text-gray-400">
-                Don't have an admin account?{' '}
+<div className="mt-4 text-center">
                 <Link 
-                  href="/admin/signup" 
-                  className="font-semibold hover:underline transition-colors"
+                  href="/admin/forgot-password" 
+                  className="text-sm font-medium hover:underline transition-colors"
                   style={{ color: '#04d3d3' }}
                 >
-                  Create one here
+                  Forgot your password?
                 </Link>
-              </p>
-              <p className="text-sm text-gray-400">
-                Authorized personnel only
-              </p>
-            </div>
+              </div>
+
+              <div className="mt-6 text-center space-y-3">
+                <p className="text-sm text-gray-400">
+                  Don't have an admin account?{' '}
+                  <Link 
+                    href="/admin/signup" 
+                    className="font-semibold hover:underline transition-colors"
+                    style={{ color: '#04d3d3' }}
+                  >
+                    Create one here
+                  </Link>
+                </p>
+                <p className="text-sm text-gray-400">
+                  Authorized personnel only
+                </p>
+              </div>
           </CardContent>
         </Card>
       </div>
