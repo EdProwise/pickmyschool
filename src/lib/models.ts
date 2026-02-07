@@ -517,24 +517,24 @@ const NewsSchema = new Schema<INews>({
 
 export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
-  recipientId: number;
+  recipientId: mongoose.Types.ObjectId;
   recipientType: string;
   title: string;
   message: string;
   type: string;
-  relatedId?: number;
+  relatedId?: mongoose.Types.ObjectId;
   isRead: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 const NotificationSchema = new Schema<INotification>({
-  recipientId: { type: Number, required: true },
+  recipientId: { type: Schema.Types.ObjectId, required: true },
   recipientType: { type: String, required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
     type: { type: String, required: true },
-    relatedId: { type: Number },
+    relatedId: { type: Schema.Types.ObjectId },
     isRead: { type: Boolean, default: false },
   }, { timestamps: true });
 

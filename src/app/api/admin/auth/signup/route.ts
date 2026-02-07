@@ -4,8 +4,60 @@ import { SuperAdmin } from '@/lib/models';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+interface JWTPayload {
+  adminId: string;
+  role: string;
+}
+
+/**
+ * Verify that the request has a valid admin token
+ */
+function verifyAdminToken(request: NextRequest): { valid: boolean; adminId?: string; error?: string } {
+  const authHeader = request.headers.get('authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { valid: false, error: 'No token provided' };
+  }
+
+  const token = authHeader.substring(7);
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    
+    if (decoded.role !== 'super_admin') {
+      return { valid: false, error: 'Insufficient permissions' };
+    }
+
+    return { valid: true, adminId: decoded.adminId };
+  } catch {
+    return { valid: false, error: 'Invalid token' };
+  }
+}
+
+/**
+ * Create a new admin account
+ * PROTECTED: Requires existing admin authentication
+ */
 export async function POST(request: NextRequest) {
   try {
+    // Require existing admin authentication
+    const authResult = verifyAdminToken(request);
+    
+    if (!authResult.valid) {
+      if (authResult.error === 'Insufficient permissions') {
+        return NextResponse.json({ 
+          error: 'Access denied. Super admin role required.',
+          code: 'FORBIDDEN' 
+        }, { status: 403 });
+      }
+      return NextResponse.json({ 
+        error: authResult.error || 'Authentication required. Only existing admins can create new admin accounts.',
+        code: 'UNAUTHORIZED' 
+      }, { status: 401 });
+    }
+
     await connectToDatabase();
     
     const body = await request.json();
@@ -64,22 +116,11 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
     });
 
-    const token = jwt.sign(
-      {
-        adminId: newAdmin._id,
-        email: newAdmin.email,
-        role: 'super_admin'
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
-
     const { password: _, ...adminWithoutPassword } = newAdmin.toObject();
 
     return NextResponse.json(
       {
         admin: { ...adminWithoutPassword, id: newAdmin._id },
-        token,
         message: 'Admin account created successfully'
       },
       { status: 201 }
