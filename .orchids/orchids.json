@@ -6,5 +6,9 @@
     "bun install; bun run dev"
   ],
   "vercelProjectId": "prj_59uei6UllIaz2UODGSai71dnyYsQ",
+<<<<<<< HEAD
   "deployedWithUserToken": true
+=======
+  "deployedWithUserToken": false
+>>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
 }
