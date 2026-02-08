@@ -914,3 +914,60 @@ It can also happen if the client has a browser extension installed which messes 
                                             >
                                               <div
                                ... [truncated]
+2026-02-08T05:48:15.606Z [console][error] Uncaught Error: ./src/app/page.tsx:175:6
+Parsing ecmascript source code failed
+  173 |
+  174 |   return (
+> 175 |     <div className="min-h-screen">
+      |      ^^^
+  176 |       <Navbar />
+  177 |
+  178 |       {/* Hero Section - Modern Split Layout */}
+
+Unexpected token `div`. Expected jsx identifier
+
+
+2026-02-08T05:48:15.708Z [console][error] ./src/app/page.tsx:175:6
+Parsing ecmascript source code failed
+  173 |
+  174 |   return (
+> 175 |     <div className="min-h-screen">
+      |      ^^^
+  176 |       <Navbar />
+  177 |
+  178 |       {/* Hero Section - Modern Split Layout */}
+
+Unexpected token `div`. Expected jsx identifier
+2026-02-08T05:48:15.802Z [console][error] ./src/app/page.tsx:175:6
+Parsing ecmascript source code failed
+  173 |
+  174 |   return (
+> 175 |     <div className="min-h-screen">
+      |      ^^^
+  176 |       <Navbar />
+  177 |
+  178 |       {/* Hero Section - Modern Split Layout */}
+
+Unexpected token `div`. Expected jsx identifier
+2026-02-08T05:48:15.709Z [console][error] ./src/app/page.tsx:175:6
+Parsing ecmascript source code failed
+  173 |
+  174 |   return (
+> 175 |     <div className="min-h-screen">
+      |      ^^^
+  176 |       <Navbar />
+  177 |
+  178 |       {/* Hero Section - Modern Split Layout */}
+
+Unexpected token `div`. Expected jsx identifier
+2026-02-08T05:48:15.803Z [console][error] ./src/app/page.tsx:175:6
+Parsing ecmascript source code failed
+  173 |
+  174 |   return (
+> 175 |     <div className="min-h-screen">
+      |      ^^^
+  176 |       <Navbar />
+  177 |
+  178 |       {/* Hero Section - Modern Split Layout */}
+
+Unexpected token `div`. Expected jsx identifier
