@@ -201,14 +201,14 @@ export default function Navbar() {
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href="https://www.edprowise.com/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
+                      <a href="https://www.educationjob.in/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
                         <LayoutGrid className="h-4 w-4 mr-2.5 text-orange-500" />
                         <span className="font-medium text-sm text-foreground">Recruit & Train Teacher</span>
                         <ExternalLink size={14} className="ml-auto text-gray-400" />
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href="https://www.edprowise.com/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
+                      <a href="https://edprowisebooster.edprowise.com/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
                         <LayoutGrid className="h-4 w-4 mr-2.5 text-green-500" />
                         <span className="font-medium text-sm text-foreground">Marketing</span>
                         <ExternalLink size={14} className="ml-auto text-gray-400" />

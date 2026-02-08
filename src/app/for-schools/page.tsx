@@ -102,10 +102,10 @@ export default function ForSchoolsPage() {
   ];
 
   const stats = [
-    { value: '50K+', label: 'Active Parents' },
-    { value: '1000+', label: 'Schools Listed' },
-    { value: '10K+', label: 'Monthly Enquiries' },
-    { value: '95%', label: 'Satisfaction Rate' },
+    { value: '5K+', label: 'Active Parents' },
+    { value: '10+', label: 'Schools Listed' },
+    { value: '1K+', label: 'Monthly Enquiries' },
+    { value: '99%', label: 'Satisfaction Rate' },
   ];
 
   return (

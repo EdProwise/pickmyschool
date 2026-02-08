@@ -330,8 +330,8 @@ export default function TermsPage() {
                         <div>
                           <h4 className="text-[#E86C3A] font-bold uppercase tracking-widest text-xs mb-4">Mailing Address</h4>
                           <p className="text-lg leading-relaxed">
-                            PickMySchool Legal Department<br />
-                            Whitefield, Bangalore, KA 560066<br />
+                            EdProwise Tech Private Limited<br />
+                            West Delhi, Delhi, 110063<br />
                             India
                           </p>
                         </div>

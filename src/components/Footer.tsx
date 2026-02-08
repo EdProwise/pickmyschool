@@ -16,16 +16,16 @@ export default function Footer() {
                 Your trusted partner in finding the perfect school for your child's bright future.
               </p>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
+                <a href="https://www.facebook.com/edprowise" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
                   <Facebook size={20} />
                 </a>
                 <a href="#" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
                   <Twitter size={20} />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
+                <a href="https://www.instagram.com/edprowise" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
                   <Instagram size={20} />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
+                <a href="https://www.linkedin.com/company/edprowise/" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
                   <Linkedin size={20} />
                 </a>
               </div>

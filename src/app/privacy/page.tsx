@@ -412,8 +412,8 @@ export default function PrivacyPage() {
                           <div>
                             <h4 className="font-semibold text-[#1a365d]">Address</h4>
                             <p className="text-gray-600 text-sm">
-                              PickMySchool Headquarters<br />
-                              Bangalore, India
+                              EdProwise Tech Private Limited<br />
+                              West Delhi, Delhi, India,110063
                             </p>
                           </div>
                         </div>

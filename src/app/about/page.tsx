@@ -38,10 +38,10 @@ export default function AboutPage() {
   ];
 
   const milestones = [
-    { number: '1000+', label: 'Schools Listed' },
-    { number: '50K+', label: 'Parents Helped' },
-    { number: '25+', label: 'Cities Covered' },
-    { number: '98%', label: 'Satisfaction Rate' }
+    { number: '10+', label: 'Schools Listed' },
+    { number: '5K+', label: 'Parents Helped' },
+    { number: '5+', label: 'Cities Covered' },
+    { number: '99%', label: 'Satisfaction Rate' }
   ];
 
   const teamMembers = [
@@ -165,23 +165,20 @@ export default function AboutPage() {
                 </div>
             </div>
             
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-3xl blur-2xl" />
-              <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-                <div className="h-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500" />
-                <div className="p-8">
-                  <img 
-                    src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop"
-                    alt="Students in classroom"
-                    className="w-full h-64 object-cover rounded-2xl mb-6"
-                  />
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">Building Futures</h3>
+              <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-3xl blur-2xl" />
+                    <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-100">
+                      <img 
+                        src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/project-uploads/52387199-7ec6-4b63-a2fa-893e007f2f3d/Images-1-1770547145574.png"
+                        alt="Children reading books together"
+                        className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  <div className="relative mt-4 bg-white rounded-2xl shadow-lg border border-slate-100 p-4 text-center">
+                    <h3 className="text-2xl font-bold text-slate-900 mb-1">Building Futures</h3>
                     <p className="text-slate-600">One school match at a time</p>
                   </div>
                 </div>
-              </div>
-            </div>
           </div>
         </div>
         </section>
