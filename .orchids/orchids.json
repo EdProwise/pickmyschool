@@ -1,14 +1,8 @@
 {
-  "projectId": "52387199-7ec6-4b63-a2fa-893e007f2f3d",
-  "createdAt": 1765527531664,
-  "version": "1.0",
+  "projectId": "9866fbc4-e876-4f22-bbe2-9e6607488004",
+  "createdAt": 1770529232110,
   "startupCommands": [
-    "bun install; bun run dev"
+    "npm run dev"
   ],
-  "vercelProjectId": "prj_59uei6UllIaz2UODGSai71dnyYsQ",
-<<<<<<< HEAD
-  "deployedWithUserToken": true
-=======
-  "deployedWithUserToken": false
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
+  "vercelProjectId": "prj_59uei6UllIaz2UODGSai71dnyYsQ"
 }
