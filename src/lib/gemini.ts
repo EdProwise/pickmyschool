@@ -33,7 +33,6 @@ export async function generateAIResponse(systemPrompt: string, userMessage: stri
       return response.text;
     }
     throw new Error('No response text from Gemini');
-<<<<<<< HEAD
     } catch (error: any) {
       console.error(`Gemini model ${modelName} failed:`, error.message || error);
       
@@ -43,12 +42,6 @@ export async function generateAIResponse(systemPrompt: string, userMessage: stri
       
       throw error;
     }
-=======
-  } catch (error: any) {
-    console.error(`Gemini model ${modelName} failed:`, error.message || error);
-    throw error;
-  }
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
 }
 
 export function extractFiltersFromQuery(query: string): SchoolFilter {

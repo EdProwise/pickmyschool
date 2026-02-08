@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-<<<<<<< HEAD
 import { Alumni, User, School } from '@/lib/models';
-=======
-import { Alumni, User } from '@/lib/models';
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -55,15 +51,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-<<<<<<< HEAD
     const school = await School.findById(user.schoolId);
     if (!school) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
     const numericSchoolId = school.id;
 
-=======
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
     const body = await request.json();
     const {
       name,
@@ -85,11 +78,7 @@ export async function POST(request: NextRequest) {
     }
     
     const newAlumni = await Alumni.create({
-<<<<<<< HEAD
       schoolId: numericSchoolId,
-=======
-      schoolId: user.schoolId,
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
       name,
       batchYear,
       classLevel: classLevel || null,
@@ -129,15 +118,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-<<<<<<< HEAD
     const school = await School.findById(user.schoolId);
     if (!school) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
     const numericSchoolId = school.id;
 
-=======
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -150,11 +136,7 @@ export async function PUT(request: NextRequest) {
 
     const existingAlumni = await Alumni.findById(id);
     
-<<<<<<< HEAD
     if (!existingAlumni || existingAlumni.schoolId !== numericSchoolId) {
-=======
-    if (!existingAlumni || existingAlumni.schoolId !== user.schoolId) {
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
       return NextResponse.json({ error: 'Alumni not found or unauthorized' }, { status: 404 });
     }
 
@@ -189,15 +171,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-<<<<<<< HEAD
     const school = await School.findById(user.schoolId);
     if (!school) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
     const numericSchoolId = school.id;
 
-=======
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -207,11 +186,7 @@ export async function DELETE(request: NextRequest) {
 
     const existingAlumni = await Alumni.findById(id);
     
-<<<<<<< HEAD
     if (!existingAlumni || existingAlumni.schoolId !== numericSchoolId) {
-=======
-    if (!existingAlumni || existingAlumni.schoolId !== user.schoolId) {
->>>>>>> 57f4c9ba3fdfa8f3203905d4450beb49ed79846d
       return NextResponse.json({ error: 'Alumni not found or unauthorized' }, { status: 404 });
     }
 
