@@ -460,10 +460,10 @@ export default function HomePage() {
                             <span className="text-xs font-bold text-green-700">Annual Fees</span>
                           </div>
                           <p className="text-sm font-bold text-foreground">
-                            {spotlightSchool.feesMin !== null && spotlightSchool.feesMax !== null
-                              ? `₹${spotlightSchool.feesMin.toLocaleString('en-IN')} – ₹${spotlightSchool.feesMax.toLocaleString('en-IN')}`
-                              : 'Fee info not available'}
-                          </p>
+                              {spotlightSchool.feesMin != null && spotlightSchool.feesMax != null
+                                ? `₹${spotlightSchool.feesMin.toLocaleString('en-IN')} – ₹${spotlightSchool.feesMax.toLocaleString('en-IN')}`
+                                : 'Fee info not available'}
+                            </p>
                         </div>
 
                         {/* Premium Rating Badge */}
