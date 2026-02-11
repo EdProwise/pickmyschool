@@ -119,6 +119,12 @@ export default function SchoolDashboard() {
   const [reviewStats, setReviewStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // Notifications state
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => {
     loadSchoolData();
   }, []);
@@ -129,6 +135,13 @@ export default function SchoolDashboard() {
       loadReviewStats();
     }
   }, [profile?.id]);
+
+  // Load notifications on mount and periodically
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
     useEffect(() => {
       // Load profile when switching to profile-related sections
@@ -475,6 +488,70 @@ export default function SchoolDashboard() {
       console.error('Failed to load review stats:', error);
     } finally {
       setStatsLoading(false);
+    }
+  };
+
+  const loadNotifications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setNotificationsLoading(true);
+    try {
+      const response = await fetch('/api/notifications?limit=20', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+        setUnreadCount(data.filter((n: any) => !n.isRead).length);
+      }
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const markNotificationRead = async (notificationId: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(n => n.id === notificationId || n._id === notificationId ? { ...n, isRead: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const unreadNotifications = notifications.filter(n => !n.isRead);
+    for (const notification of unreadNotifications) {
+      await markNotificationRead(notification.id || notification._id);
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'enquiry':
+        return <MessageSquare className="text-cyan-500" size={16} />;
+      case 'review':
+        return <Star className="text-yellow-500" size={16} />;
+      default:
+        return <Bell className="text-gray-500" size={16} />;
     }
   };
 
@@ -1172,11 +1249,94 @@ export default function SchoolDashboard() {
                 </span>
               </div>
               
-              {/* Notifications */}
-              <button className="relative p-3 hover:bg-gray-100 rounded-xl transition-colors group">
-                <Bell size={20} className="text-gray-600 group-hover:text-cyan-600 transition-colors" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </button>
+{/* Notifications */}
+                <DropdownMenu open={showNotifications} onOpenChange={setShowNotifications}>
+                  <DropdownMenuTrigger asChild>
+                    <button className="relative p-3 hover:bg-gray-100 rounded-xl transition-colors group">
+                      <Bell size={20} className="text-gray-600 group-hover:text-cyan-600 transition-colors" />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto bg-white/95 backdrop-blur-2xl border-gray-200/60 shadow-2xl rounded-xl p-0">
+                    <div className="sticky top-0 bg-white/95 backdrop-blur-xl px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAllNotificationsRead();
+                          }}
+                          className="text-xs text-cyan-600 hover:text-cyan-700 font-medium"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    {notificationsLoading ? (
+                      <div className="p-6 text-center">
+                        <div className="animate-spin w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-6 text-center text-muted-foreground">
+                        <Bell className="mx-auto mb-2 opacity-30" size={32} />
+                        <p className="text-sm">No notifications yet</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100">
+                        {notifications.map((notification) => (
+                          <button
+                            key={notification.id || notification._id}
+                            onClick={() => {
+                              if (!notification.isRead) {
+                                markNotificationRead(notification.id || notification._id);
+                              }
+                              // Navigate to relevant section based on notification type
+                              if (notification.type === 'enquiry') {
+                                setActiveSection('enquiry');
+                              } else if (notification.type === 'review') {
+                                setActiveSection('review');
+                              }
+                              setShowNotifications(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                              !notification.isRead ? 'bg-cyan-50/50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                notification.type === 'enquiry' 
+                                  ? 'bg-cyan-100' 
+                                  : notification.type === 'review'
+                                  ? 'bg-yellow-100'
+                                  : 'bg-gray-100'
+                              }`}>
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!notification.isRead ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {new Date(notification.createdAt).toLocaleDateString()} at {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {!notification.isRead && (
+                                <div className="w-2 h-2 rounded-full bg-cyan-500 mt-2" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               
               {/* User Profile with Logout */}
               <DropdownMenu>

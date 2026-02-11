@@ -1081,3 +1081,113 @@ It can also happen if the client has a browser extension installed which messes 
                                 <div
                                   className="min-h-screen"
 -      ...
+2026-02-10T18:43:57.212Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-                                 data-orchid-ref="ref-fbire9cfm2"
+                                >
+                                  <Navbar>
+                                    <nav
+                                      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white/..."
+-                                     data-orchid-ref="ref-3561aubs51"
+                                    >
+                                      <div
+                                        className="container mx-auto px-3 sm:px-4"
+-                                       data-orchid-ref="ref-654jdjqd2e"
+                                      >
+                                        <div
+                                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-trans..."
+-                                         data-orchid-ref="ref-61lmgyv2ay"
+                                        >
+                                        <div
+                                          className="flex items-center justify-between h-16 sm:h-20"
+-                                         data-orchid-ref="ref-orldiwuabh"
+                                        >
+                                          <LinkComponent href="/" className="flex items...">
+                                            <a
+                                              className="flex items-center space-x-2 group relative"
+                                              ref={function}
+                                              onClick={function onClick}
+                                              onMouseEnter={function onMouseEnter}
+                                              onTouchStart={function onTouchStart}
+                                              href="/"
+-                                             data-orchid-ref="ref-717lto4b6y"
+                                            >
+                                              <div
+                               ... [truncated]
+2026-02-10T18:43:57.214Z [console][error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload assetPrefix="" globalError={[...]}>
+      <AppDevOverlay state={{nextId:1, ...}} globalError={[...]}>
+        <AppDevOverlayErrorBoundary globalError={[...]} onError={function bound dispatchSetState}>
+          <ReplaySsrOnlyErrors>
+          <DevRootHTTPAccessFallbackBoundary>
+            <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <Head>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en">
+                        <body className="antialiased">
+                          <Script>
+                          <ErrorReporter>
+                          <Script>
+                          <Toaster>
+                          ...
+                            <ClientPageRoot Component={function HomePage} searchParams={{}} params={{}}>
+                              <HomePage params={Promise} searchParams={Promise}>
+                                <div
+                                  className="min-h-screen"
+-      ...
