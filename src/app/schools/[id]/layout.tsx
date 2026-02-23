@@ -1,6 +1,7 @@
 import { Metadata } from "next";
-iimport clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Types } from "mongoose";
+import mongoose from "mongoose";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -8,16 +9,20 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  
+
   try {
-    const client = await clientPromise;
-    const db = client.db();
-    
-    let school;
-    if (ObjectId.isValid(id)) {
-      school = await db.collection("schools").findOne({ _id: new ObjectId(id) });
+    await connectToDatabase();
+    const db = mongoose.connection.db;
+
+    if (!db) {
+      throw new Error("Database connection not established");
     }
-    
+
+    let school;
+    if (Types.ObjectId.isValid(id)) {
+      school = await db.collection("schools").findOne({ _id: new Types.ObjectId(id) });
+    }
+
     if (!school) {
       school = await db.collection("schools").findOne({ slug: id });
     }
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const schoolName = school.name || "School";
     const city = school.city || "";
     const board = school.board || "";
-    const description = school.aboutSchool 
+    const description = school.aboutSchool
       ? school.aboutSchool.substring(0, 155) + "..."
       : `${schoolName} is a ${board} school located in ${city}. View fees, facilities, reviews, and admission details on PickMySchool.`;
 
@@ -53,15 +58,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         url: `https://www.pickmyschool.in/schools/${id}`,
         type: "website",
-        images: school.bannerImageUrl ? [
-          {
-            url: school.bannerImageUrl,
-            width: 1200,
-            height: 630,
-            alt: schoolName,
-          },
-        ] : undefined,
- title: `${schoolName} - Fees, Reviews & Admission`,
+        images: school.bannerImageUrl
+          ? [
+              {
+                url: school.bannerImageUrl,
+                width: 1200,
+                height: 630,
+                alt: schoolName,
+              },
+            ]
+          : undefined,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${schoolName} - Fees, Reviews & Admission`,
         description,
         images: school.bannerImageUrl ? [school.bannerImageUrl] : undefined,
       },
