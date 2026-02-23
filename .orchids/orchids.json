@@ -4,5 +4,6 @@
   "startupCommands": [
     "npm run dev"
   ],
-  "vercelProjectId": "prj_59uei6UllIaz2UODGSai71dnyYsQ"
+  "vercelProjectId": "prj_59uei6UllIaz2UODGSai71dnyYsQ",
+  "deployedWithUserToken": false
 }
