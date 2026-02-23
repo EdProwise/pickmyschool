@@ -582,7 +582,7 @@ export interface IEmailVerificationToken extends Document {
 const EmailVerificationTokenSchema = new Schema<IEmailVerificationToken>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   token: { type: String, required: true, unique: true },
-    expiresAt: { type: date, required: true },
+    expiresAt: { type: Date, required: true },
   }, { timestamps: { createdAt: true, updatedAt: false } });
 
 export interface IPasswordResetToken extends Document {
