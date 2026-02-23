@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     await newUser.save();
 
     const verificationToken = generateVerificationToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const tokenDoc = new EmailVerificationToken({
       userId: newUser._id,
