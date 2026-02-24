@@ -1191,3 +1191,7 @@ It can also happen if the client has a browser extension installed which messes 
                                 <div
                                   className="min-h-screen"
 -      ...
+2026-02-24T16:17:07.003Z [console][error] Uncaught Error: trendingSchools.map is not a function
+2026-02-24T16:17:17.190Z [console][error] [Fast Refresh] performing full reload because your application had an unrecoverable error
+2026-02-24T16:17:07.003Z [console][error] Uncaught Error: trendingSchools.map is not a function
+2026-02-24T16:17:17.190Z [console][error] [Fast Refresh] performing full reload because your application had an unrecoverable error

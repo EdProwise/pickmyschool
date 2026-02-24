@@ -59,7 +59,7 @@ export default function StudentDashboard() {
   const loadAllSchools = async () => {
     setSchoolsLoading(true);
     try {
-      const schoolsData = await getSchools({ limit: 1000 });
+      const { data: schoolsData } = await getSchools({ limit: 1000 });
       setAllSchools(schoolsData);
     } catch (error) {
       console.error('Failed to load schools:', error);

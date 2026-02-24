@@ -604,6 +604,9 @@ function SchoolsPageContent() {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 12;
 
   // Filter states
   const [selectedCities, setSelectedCities] = useState<string[]>(
@@ -660,9 +663,14 @@ function SchoolsPageContent() {
     loadFilterOptions();
   }, []);
 
+  // Reset to page 1 whenever filters/search change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCities, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities, minRating, gender, language, stream, k12Level, isInternational, radiusKm, coords]);
+
   useEffect(() => {
     loadSchools();
-  }, [selectedCities, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities, minRating, gender, language, stream, k12Level, isInternational, radiusKm, coords]);
+  }, [selectedCities, board, schoolType, feesMin, feesMax, search, sortBy, sortOrder, selectedFacilities, minRating, gender, language, stream, k12Level, isInternational, radiusKm, coords, page]);
 
   const loadCities = async () => {
     try {
@@ -699,7 +707,8 @@ function SchoolsPageContent() {
       const params: any = {
         sort: sortBy,
         order: sortOrder,
-        limit: 50,
+        limit: PAGE_SIZE,
+        offset: (page - 1) * PAGE_SIZE,
       };
 
       if (selectedCities.length > 0) {
@@ -725,8 +734,9 @@ function SchoolsPageContent() {
         }
       }
 
-      const data = await getSchools(params);
+      const { data, total } = await getSchools(params);
       setSchools(data);
+      setTotalCount(total);
     } catch (error) {
       console.error('Failed to load schools:', error);
     } finally {
@@ -757,6 +767,7 @@ function SchoolsPageContent() {
   };
 
   const clearAllFilters = () => {
+    setPage(1);
     setSelectedCities([]);
     setBoard('all');
     setSchoolType('all');
@@ -833,9 +844,9 @@ function SchoolsPageContent() {
                 <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground mb-1 sm:mb-2 tracking-tight">
                   Find Your Perfect School
                 </h1>
-                <p className="text-xs sm:text-lg font-medium text-muted-foreground">
-                  {loading ? 'Loading schools...' : `${schools.length} premier institutions found`}
-                </p>
+                  <p className="text-xs sm:text-lg font-medium text-muted-foreground">
+                    {loading ? 'Loading schools...' : `Showing ${schools.length > 0 ? (page - 1) * PAGE_SIZE + 1 : 0}–${Math.min(page * PAGE_SIZE, totalCount)} of ${totalCount} institutions`}
+                  </p>
               </div>
 
 
@@ -959,14 +970,64 @@ function SchoolsPageContent() {
                       </Button>
                     </CardContent>
                   </Card>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
-                    {schools.map((school) => (
-                      <SchoolCard key={school.id} school={school} />
-                    ))}
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
+                      {schools.map((school) => (
+                        <SchoolCard key={school.id} school={school} />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {!loading && totalCount > PAGE_SIZE && (
+                    <div className="flex items-center justify-center gap-2 mt-8 sm:mt-12">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="h-10 px-4 rounded-xl font-semibold"
+                      >
+                        Previous
+                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.ceil(totalCount / PAGE_SIZE) }, (_, i) => i + 1)
+                          .filter((p) => p === 1 || p === Math.ceil(totalCount / PAGE_SIZE) || Math.abs(p - page) <= 2)
+                          .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                            if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, idx) =>
+                            p === '...' ? (
+                              <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground text-sm">…</span>
+                            ) : (
+                              <Button
+                                key={p}
+                                variant={page === p ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setPage(p as number)}
+                                className="h-10 w-10 rounded-xl font-bold text-sm"
+                              >
+                                {p}
+                              </Button>
+                            )
+                          )}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.min(Math.ceil(totalCount / PAGE_SIZE), p + 1))}
+                        disabled={page === Math.ceil(totalCount / PAGE_SIZE)}
+                        className="h-10 px-4 rounded-xl font-semibold"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </div>
             </div>
           </div>
         </div>

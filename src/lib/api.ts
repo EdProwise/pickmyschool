@@ -175,7 +175,7 @@ export const getSchools = async (params?: {
   offset?: number;
   sort?: string;
   order?: string;
-}): Promise<School[]> => {
+}): Promise<{ data: School[]; total: number }> => {
   const queryParams = new URLSearchParams();
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -222,7 +222,8 @@ export const getFeaturedSchools = async (limit = 10): Promise<School[]> => {
 export const getTrendingSchools = async (limit = 4): Promise<School[]> => {
   const response = await fetch(`${API_BASE_URL}/api/schools?sort=profileViews&order=desc&limit=${limit}`);
   if (!response.ok) throw new Error('Failed to fetch trending schools');
-  return response.json();
+  const result = await response.json();
+  return Array.isArray(result) ? result : (result.data ?? []);
 };
 
 export const getRecommendedSchools = async (token: string, limit = 8): Promise<{

@@ -365,26 +365,26 @@ export default function Navbar() {
                         <LayoutGrid size={18} className="text-purple-500" />
                         Orbit School - School Management
                       </a>
-                      <a
-                        href="https://www.edprowise.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-4 py-3 text-foreground hover:text-cyan-600 transition-colors font-medium rounded-xl hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <LayoutGrid size={18} className="text-orange-500" />
-                        Recruit & Train Teacher
-                      </a>
-                      <a
-                        href="https://www.edprowise.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-4 py-3 text-foreground hover:text-cyan-600 transition-colors font-medium rounded-xl hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <LayoutGrid size={18} className="text-green-500" />
-                        Marketing
-                      </a>
+                        <a
+                          href="https://www.educationjob.in/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-4 py-3 text-foreground hover:text-cyan-600 transition-colors font-medium rounded-xl hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <LayoutGrid size={18} className="text-orange-500" />
+                          Recruit & Train Teacher
+                        </a>
+                        <a
+                          href="https://edprowisebooster.edprowise.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-4 py-3 text-foreground hover:text-cyan-600 transition-colors font-medium rounded-xl hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <LayoutGrid size={18} className="text-green-500" />
+                          Marketing
+                        </a>
                     </div>
                   </div>
 

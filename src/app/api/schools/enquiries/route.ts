@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
     const studentClass = searchParams.get('studentClass');
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
+      const limit = Math.min(parseInt(searchParams.get('limit') ?? '1000'), 1000);
     const offset = parseInt(searchParams.get('offset') ?? '0');
     const sortField = searchParams.get('sort') ?? 'createdAt';
     const sortOrder = searchParams.get('order') ?? 'desc';

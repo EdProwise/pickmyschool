@@ -51,14 +51,14 @@ export default function Footer() {
                   </a>
                 </li>
                 <li>
-                  <a href="https://www.edprowise.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
-                    Recruit & Train Teacher
-                  </a>
-                </li>
-                <li>
-                  <a href="https://www.edprowise.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
-                    Marketing
-                  </a>
+                  <a href="https://www.educationjob.in/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
+                      Recruit & Train Teacher
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://edprowisebooster.edprowise.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
+                      Marketing
+                    </a>
                 </li>
               </ul>
             </div>

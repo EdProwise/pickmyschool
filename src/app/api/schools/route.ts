@@ -268,11 +268,13 @@ export async function GET(request: NextRequest) {
       return 0;
     });
 
-    if (hasInMemoryFilters) {
-      filteredResults = filteredResults.slice(offset, offset + limit);
-    }
+      const total = filteredResults.length;
 
-    return NextResponse.json(filteredResults, { status: 200 });
+      if (hasInMemoryFilters) {
+        filteredResults = filteredResults.slice(offset, offset + limit);
+      }
+
+      return NextResponse.json({ data: filteredResults, total }, { status: 200 });
 
   } catch (error) {
     console.error('GET error:', error);

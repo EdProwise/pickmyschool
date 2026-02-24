@@ -169,7 +169,7 @@ function CompareSchoolsContent() {
     }
     setIsSearching(true);
     try {
-      const results = await getSchools({ search: searchQuery, limit: 20 });
+      const { data: results } = await getSchools({ search: searchQuery, limit: 20 });
       setSearchResults(results);
     } catch (error) {
       toast.error('Failed to search schools');

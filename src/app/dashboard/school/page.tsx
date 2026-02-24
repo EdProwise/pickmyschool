@@ -70,7 +70,7 @@ const sidebarItems = [
   { id: 'virtualtour', label: 'Virtual Tour', icon: Video },
   { id: 'fees', label: 'Fees Structure', icon: DollarSign },
   { id: 'results', label: 'Results', icon: Trophy },
-  { id: 'alumini', label: 'Alumini', icon: Users },
+  { id: 'alumini', label: 'Alumni', icon: Users },
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'review', label: 'Review', icon: Star },
   { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
@@ -112,6 +112,10 @@ export default function SchoolDashboard() {
   const [newEnquiryClass, setNewEnquiryClass] = useState('');
   const [newEnquiryMessage, setNewEnquiryMessage] = useState('');
   const [addingEnquiry, setAddingEnquiry] = useState(false);
+
+  // Enquiry pagination
+  const [enquiryPage, setEnquiryPage] = useState(1);
+  const ENQUIRIES_PER_PAGE = 30;
 
   // Reviews state
   const [reviews, setReviews] = useState<any[]>([]);
@@ -187,9 +191,9 @@ export default function SchoolDashboard() {
       setUser(userData);
 
       // Load school enquiries
-      const response = await fetch('/api/schools/enquiries', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        const response = await fetch('/api/schools/enquiries?limit=1000', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -405,6 +409,12 @@ export default function SchoolDashboard() {
     return matchesStatus && matchesSearch;
   });
 
+  const totalEnquiryPages = Math.ceil(filteredEnquiries.length / ENQUIRIES_PER_PAGE);
+  const paginatedEnquiries = filteredEnquiries.slice(
+    (enquiryPage - 1) * ENQUIRIES_PER_PAGE,
+    enquiryPage * ENQUIRIES_PER_PAGE
+  );
+
   const stats = {
     totalLeads: enquiries.length,
     newEnquiries: enquiries.filter(e => e.status === 'New').length,
@@ -613,16 +623,16 @@ export default function SchoolDashboard() {
                 <Plus className="mr-2" size={16} />
                 Add Enquiry
               </Button>
-              <div className="relative flex-1 md:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-                <Input
-                  placeholder="Search by name, email, phone..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/50 border-gray-200 focus:border-cyan-400"
-                />
-              </div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <div className="relative flex-1 md:w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="Search by name, email, phone..."
+                    value={searchTerm}
+                    onChange={(e) => { setSearchTerm(e.target.value); setEnquiryPage(1); }}
+                    className="pl-10 bg-white/50 border-gray-200 focus:border-cyan-400"
+                  />
+                </div>
+                <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setEnquiryPage(1); }}>
                 <SelectTrigger className="w-40 bg-white/50">
                   <Filter size={16} className="mr-2" />
                   <SelectValue />
@@ -647,9 +657,10 @@ export default function SchoolDashboard() {
               <p className="text-xl font-semibold mb-2">No enquiries found</p>
               <p>Enquiries from parents will appear here</p>
             </div>
-          ) : (
-              <div className="overflow-x-auto">
-                <Table>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow className="border-gray-200 hover:bg-transparent">
                       <TableHead className="font-semibold">Student Name</TableHead>
@@ -661,8 +672,8 @@ export default function SchoolDashboard() {
                       <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {filteredEnquiries.map((enquiry) => (
+                    <TableBody>
+                      {paginatedEnquiries.map((enquiry) => (
                       <TableRow key={enquiry.id} className="border-gray-100 hover:bg-cyan-50/50 transition-colors">
                         <TableCell className="font-semibold">
                           {enquiry.studentName}
@@ -740,12 +751,46 @@ export default function SchoolDashboard() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-          )}
-        </CardContent>
-      </Card>
+                    </TableBody>
+                  </Table>
+                </div>
+                {totalEnquiryPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 px-2">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {(enquiryPage - 1) * ENQUIRIES_PER_PAGE + 1}–{Math.min(enquiryPage * ENQUIRIES_PER_PAGE, filteredEnquiries.length)} of {filteredEnquiries.length} enquiries
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="sm" onClick={() => setEnquiryPage(1)} disabled={enquiryPage === 1} className="h-8 w-8 p-0">«</Button>
+                      <Button variant="outline" size="sm" onClick={() => setEnquiryPage(p => Math.max(1, p - 1))} disabled={enquiryPage === 1} className="h-8 px-3">Prev</Button>
+                      {Array.from({ length: totalEnquiryPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === totalEnquiryPages || Math.abs(p - enquiryPage) <= 1)
+                        .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                          if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) acc.push('…');
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((p, idx) =>
+                          p === '…' ? (
+                            <span key={`e-${idx}`} className="h-8 w-8 flex items-center justify-center text-sm text-muted-foreground">…</span>
+                          ) : (
+                            <Button
+                              key={p}
+                              variant={enquiryPage === p ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setEnquiryPage(p as number)}
+                              className={`h-8 w-8 p-0 ${enquiryPage === p ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0' : ''}`}
+                            >{p}</Button>
+                          )
+                        )}
+                      <Button variant="outline" size="sm" onClick={() => setEnquiryPage(p => Math.min(totalEnquiryPages, p + 1))} disabled={enquiryPage === totalEnquiryPages} className="h-8 px-3">Next</Button>
+                      <Button variant="outline" size="sm" onClick={() => setEnquiryPage(totalEnquiryPages)} disabled={enquiryPage === totalEnquiryPages} className="h-8 w-8 p-0">»</Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Edit Enquiry Modal */}
       <Dialog open={!!selectedEnquiry} onOpenChange={(open) => !open && setSelectedEnquiry(null)}>

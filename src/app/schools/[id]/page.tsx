@@ -247,12 +247,12 @@ export default function SchoolDetailPage() {
       if (!school?.city) return;
       setSimilarLoading(true);
       try {
-        const schools = await getSchools({
-          city: school.city,
-          limit: 5,
-        });
-        // Filter out the current school
-        setSimilarSchools(schools.filter((s) => s.id !== school.id).slice(0, 4));
+        const { data: schools } = await getSchools({
+            city: school.city,
+            limit: 5,
+          });
+          // Filter out the current school
+          setSimilarSchools(schools.filter((s) => s.id !== school.id).slice(0, 4));
       } catch (error) {
         console.error('Failed to load similar schools:', error);
       } finally {
