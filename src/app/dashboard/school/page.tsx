@@ -9,7 +9,7 @@
     LayoutDashboard, MessageSquare, Info, Contact2, Building,
     Image, DollarSign, Trophy, GraduationCap, Newspaper,
     Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus
+    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus, FileDown, Tag, UserCog, Pencil, Trash2
   } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,8 +112,28 @@ export default function SchoolDashboard() {
   const [newEnquiryClass, setNewEnquiryClass] = useState('');
   const [newEnquiryMessage, setNewEnquiryMessage] = useState('');
   const [addingEnquiry, setAddingEnquiry] = useState(false);
+  const [viewMessageEnquiry, setViewMessageEnquiry] = useState<Enquiry | null>(null);
+
+  // Tags modal state
+  const [tagsEnquiry, setTagsEnquiry] = useState<Enquiry | null>(null);
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
+  const [savingTags, setSavingTags] = useState(false);
+  const [editingTagIndex, setEditingTagIndex] = useState<number | null>(null);
+  const [editingTagValue, setEditingTagValue] = useState('');
+
+  // Lead Assigned modal state
+  const [leadEnquiry, setLeadEnquiry] = useState<Enquiry | null>(null);
+  const [editLeadAssigned, setEditLeadAssigned] = useState('');
+  const [newLeadInput, setNewLeadInput] = useState('');
+  const [savingLead, setSavingLead] = useState(false);
+  const [editingStaffIndex, setEditingStaffIndex] = useState<number | null>(null);
+  const [editingStaffValue, setEditingStaffValue] = useState('');
 
   // Enquiry pagination
+  const [filterTag, setFilterTag] = useState('all');
+  const [filterLead, setFilterLead] = useState('all');
+
   const [enquiryPage, setEnquiryPage] = useState(1);
   const ENQUIRIES_PER_PAGE = 30;
 
@@ -149,7 +169,7 @@ export default function SchoolDashboard() {
 
     useEffect(() => {
       // Load profile when switching to profile-related sections
-      if (['dashboard', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings', 'review', 'whatsapp-api'].includes(activeSection) && !profile) {
+      if (['dashboard', 'enquiry', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'school-page', 'enquiry-settings', 'review', 'whatsapp-api'].includes(activeSection) && !profile) {
         loadSchoolProfile();
       }
     }, [activeSection, profile]);
@@ -385,6 +405,234 @@ export default function SchoolDashboard() {
     }
   };
 
+  const handleSaveTags = async () => {
+    if (!tagsEnquiry) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setSavingTags(true);
+    try {
+      const response = await fetch(`/api/enquiries/${tagsEnquiry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tags: editTags }),
+      });
+      if (!response.ok) throw new Error('Failed to save tags');
+      toast.success('Tags updated successfully');
+      setTagsEnquiry(null);
+      loadSchoolData();
+    } catch {
+      toast.error('Failed to save tags');
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const handleSaveLeadAssigned = async () => {
+    if (!leadEnquiry) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setSavingLead(true);
+    try {
+      const response = await fetch(`/api/enquiries/${leadEnquiry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ leadAssigned: editLeadAssigned }),
+      });
+      if (!response.ok) throw new Error('Failed to save lead assigned');
+      toast.success('Lead assigned updated successfully');
+      setLeadEnquiry(null);
+      loadSchoolData();
+    } catch {
+      toast.error('Failed to save lead assigned');
+    } finally {
+      setSavingLead(false);
+    }
+  };
+
+  const handleSaveNewTag = async () => {
+    if (!newTagInput.trim() || !profile) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const existing: string[] = profile.enquiryTags || [];
+    if (existing.includes(newTagInput.trim())) { setNewTagInput(''); return; }
+    const updated = [...existing, newTagInput.trim()];
+    try {
+      await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enquiryTags: updated }),
+      });
+      setProfile((p: any) => ({ ...p, enquiryTags: updated }));
+      setNewTagInput('');
+      toast.success('Tag defined');
+    } catch {
+      toast.error('Failed to save tag');
+    }
+  };
+
+  const handleSaveNewLeadStaff = async () => {
+      if (!newLeadInput.trim() || !profile) return;
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const existing: string[] = profile.leadStaff || [];
+      if (existing.includes(newLeadInput.trim())) { setNewLeadInput(''); return; }
+      const updated = [...existing, newLeadInput.trim()];
+      try {
+        await fetch('/api/schools/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ leadStaff: updated }),
+        });
+        setProfile((p: any) => ({ ...p, leadStaff: updated }));
+        setNewLeadInput('');
+        toast.success('Staff member added');
+      } catch {
+        toast.error('Failed to save staff member');
+      }
+    };
+
+  const handleDeleteTag = async (index: number) => {
+    if (!profile) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const existing: string[] = profile.enquiryTags || [];
+    const removed = existing[index];
+    const updated = existing.filter((_, i) => i !== index);
+    try {
+      await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enquiryTags: updated }),
+      });
+      setProfile((p: any) => ({ ...p, enquiryTags: updated }));
+      // Also deselect if it was selected on the current enquiry
+      setEditTags((prev) => prev.filter((t) => t !== removed));
+      toast.success('Tag deleted');
+    } catch {
+      toast.error('Failed to delete tag');
+    }
+  };
+
+  const handleRenameTag = async (index: number) => {
+    if (!profile || !editingTagValue.trim()) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const existing: string[] = profile.enquiryTags || [];
+    const oldName = existing[index];
+    const newName = editingTagValue.trim();
+    if (oldName === newName) { setEditingTagIndex(null); return; }
+    const updated = existing.map((t, i) => (i === index ? newName : t));
+    try {
+      await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enquiryTags: updated }),
+      });
+      setProfile((p: any) => ({ ...p, enquiryTags: updated }));
+      // Update selection if old name was selected
+      setEditTags((prev) => prev.map((t) => (t === oldName ? newName : t)));
+      setEditingTagIndex(null);
+      setEditingTagValue('');
+      toast.success('Tag renamed');
+    } catch {
+      toast.error('Failed to rename tag');
+    }
+  };
+
+  const handleDeleteStaff = async (index: number) => {
+    if (!profile) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const existing: string[] = profile.leadStaff || [];
+    const removed = existing[index];
+    const updated = existing.filter((_, i) => i !== index);
+    try {
+      await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ leadStaff: updated }),
+      });
+      setProfile((p: any) => ({ ...p, leadStaff: updated }));
+      if (editLeadAssigned === removed) setEditLeadAssigned('');
+      toast.success('Staff member deleted');
+    } catch {
+      toast.error('Failed to delete staff member');
+    }
+  };
+
+  const handleRenameStaff = async (index: number) => {
+    if (!profile || !editingStaffValue.trim()) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const existing: string[] = profile.leadStaff || [];
+    const oldName = existing[index];
+    const newName = editingStaffValue.trim();
+    if (oldName === newName) { setEditingStaffIndex(null); return; }
+    const updated = existing.map((s, i) => (i === index ? newName : s));
+    try {
+      await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ leadStaff: updated }),
+      });
+      setProfile((p: any) => ({ ...p, leadStaff: updated }));
+      if (editLeadAssigned === oldName) setEditLeadAssigned(newName);
+      setEditingStaffIndex(null);
+      setEditingStaffValue('');
+      toast.success('Staff member renamed');
+    } catch {
+      toast.error('Failed to rename staff member');
+    }
+  };
+
+  const exportToCSV = () => {
+    if (filteredEnquiries.length === 0) {
+      toast.error('No enquiries to export');
+      return;
+    }
+
+    const headers = ['Student Name', 'Email', 'Phone', 'Class', 'Status', 'Date', 'Message', 'Address', 'State', 'Age', 'Gender', 'Notes'];
+    const csvData = filteredEnquiries.map(enquiry => {
+      let notesText = '';
+      try {
+        const notes = JSON.parse(enquiry.notes || '[]');
+        if (Array.isArray(notes)) {
+          notesText = notes.map((n: any) => `${n.date}: ${n.text}`).join(' | ');
+        } else {
+          notesText = enquiry.notes || '';
+        }
+      } catch (e) {
+        notesText = enquiry.notes || '';
+      }
+
+      return [
+        enquiry.studentName,
+        enquiry.studentEmail,
+        enquiry.studentPhone,
+        enquiry.studentClass,
+        enquiry.status,
+        new Date(enquiry.createdAt).toLocaleDateString(),
+        enquiry.message || '',
+        (enquiry as any).studentAddress || '',
+        (enquiry as any).studentState || '',
+        (enquiry as any).studentAge || '',
+        (enquiry as any).studentGender || '',
+        notesText
+      ].map(field => `"${String(field || '').replace(/"/g, '""')}"`).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...csvData].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `enquiries_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'New':
@@ -402,11 +650,13 @@ export default function SchoolDashboard() {
 
   const filteredEnquiries = enquiries.filter((enquiry) => {
     const matchesStatus = filterStatus === 'all' || enquiry.status === filterStatus;
-    const matchesSearch = 
+    const matchesSearch =
       enquiry.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       enquiry.studentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
       enquiry.studentPhone.includes(searchTerm);
-    return matchesStatus && matchesSearch;
+    const matchesTag = filterTag === 'all' || ((enquiry as any).tags || []).includes(filterTag);
+    const matchesLead = filterLead === 'all' || (enquiry as any).leadAssigned === filterLead;
+    return matchesStatus && matchesSearch && matchesTag && matchesLead;
   });
 
   const totalEnquiryPages = Math.ceil(filteredEnquiries.length / ENQUIRIES_PER_PAGE);
@@ -620,9 +870,18 @@ export default function SchoolDashboard() {
                 onClick={() => setShowAddEnquiryModal(true)}
                 className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg"
               >
-                <Plus className="mr-2" size={16} />
-                Add Enquiry
-              </Button>
+                  <Plus className="mr-2" size={16} />
+                  Add Enquiry
+                </Button>
+                <Button
+                  onClick={exportToCSV}
+                  variant="outline"
+                  className="border-cyan-200 text-cyan-700 hover:bg-cyan-50 shadow-sm"
+                >
+                  <FileDown className="mr-2" size={16} />
+                  Export to Excel
+                </Button>
+
                 <div className="relative flex-1 md:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
                   <Input
@@ -632,19 +891,43 @@ export default function SchoolDashboard() {
                     className="pl-10 bg-white/50 border-gray-200 focus:border-cyan-400"
                   />
                 </div>
-                <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setEnquiryPage(1); }}>
-                <SelectTrigger className="w-40 bg-white/50">
-                  <Filter size={16} className="mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Converted">Converted</SelectItem>
-                    <SelectItem value="Lost">Lost</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setEnquiryPage(1); }}>
+                  <SelectTrigger className="w-40 bg-white/50">
+                    <Filter size={16} className="mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="New">New</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                      <SelectItem value="Converted">Converted</SelectItem>
+                      <SelectItem value="Lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterTag} onValueChange={(v) => { setFilterTag(v); setEnquiryPage(1); }}>
+                  <SelectTrigger className="w-40 bg-white/50">
+                    <Tag size={14} className="mr-2 text-purple-500" />
+                    <SelectValue placeholder="All Tags" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {(profile?.enquiryTags || []).map((tag: string) => (
+                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filterLead} onValueChange={(v) => { setFilterLead(v); setEnquiryPage(1); }}>
+                  <SelectTrigger className="w-44 bg-white/50">
+                    <UserCog size={14} className="mr-2 text-cyan-600" />
+                    <SelectValue placeholder="All Leads" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Leads</SelectItem>
+                    {(profile?.leadStaff || []).map((staff: string) => (
+                      <SelectItem key={staff} value={staff}>{staff}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
           </div>
         </CardHeader>
@@ -662,15 +945,17 @@ export default function SchoolDashboard() {
                 <div className="overflow-x-auto">
                   <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-200 hover:bg-transparent">
-                      <TableHead className="font-semibold">Student Name</TableHead>
-                      <TableHead className="font-semibold">Email</TableHead>
-                      <TableHead className="font-semibold">Phone</TableHead>
-                      <TableHead className="font-semibold">Class</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
-                      <TableHead className="font-semibold">Date</TableHead>
-                      <TableHead className="font-semibold">Actions</TableHead>
-                    </TableRow>
+                      <TableRow className="border-gray-200 hover:bg-transparent">
+                        <TableHead className="font-semibold">Student Name</TableHead>
+                        <TableHead className="font-semibold">Email</TableHead>
+                        <TableHead className="font-semibold">Phone</TableHead>
+                        <TableHead className="font-semibold">Class</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Tags</TableHead>
+                        <TableHead className="font-semibold">Lead Assigned</TableHead>
+                        <TableHead className="font-semibold">Date</TableHead>
+                        <TableHead className="font-semibold">Actions</TableHead>
+                      </TableRow>
                   </TableHeader>
                     <TableBody>
                       {paginatedEnquiries.map((enquiry) => (
@@ -695,11 +980,29 @@ export default function SchoolDashboard() {
                             {enquiry.studentClass}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge className={`${getStatusColor(enquiry.status)} text-white border-0 shadow-sm`}>
-                            {enquiry.status}
-                          </Badge>
-                        </TableCell>
+                          <TableCell>
+                            <Badge className={`${getStatusColor(enquiry.status)} text-white border-0 shadow-sm`}>
+                              {enquiry.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-[140px]">
+                              {((enquiry as any).tags || []).length > 0
+                                ? ((enquiry as any).tags as string[]).map((tag) => (
+                                    <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                                      {tag}
+                                    </span>
+                                  ))
+                                : <span className="text-xs text-muted-foreground">—</span>
+                              }
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {(enquiry as any).leadAssigned
+                              ? <span className="inline-flex items-center gap-1 text-sm text-cyan-700 font-medium"><UserCog size={13} />{(enquiry as any).leadAssigned}</span>
+                              : <span className="text-xs text-muted-foreground">—</span>
+                            }
+                          </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(enquiry.createdAt).toLocaleDateString()}
                         </TableCell>
@@ -710,43 +1013,72 @@ export default function SchoolDashboard() {
                                 <MoreVertical size={16} />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedEnquiry(enquiry);
-                                  setEnquiryStatus(enquiry.status);
-                                  setEnquiryNotes(enquiry.notes || '');
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <Edit className="mr-2" size={14} />
-                                Update Status
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedEnquiry(enquiry);
-                                  setEnquiryStatus(enquiry.status);
-                                  setEnquiryNotes('');
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <FileText className="mr-2" size={14} />
-                                Prepare Notes
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setAdditionalDataEnquiry(enquiry);
-                                  setAdditionalAddress((enquiry as any).studentAddress || '');
-                                  setAdditionalState((enquiry as any).studentState || '');
-                                  setAdditionalAge((enquiry as any).studentAge || '');
-                                  setAdditionalGender((enquiry as any).studentGender || '');
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <UserPlus className="mr-2" size={14} />
-                                Add Additional Data
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
+                                <DropdownMenuContent align="end" className="w-52">
+                                  <DropdownMenuItem
+                                    onClick={() => setViewMessageEnquiry(enquiry)}
+                                    className="cursor-pointer"
+                                  >
+                                    <MessageSquare className="mr-2" size={14} />
+                                    View Message
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedEnquiry(enquiry);
+                                      setEnquiryStatus(enquiry.status);
+                                      setEnquiryNotes(enquiry.notes || '');
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <Edit className="mr-2" size={14} />
+                                    Update Status
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedEnquiry(enquiry);
+                                      setEnquiryStatus(enquiry.status);
+                                      setEnquiryNotes('');
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <FileText className="mr-2" size={14} />
+                                    Prepare Notes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setTagsEnquiry(enquiry);
+                                      setEditTags((enquiry as any).tags || []);
+                                      setNewTagInput('');
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <Tag className="mr-2" size={14} />
+                                    Edit Tags
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setLeadEnquiry(enquiry);
+                                      setEditLeadAssigned((enquiry as any).leadAssigned || '');
+                                      setNewLeadInput('');
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <UserCog className="mr-2" size={14} />
+                                    Edit Lead Assigned
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setAdditionalDataEnquiry(enquiry);
+                                      setAdditionalAddress((enquiry as any).studentAddress || '');
+                                      setAdditionalState((enquiry as any).studentState || '');
+                                      setAdditionalAge((enquiry as any).studentAge || '');
+                                      setAdditionalGender((enquiry as any).studentGender || '');
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <UserPlus className="mr-2" size={14} />
+                                    Add Additional Data
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
@@ -1132,10 +1464,275 @@ export default function SchoolDashboard() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-        </div>
-      );
+            </DialogContent>
+          </Dialog>
+
+          {/* View Message Modal */}
+          <Dialog open={!!viewMessageEnquiry} onOpenChange={(open) => !open && setViewMessageEnquiry(null)}>
+            <DialogContent className="max-w-md bg-white">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <MessageSquare className="text-white" size={20} />
+                  </div>
+                  Enquiry Message
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 min-h-[100px]">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {viewMessageEnquiry?.message || "No message provided."}
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => setViewMessageEnquiry(null)} variant="outline">
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Tags Modal */}
+          <Dialog open={!!tagsEnquiry} onOpenChange={(open) => !open && setTagsEnquiry(null)}>
+            <DialogContent className="max-w-lg bg-white max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Tag className="text-white" size={20} />
+                  </div>
+                  Edit Tags — {tagsEnquiry?.studentName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-5 pt-4">
+                {/* Define new tag */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Define New Tag</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTagInput}
+                      onChange={(e) => setNewTagInput(e.target.value)}
+                      placeholder="e.g. Hot Lead, Callback, Interested..."
+                      className="bg-white/50"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveNewTag()}
+                    />
+                    <Button onClick={handleSaveNewTag} variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50 shrink-0">
+                      + Add
+                    </Button>
+                  </div>
+                </div>
+
+                  {/* Available tags to pick */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Select Tags</Label>
+                    <div className="space-y-1.5 p-3 bg-gray-50 rounded-xl border border-gray-200 min-h-[60px]">
+                      {(profile?.enquiryTags || []).length === 0 && (
+                        <span className="text-xs text-muted-foreground">No tags defined yet. Add one above.</span>
+                      )}
+                      {(profile?.enquiryTags || []).map((tag: string, idx: number) => {
+                        const selected = editTags.includes(tag);
+                        const isEditing = editingTagIndex === idx;
+                        return (
+                          <div key={tag} className="flex items-center gap-2">
+                            {isEditing ? (
+                              <>
+                                <Input
+                                  value={editingTagValue}
+                                  onChange={(e) => setEditingTagValue(e.target.value)}
+                                  className="h-8 text-xs flex-1"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRenameTag(idx);
+                                    if (e.key === 'Escape') { setEditingTagIndex(null); setEditingTagValue(''); }
+                                  }}
+                                />
+                                <Button size="sm" className="h-8 px-2 bg-purple-600 hover:bg-purple-700 text-white text-xs" onClick={() => handleRenameTag(idx)}>Save</Button>
+                                <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" onClick={() => { setEditingTagIndex(null); setEditingTagValue(''); }}>×</Button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => setEditTags(selected ? editTags.filter((t) => t !== tag) : [...editTags, tag])}
+                                  className={`flex-1 text-left px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                                    selected
+                                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                      : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50'
+                                  }`}
+                                >
+                                  {selected ? '✓ ' : ''}{tag}
+                                </button>
+                                <button
+                                  title="Rename"
+                                  onClick={() => { setEditingTagIndex(idx); setEditingTagValue(tag); }}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  title="Delete"
+                                  onClick={() => handleDeleteTag(idx)}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                {/* Current selection preview */}
+                {editTags.length > 0 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Selected tags:</Label>
+                    <div className="flex flex-wrap gap-1">
+                      {editTags.map((tag) => (
+                        <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                          {tag}
+                          <button onClick={() => setEditTags(editTags.filter((t) => t !== tag))} className="hover:text-red-500">×</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={handleSaveTags}
+                    disabled={savingTags}
+                    className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg flex-1"
+                  >
+                    {savingTags ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" /> : <CheckCircle2 className="mr-2" size={18} />}
+                    Save Tags
+                  </Button>
+                  <Button variant="outline" onClick={() => setTagsEnquiry(null)} className="border-2 flex-1">
+                    <XCircle className="mr-2" size={18} />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Lead Assigned Modal */}
+          <Dialog open={!!leadEnquiry} onOpenChange={(open) => !open && setLeadEnquiry(null)}>
+            <DialogContent className="max-w-lg bg-white max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
+                    <UserCog className="text-white" size={20} />
+                  </div>
+                  Lead Assigned — {leadEnquiry?.studentName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-5 pt-4">
+                {/* Define new staff */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Add Staff Member</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newLeadInput}
+                      onChange={(e) => setNewLeadInput(e.target.value)}
+                      placeholder="e.g. Rahul Sharma, Priya Mehta..."
+                      className="bg-white/50"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveNewLeadStaff()}
+                    />
+                    <Button onClick={handleSaveNewLeadStaff} variant="outline" className="border-cyan-200 text-cyan-700 hover:bg-cyan-50 shrink-0">
+                      + Add
+                    </Button>
+                  </div>
+                </div>
+
+                  {/* Staff list to pick from */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Assign To</Label>
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                      {(profile?.leadStaff || []).length === 0 && (
+                        <p className="text-xs text-muted-foreground p-2">No staff defined yet. Add one above.</p>
+                      )}
+                      {(profile?.leadStaff || []).map((staff: string, idx: number) => {
+                        const isEditing = editingStaffIndex === idx;
+                        return (
+                          <div key={staff} className="flex items-center gap-2">
+                            {isEditing ? (
+                              <>
+                                <Input
+                                  value={editingStaffValue}
+                                  onChange={(e) => setEditingStaffValue(e.target.value)}
+                                  className="h-9 text-sm flex-1"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRenameStaff(idx);
+                                    if (e.key === 'Escape') { setEditingStaffIndex(null); setEditingStaffValue(''); }
+                                  }}
+                                />
+                                <Button size="sm" className="h-9 px-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs" onClick={() => handleRenameStaff(idx)}>Save</Button>
+                                <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" onClick={() => { setEditingStaffIndex(null); setEditingStaffValue(''); }}>×</Button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => setEditLeadAssigned(editLeadAssigned === staff ? '' : staff)}
+                                  className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                                    editLeadAssigned === staff
+                                      ? 'bg-cyan-600 text-white border-cyan-600 shadow-sm'
+                                      : 'bg-white text-gray-700 border-gray-200 hover:bg-cyan-50 hover:border-cyan-200'
+                                  }`}
+                                >
+                                  <UserCog size={14} />
+                                  {staff}
+                                  {editLeadAssigned === staff && <CheckCircle2 size={14} className="ml-auto" />}
+                                </button>
+                                <button
+                                  title="Rename"
+                                  onClick={() => { setEditingStaffIndex(idx); setEditingStaffValue(staff); }}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  title="Delete"
+                                  onClick={() => handleDeleteStaff(idx)}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                {editLeadAssigned && (
+                  <p className="text-sm text-cyan-700 font-medium">
+                    Assigning to: <strong>{editLeadAssigned}</strong>
+                  </p>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={handleSaveLeadAssigned}
+                    disabled={savingLead}
+                    className="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white shadow-lg flex-1"
+                  >
+                    {savingLead ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" /> : <CheckCircle2 className="mr-2" size={18} />}
+                    Save Lead Assigned
+                  </Button>
+                  <Button variant="outline" onClick={() => setLeadEnquiry(null)} className="border-2 flex-1">
+                    <XCircle className="mr-2" size={18} />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          </div>
+        );
+
 
   if (loading) {
     return (

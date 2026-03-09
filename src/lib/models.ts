@@ -127,11 +127,15 @@ export interface ISchool extends Document {
   profileViews: number;
   featured: boolean;
   isPublic: boolean;
-  latitude?: number;
-  longitude?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+    latitude?: number;
+    longitude?: number;
+    whatsappWebhookUrl?: string;
+    whatsappApiKey?: string;
+    enquiryTags?: string[];
+    leadStaff?: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
+  }
 
 const SchoolSchema = new Schema<ISchool>({
   id: { type: Number, required: true, unique: true },
@@ -230,9 +234,13 @@ const SchoolSchema = new Schema<ISchool>({
   profileViews: { type: Number, default: 0 },
   featured: { type: Boolean, default: false },
   isPublic: { type: Boolean, default: true },
-  latitude: { type: Number },
-  longitude: { type: Number },
-}, { timestamps: true });
+    latitude: { type: Number },
+    longitude: { type: Number },
+    whatsappWebhookUrl: { type: String },
+    whatsappApiKey: { type: String },
+    enquiryTags: [{ type: String }],
+    leadStaff: [{ type: String }],
+  }, { timestamps: true });
 
 SchoolSchema.index({ city: 1 });
 SchoolSchema.index({ board: 1 });
@@ -256,6 +264,8 @@ export interface IEnquiry extends Document {
   studentState?: string;
   studentAge?: string;
   studentGender?: string;
+  tags?: string[];
+  leadAssigned?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -274,8 +284,10 @@ const EnquirySchema = new Schema<IEnquiry>({
   studentAddress: { type: String },
   studentState: { type: String },
   studentAge: { type: String },
-    studentGender: { type: String },
-  }, { timestamps: true });
+  studentGender: { type: String },
+  tags: [{ type: String }],
+  leadAssigned: { type: String },
+}, { timestamps: true });
 
 export interface IEnquiryFormSettings extends Document {
   _id: mongoose.Types.ObjectId;
@@ -339,12 +351,14 @@ const SuperAdminSchema = new Schema<ISuperAdmin>({
 export interface ISiteSettings extends Document {
   _id: mongoose.Types.ObjectId;
   spotlightSchoolId?: number;
+  geminiApiKey?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 const SiteSettingsSchema = new Schema<ISiteSettings>({
     spotlightSchoolId: { type: Number },
+    geminiApiKey: { type: String },
   }, { timestamps: true });
 
 export interface ITestimonial extends Document {

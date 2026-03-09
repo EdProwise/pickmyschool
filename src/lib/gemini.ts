@@ -1,11 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set in environment variables');
-}
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export interface SchoolFilter {
   board?: string[];
   city?: string[];
@@ -18,7 +12,12 @@ export interface SchoolFilter {
   schoolName?: string;
 }
 
-export async function generateAIResponse(systemPrompt: string, userMessage: string): Promise<string> {
+export async function generateAIResponse(systemPrompt: string, userMessage: string, apiKey?: string): Promise<string> {
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error('Gemini API key is not configured. Please set it in the Admin Panel under Settings > AI Settings.');
+  }
+  const genAI = new GoogleGenAI({ apiKey: key });
   const modelName = 'gemini-2.5-flash-lite';
 
   try {

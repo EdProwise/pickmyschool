@@ -290,9 +290,13 @@ export async function PUT(request: NextRequest) {
     if (body.facilityImages !== undefined) updateData.facilityImages = body.facilityImages;
     if (body.virtualTourVideos !== undefined) updateData.virtualTourVideos = Array.isArray(body.virtualTourVideos) ? body.virtualTourVideos : [];
 
-    // WhatsApp API settings
-    if (body.whatsappWebhookUrl !== undefined) updateData.whatsappWebhookUrl = toStringOrNull(body.whatsappWebhookUrl);
-    if (body.whatsappApiKey !== undefined) updateData.whatsappApiKey = toStringOrNull(body.whatsappApiKey);
+      // WhatsApp API settings
+      if (body.whatsappWebhookUrl !== undefined) updateData.whatsappWebhookUrl = toStringOrNull(body.whatsappWebhookUrl);
+      if (body.whatsappApiKey !== undefined) updateData.whatsappApiKey = toStringOrNull(body.whatsappApiKey);
+
+      // Enquiry CRM settings
+      if (body.enquiryTags !== undefined) updateData.enquiryTags = Array.isArray(body.enquiryTags) ? body.enquiryTags : [];
+      if (body.leadStaff !== undefined) updateData.leadStaff = Array.isArray(body.leadStaff) ? body.leadStaff : [];
 
     console.log('PUT /api/schools/profile - WhatsApp fields being updated:', {
       whatsappWebhookUrl: updateData.whatsappWebhookUrl,

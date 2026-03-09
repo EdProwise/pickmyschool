@@ -79,7 +79,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { status, notes, followUpDate, studentAddress, studentState, studentAge, studentGender } = body;
+    const { status, notes, followUpDate, studentAddress, studentState, studentAge, studentGender, tags, leadAssigned } = body;
 
     if (status !== undefined) {
       if (!VALID_STATUSES.includes(status)) {
@@ -146,6 +146,14 @@ export async function PUT(
 
     if (studentGender !== undefined) {
       updateData.studentGender = studentGender;
+    }
+
+    if (tags !== undefined) {
+      updateData.tags = Array.isArray(tags) ? tags : [];
+    }
+
+    if (leadAssigned !== undefined) {
+      updateData.leadAssigned = leadAssigned;
     }
 
     const updated = await Enquiry.findByIdAndUpdate(

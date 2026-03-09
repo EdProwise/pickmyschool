@@ -126,6 +126,28 @@ export async function POST(request: NextRequest) {
       studentGender: studentGender || null,
     });
 
+    // Forward to EdproWise Booster Webhook (use school's configured webhook or default)
+    const webhookUrl = school.whatsappWebhookUrl || 'https://edprowisebooster.edprowise.com/api/webhooks/external-enquiry';
+    const apiKey = school.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
+
+    try {
+      const webhookResponse = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: apiKey,
+          name: studentName.trim(),
+          phone: studentPhone.trim(),
+          email: trimmedEmail,
+          message: message ? message.trim() : `Manual enquiry added for class ${studentClass.trim()}`,
+          source: 'PickMySchool - Manual'
+        })
+      });
+      console.log('Manual enquiry forwarded to EdproWise Booster:', webhookUrl, 'Response status:', webhookResponse.status);
+    } catch (webhookError) {
+      console.error('Failed to forward manual enquiry to EdproWise Booster:', webhookError);
+    }
+
     return NextResponse.json(
       {
         enquiry: { ...newEnquiry.toObject(), id: newEnquiry._id },

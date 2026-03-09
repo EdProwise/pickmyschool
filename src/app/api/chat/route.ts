@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { School, Chat, Result, StudentAchievement } from '@/lib/models';
+import mongoose from 'mongoose';
 import { extractFiltersFromQuery, buildSystemPrompt, generateAIResponse } from '@/lib/gemini';
 import jwt from 'jsonwebtoken';
 
@@ -92,8 +93,14 @@ export async function POST(request: NextRequest) {
       studentAchievements: achievements.filter(a => a.schoolId === school.id),
     }));
 
-    const systemPrompt = buildSystemPrompt(schoolsWithAllData);
-    const aiResponse = await generateAIResponse(systemPrompt, message);
+      const systemPrompt = buildSystemPrompt(schoolsWithAllData);
+
+      // Fetch Gemini API key from DB via native driver (bypasses Mongoose strict mode)
+      const col = mongoose.connection.db!.collection('sitesettings');
+      const siteSettings = await col.findOne({});
+      const geminiApiKey = (siteSettings?.geminiApiKey as string) || process.env.GEMINI_API_KEY;
+
+      const aiResponse = await generateAIResponse(systemPrompt, message, geminiApiKey);
 
     const mentionedSchoolIds: number[] = [];
     relevantSchools.forEach(school => {
