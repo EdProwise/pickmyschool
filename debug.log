@@ -1237,3 +1237,95 @@ It can also happen if the client has a browser extension installed which messes 
   response: {"geminiApiKey":""}
 2026-03-04T12:39:46.754Z [network][GET 200] /api/admin/settings/api-keys
   response: {"geminiApiKey":""}
+2026-03-09T15:07:44.977Z [console][log] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-03-09T15:07:45.164Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:07:46.278Z [console][warn] [Fast Refresh] done in 1215ms
+2026-03-09T15:08:12.162Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:08:12.272Z [console][warn] [Fast Refresh] done in 208ms
+2026-03-09T15:08:16.826Z [console][error] Failed to load featured schools: Error: Failed to fetch featured schools
+2026-03-09T15:08:16.833Z [console][error] Failed to load trending schools: Error: Failed to fetch trending schools
+2026-03-09T15:08:17.180Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:08:17.245Z [console][warn] [Fast Refresh] done in 177ms
+2026-03-09T15:09:29.132Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:09:29.249Z [console][warn] [Fast Refresh] done in 221ms
+2026-03-09T15:10:44.035Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:10:44.220Z [console][warn] [Fast Refresh] done in 293ms
+2026-03-09T15:10:46.786Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:10:46.822Z [console][warn] [Fast Refresh] done in 145ms
+2026-03-09T15:07:44.977Z [console][debug] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-03-09T15:07:45.164Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:07:46.278Z [console][log] [Fast Refresh] done in 1215ms
+2026-03-09T15:08:12.162Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:08:12.269Z [console][log] [Fast Refresh] done in 208ms
+2026-03-09T15:08:16.831Z [console][error] Failed to load featured schools: Error: Failed to fetch featured schools
+    at getFeaturedSchools (http://localhost:3000/_next/static/chunks/src_c036b1c7._.js:2395:29)
+    at async HomePage.useEffect.loadFeaturedSchools (http://localhost:3000/_next/static/chunks/src_cc08b3a7._.js:3224:41)
+2026-03-09T15:08:16.833Z [console][error] Failed to load trending schools: Error: Failed to fetch trending schools
+    at getTrendingSchools (http://localhost:3000/_next/static/chunks/src_c036b1c7._.js:2400:29)
+    at async HomePage.useEffect.loadTrendingSchools (http://localhost:3000/_next/static/chunks/src_cc08b3a7._.js:3236:41)
+2026-03-09T15:08:17.180Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:08:17.245Z [console][log] [Fast Refresh] done in 177ms
+2026-03-09T15:09:29.132Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:09:29.248Z [console][log] [Fast Refresh] done in 221ms
+2026-03-09T15:10:44.035Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:10:44.217Z [console][log] [Fast Refresh] done in 293ms
+2026-03-09T15:10:46.785Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:10:46.822Z [console][log] [Fast Refresh] done in 145ms
+2026-03-09T15:08:17.041Z [network][GET 500] /api/schools/spotlight
+  response: {"error":"Failed to fetch spotlight school"}
+2026-03-09T15:08:17.044Z [network][GET 500] /api/testimonials
+  response: {"error":"Internal server error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"}
+2026-03-09T15:08:17.044Z [network][GET 500] /api/schools/featured?limit=8
+  response: {"error":"Failed to fetch featured schools"}
+2026-03-09T15:08:17.051Z [network][GET 500] /api/schools/filter-options
+  response: {"error":"Failed to fetch filter options"}
+2026-03-09T15:08:17.051Z [network][GET 500] /api/cities/stats
+  response: {"error":"Internal server error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"}
+2026-03-09T15:08:17.051Z [network][GET 500] /api/schools?sort=profileViews&order=desc&limit=4
+  response: {"error":"Internal server error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"}
+2026-03-09T15:08:17.253Z [network][POST 200] /__nextjs_original-stack-frames
+  request: {"frames":[{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_c036b1c7._.js","line1":2400,"column1":29,"methodName":"getTrendingSchools","arguments":[]},{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_cc08b3a7._.js","line1":3236,"column1":41,"methodName":"async HomePage.useEffect.loadTrendingSchools","arguments":[]}],"isServer":false,"isEdgeServer":false,"isAppDirectory":true}
+  response: [{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/lib/api.ts","line1":224,"column1":27,"ignored":false,"methodName":"getTrendingSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 222 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m getTrendingSchools \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m (limit \u001b[33m=\u001b[39m \u001b[35m4\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[33mSchool\u001b[39m[]\u001b[33m>\u001b[39m \u001b[33m=>\u001b[39m {\n \u001b[90m 223 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m fetch(\u001b[32m`${API_BASE_URL}/api/schools?sort=profileViews&order=desc&limit=${limit}`\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 224 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'Failed to fetch trending schools'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 225 |\u001b[39m   \u001b[36mconst\u001b[39m result \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m response\u001b[33m.\u001b[39mjson()\u001b[33m;\u001b[39m\n \u001b[90m 226 |\u001b[39m   \u001b[36mreturn\u001b[39m \u001b[33mArray\u001b[39m\u001b[33m.\u001b[39misArray(result) \u001b[33m?\u001b[39m result \u001b[33m:\u001b[39m (result\u001b[33m.\u001b[39mdata \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m [])\u001b[33m;\u001b[39m\n \u001b[90m 227 |\u001b[39m }\u001b[33m;\u001b[39m\u001b[0m"}},{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/app/page.tsx","line1":69,"column1":25,"ignored":false,"methodName":"async HomePage.useEffect.loadTrendingSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 67 |\u001b[39m     \u001b[36mconst\u001b[39m loadTrendingSchools \u001b[33m=\u001b... [truncated]
+2026-03-09T15:08:17.254Z [network][POST 200] /__nextjs_original-stack-frames
+  request: {"frames":[{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_c036b1c7._.js","line1":2395,"column1":29,"methodName":"getFeaturedSchools","arguments":[]},{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_cc08b3a7._.js","line1":3224,"column1":41,"methodName":"async HomePage.useEffect.loadFeaturedSchools","arguments":[]}],"isServer":false,"isEdgeServer":false,"isAppDirectory":true}
+  response: [{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/lib/api.ts","line1":218,"column1":27,"ignored":false,"methodName":"getFeaturedSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 216 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m getFeaturedSchools \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m (limit \u001b[33m=\u001b[39m \u001b[35m10\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[33mSchool\u001b[39m[]\u001b[33m>\u001b[39m \u001b[33m=>\u001b[39m {\n \u001b[90m 217 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m fetch(\u001b[32m`${API_BASE_URL}/api/schools/featured?limit=${limit}`\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 218 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'Failed to fetch featured schools'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 219 |\u001b[39m   \u001b[36mreturn\u001b[39m response\u001b[33m.\u001b[39mjson()\u001b[33m;\u001b[39m\n \u001b[90m 220 |\u001b[39m }\u001b[33m;\u001b[39m\n \u001b[90m 221 |\u001b[39m\u001b[0m"}},{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/app/page.tsx","line1":58,"column1":25,"ignored":false,"methodName":"async HomePage.useEffect.loadFeaturedSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 56 |\u001b[39m     \u001b[36mconst\u001b[39m loadFeaturedSchools \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 57 |\u001b[39m       \u001b[36mtry\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 58 |\u001b[39m         \u001b[36mconst\u001b[39m schools \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m getFeaturedSchools(\u001b[35m8\u001b[39m... [truncated]
+2026-03-09T15:14:58.004Z [console][warn] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+2026-03-09T15:14:58.063Z [console][warn] [HMR] connected
+2026-03-09T15:14:58.181Z [console][log] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-03-09T15:14:58.365Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:14:59.482Z [console][warn] [Fast Refresh] done in 1219ms
+2026-03-09T15:15:29.886Z [console][error] Failed to load featured schools: Error: Failed to fetch featured schools
+2026-03-09T15:15:29.891Z [console][error] Failed to load trending schools: Error: Failed to fetch trending schools
+2026-03-09T15:15:30.247Z [console][warn] [Fast Refresh] rebuilding
+2026-03-09T15:15:30.262Z [console][warn] [Fast Refresh] done in 126ms
+2026-03-09T15:14:58.181Z [console][debug] __ORCHIDS_NAVIGATE__ http://localhost:3000/
+2026-03-09T15:14:58.365Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:14:59.482Z [console][log] [Fast Refresh] done in 1219ms
+2026-03-09T15:15:29.889Z [console][error] Failed to load featured schools: Error: Failed to fetch featured schools
+    at getFeaturedSchools (http://localhost:3000/_next/static/chunks/src_c036b1c7._.js:2395:29)
+    at async HomePage.useEffect.loadFeaturedSchools (http://localhost:3000/_next/static/chunks/src_cc08b3a7._.js:3224:41)
+2026-03-09T15:15:29.892Z [console][error] Failed to load trending schools: Error: Failed to fetch trending schools
+    at getTrendingSchools (http://localhost:3000/_next/static/chunks/src_c036b1c7._.js:2400:29)
+    at async HomePage.useEffect.loadTrendingSchools (http://localhost:3000/_next/static/chunks/src_cc08b3a7._.js:3236:41)
+2026-03-09T15:15:30.247Z [console][log] [Fast Refresh] rebuilding
+2026-03-09T15:15:30.260Z [console][log] [Fast Refresh] done in 126ms
+2026-03-09T15:15:30.105Z [network][GET 500] /api/testimonials
+  response: {"error":"Internal server error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"}
+2026-03-09T15:15:30.106Z [network][GET 500] /api/cities/stats
+  response: {"error":"Internal server error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"}
+2026-03-09T15:15:30.108Z [network][GET 500] /api/schools/featured?limit=8
+  response: {"error":"Failed to fetch featured schools"}
+2026-03-09T15:15:30.114Z [network][GET 500] /api/schools/spotlight
+  response: {"error":"Failed to fetch spotlight school"}
+2026-03-09T15:15:30.114Z [network][GET 500] /api/schools/filter-options
+  response: {"error":"Failed to fetch filter options"}
+2026-03-09T15:15:30.114Z [network][GET 500] /api/schools?sort=profileViews&order=desc&limit=4
+  response: {"error":"Internal server error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"}
+2026-03-09T15:15:30.278Z [network][POST 200] /__nextjs_original-stack-frames
+  request: {"frames":[{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_c036b1c7._.js","line1":2395,"column1":29,"methodName":"getFeaturedSchools","arguments":[]},{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_cc08b3a7._.js","line1":3224,"column1":41,"methodName":"async HomePage.useEffect.loadFeaturedSchools","arguments":[]}],"isServer":false,"isEdgeServer":false,"isAppDirectory":true}
+  response: [{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/lib/api.ts","line1":218,"column1":27,"ignored":false,"methodName":"getFeaturedSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 216 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m getFeaturedSchools \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m (limit \u001b[33m=\u001b[39m \u001b[35m10\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[33mSchool\u001b[39m[]\u001b[33m>\u001b[39m \u001b[33m=>\u001b[39m {\n \u001b[90m 217 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m fetch(\u001b[32m`${API_BASE_URL}/api/schools/featured?limit=${limit}`\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 218 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'Failed to fetch featured schools'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 219 |\u001b[39m   \u001b[36mreturn\u001b[39m response\u001b[33m.\u001b[39mjson()\u001b[33m;\u001b[39m\n \u001b[90m 220 |\u001b[39m }\u001b[33m;\u001b[39m\n \u001b[90m 221 |\u001b[39m\u001b[0m"}},{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/app/page.tsx","line1":58,"column1":25,"ignored":false,"methodName":"async HomePage.useEffect.loadFeaturedSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 56 |\u001b[39m     \u001b[36mconst\u001b[39m loadFeaturedSchools \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 57 |\u001b[39m       \u001b[36mtry\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 58 |\u001b[39m         \u001b[36mconst\u001b[39m schools \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m getFeaturedSchools(\u001b[35m8\u001b[39m... [truncated]
+2026-03-09T15:15:30.280Z [network][POST 200] /__nextjs_original-stack-frames
+  request: {"frames":[{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_c036b1c7._.js","line1":2400,"column1":29,"methodName":"getTrendingSchools","arguments":[]},{"file":"file://C:/Github/pickmyschool/.next/dev/static/chunks/src_cc08b3a7._.js","line1":3236,"column1":41,"methodName":"async HomePage.useEffect.loadTrendingSchools","arguments":[]}],"isServer":false,"isEdgeServer":false,"isAppDirectory":true}
+  response: [{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/lib/api.ts","line1":224,"column1":27,"ignored":false,"methodName":"getTrendingSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 222 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m getTrendingSchools \u001b[33m=\u001b[39m \u001b[36masync\u001b[39m (limit \u001b[33m=\u001b[39m \u001b[35m4\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[33mSchool\u001b[39m[]\u001b[33m>\u001b[39m \u001b[33m=>\u001b[39m {\n \u001b[90m 223 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m fetch(\u001b[32m`${API_BASE_URL}/api/schools?sort=profileViews&order=desc&limit=${limit}`\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 224 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'Failed to fetch trending schools'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 225 |\u001b[39m   \u001b[36mconst\u001b[39m result \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m response\u001b[33m.\u001b[39mjson()\u001b[33m;\u001b[39m\n \u001b[90m 226 |\u001b[39m   \u001b[36mreturn\u001b[39m \u001b[33mArray\u001b[39m\u001b[33m.\u001b[39misArray(result) \u001b[33m?\u001b[39m result \u001b[33m:\u001b[39m (result\u001b[33m.\u001b[39mdata \u001b[33m?\u001b[39m\u001b[33m?\u001b[39m [])\u001b[33m;\u001b[39m\n \u001b[90m 227 |\u001b[39m }\u001b[33m;\u001b[39m\u001b[0m"}},{"status":"fulfilled","value":{"originalStackFrame":{"arguments":[],"file":"src/app/page.tsx","line1":69,"column1":25,"ignored":false,"methodName":"async HomePage.useEffect.loadTrendingSchools"},"originalCodeFrame":"\u001b[0m \u001b[90m 67 |\u001b[39m     \u001b[36mconst\u001b[39m loadTrendingSchools \u001b[33m=\u001b... [truncated]
+2026-03-09T15:17:33.719Z [network][GET 500] /api/schools/featured?limit=8
+  response: {"error":"Failed to fetch featured schools"}
