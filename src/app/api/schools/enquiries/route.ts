@@ -115,6 +115,8 @@ export async function POST(request: NextRequest) {
       studentState,
       studentAge,
       studentGender,
+      tags,
+      leadAssigned,
       enquiries,
       allowBlank,
     } = body;
@@ -127,11 +129,27 @@ export async function POST(request: NextRequest) {
       return String(value).trim();
     };
 
+    const normalizeTags = (value: unknown): string[] => {
+      if (Array.isArray(value)) {
+        return value
+          .map((item) => normalizeField(item))
+          .filter(Boolean);
+      }
+      const asString = normalizeField(value);
+      if (!asString) return [];
+      return asString
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    };
+
     const buildEnquiryPayload = (record: any, index?: number) => {
       const normalizedName = normalizeField(record.studentName);
       const normalizedEmail = normalizeField(record.studentEmail).toLowerCase();
       const normalizedPhone = normalizeField(record.studentPhone);
       const normalizedClass = normalizeField(record.studentClass);
+      const normalizedTags = normalizeTags(record.tags);
+      const normalizedLeadAssigned = normalizeField(record.leadAssigned);
 
       if (!shouldAllowBlank) {
         if (!normalizedName || !normalizedEmail || !normalizedPhone || !normalizedClass) {
@@ -155,6 +173,8 @@ export async function POST(request: NextRequest) {
         studentState: normalizeField(record.studentState) || null,
         studentAge: normalizeField(record.studentAge) || null,
         studentGender: normalizeField(record.studentGender) || null,
+        tags: normalizedTags,
+        leadAssigned: normalizedLeadAssigned || null,
       };
     };
 
@@ -220,6 +240,8 @@ export async function POST(request: NextRequest) {
         studentState,
         studentAge,
         studentGender,
+        tags,
+        leadAssigned,
       });
     } catch (validationError: any) {
       return NextResponse.json(

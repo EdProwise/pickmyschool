@@ -598,6 +598,8 @@ export default function SchoolDashboard() {
     studentState: string;
     studentAge: string;
     studentGender: string;
+    tags: string;
+    leadAssigned: string;
   };
 
   const normalizeImportHeader = (header: string) =>
@@ -632,6 +634,8 @@ export default function SchoolDashboard() {
       studentState: getImportField(normalizedRow, ['studentstate', 'state']),
       studentAge: getImportField(normalizedRow, ['studentage', 'age']),
       studentGender: getImportField(normalizedRow, ['studentgender', 'gender', 'sex']),
+      tags: getImportField(normalizedRow, ['tags', 'tag']),
+      leadAssigned: getImportField(normalizedRow, ['leadassigned', 'lead', 'assignedlead', 'leadowner']),
     };
   };
 
@@ -674,6 +678,8 @@ export default function SchoolDashboard() {
             row.studentState,
             row.studentAge,
             row.studentGender,
+            row.tags,
+            row.leadAssigned,
           ].some((value) => value !== '')
         );
 
@@ -734,7 +740,7 @@ export default function SchoolDashboard() {
       return;
     }
 
-    const headers = ['Student Name', 'Email', 'Phone', 'Class', 'Status', 'Date', 'Message', 'Address', 'State', 'Age', 'Gender', 'Notes'];
+    const headers = ['Student Name', 'Email', 'Phone', 'Class', 'Status', 'Date', 'Message', 'Address', 'State', 'Age', 'Gender', 'Tags', 'Lead Assigned', 'Notes'];
     const csvData = filteredEnquiries.map(enquiry => {
       let notesText = '';
       try {
@@ -760,6 +766,8 @@ export default function SchoolDashboard() {
         (enquiry as any).studentState || '',
         (enquiry as any).studentAge || '',
         (enquiry as any).studentGender || '',
+        ((enquiry as any).tags || []).join(', '),
+        (enquiry as any).leadAssigned || '',
         notesText
       ].map(field => `"${String(field || '').replace(/"/g, '""')}"`).join(',');
     });
@@ -787,12 +795,14 @@ export default function SchoolDashboard() {
       'Student State',
       'Student Age',
       'Student Gender',
+      'Tags',
+      'Lead Assigned',
     ];
 
     const sampleRows = [
       headers,
-      ['Aarav Sharma', 'aarav@example.com', '9876543210', '5th', 'Interested in admission', 'Pune', 'Maharashtra', '10', 'Male'],
-      ['', '', '', '', '', '', '', '', ''],
+      ['Aarav Sharma', 'aarav@example.com', '9876543210', '5th', 'Interested in admission', 'Pune', 'Maharashtra', '10', 'Male', 'Hot,Scholarship', 'Counsellor A'],
+      ['', '', '', '', '', '', '', '', '', '', ''],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(sampleRows);
