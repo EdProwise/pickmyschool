@@ -5,9 +5,11 @@ import ErrorReporter from "@/components/ErrorReporter";
 import Script from "next/script";
 import { Toaster } from "sonner";
 import { AIChat } from "@/components/AIChat";
+import PWARegister from "@/components/PWARegister";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.pickmyschool.in"),
+  manifest: "/manifest.webmanifest",
   title: {
     default: "PickMySchool - Find the Perfect School for Your Child",
     template: "%s | PickMySchool",
@@ -40,6 +42,11 @@ export const metadata: Metadata = {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     shortcut: "/favicon.svg",
     apple: "/favicon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PickMySchool",
   },
   openGraph: {
     type: "website",
@@ -152,6 +159,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <PWARegister />
         <Script
           id="orchids-browser-logs"
           src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/scripts/orchids-browser-logs.js"
