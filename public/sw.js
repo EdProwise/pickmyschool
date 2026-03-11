@@ -4,8 +4,10 @@ const STATIC_ASSETS = [
   "/",
   "/offline",
   "/manifest.webmanifest",
-  "/icon.svg",
-  "/favicon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
+  "/favicon-32.png",
 ];
 
 self.addEventListener("install", (event) => {

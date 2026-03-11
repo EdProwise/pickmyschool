@@ -15,8 +15,17 @@ export default function PWARegister() {
       }
     };
 
-    window.addEventListener("load", register);
-    return () => window.removeEventListener("load", register);
+    if (document.readyState === "complete") {
+      void register();
+      return;
+    }
+
+    const onLoad = () => {
+      void register();
+    };
+
+    window.addEventListener("load", onLoad);
+    return () => window.removeEventListener("load", onLoad);
   }, []);
 
   return null;

@@ -6,6 +6,7 @@ import Script from "next/script";
 import { Toaster } from "sonner";
 import { AIChat } from "@/components/AIChat";
 import PWARegister from "@/components/PWARegister";
+import PWAInstallButton from "@/components/PWAInstallButton";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.pickmyschool.in"),
@@ -39,9 +40,12 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: [{ url: "/favicon-32.png", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -116,7 +120,7 @@ const jsonLd = {
       url: "https://www.pickmyschool.in",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.pickmyschool.in/favicon.svg",
+        url: "https://www.pickmyschool.in/icon-512.png",
       },
       sameAs: [
         "https://twitter.com/pickmyschool",
@@ -160,6 +164,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <PWARegister />
+        <PWAInstallButton />
         <Script
           id="orchids-browser-logs"
           src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/scripts/orchids-browser-logs.js"
