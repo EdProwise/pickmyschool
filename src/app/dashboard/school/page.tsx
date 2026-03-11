@@ -1,7 +1,7 @@
 'use client';
 
   // HMR touch
-  import { useState, useEffect } from 'react';
+  import { useState, useEffect, useRef, type ChangeEvent } from 'react';
   import { useRouter } from 'next/navigation';
   import { 
     Users, TrendingUp, Clock, Eye, Mail, Phone, Calendar,
@@ -9,7 +9,7 @@
     LayoutDashboard, MessageSquare, Info, Contact2, Building,
     Image, DollarSign, Trophy, GraduationCap, Newspaper,
     Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus, FileDown, Tag, UserCog, Pencil, Trash2
+    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus, FileDown, FileUp, Tag, UserCog, Pencil, Trash2
   } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { getMe, type User, type Enquiry } from '@/lib/api';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import {
   BasicInfoSection,
   ContactInfoSection,
@@ -112,6 +113,8 @@ export default function SchoolDashboard() {
   const [newEnquiryClass, setNewEnquiryClass] = useState('');
   const [newEnquiryMessage, setNewEnquiryMessage] = useState('');
   const [addingEnquiry, setAddingEnquiry] = useState(false);
+  const [importingEnquiries, setImportingEnquiries] = useState(false);
+  const enquiryImportInputRef = useRef<HTMLInputElement | null>(null);
   const [viewMessageEnquiry, setViewMessageEnquiry] = useState<Enquiry | null>(null);
 
   // Tags modal state
@@ -585,6 +588,146 @@ export default function SchoolDashboard() {
     }
   };
 
+  type ImportedEnquiryRow = {
+    studentName: string;
+    studentEmail: string;
+    studentPhone: string;
+    studentClass: string;
+    message: string;
+    studentAddress: string;
+    studentState: string;
+    studentAge: string;
+    studentGender: string;
+  };
+
+  const normalizeImportHeader = (header: string) =>
+    header.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const toImportString = (value: unknown) => {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  };
+
+  const getImportField = (row: Record<string, string>, aliases: string[]) => {
+    for (const alias of aliases) {
+      const value = row[alias];
+      if (value !== undefined) return value;
+    }
+    return '';
+  };
+
+  const parseImportRow = (rawRow: Record<string, unknown>): ImportedEnquiryRow => {
+    const normalizedRow = Object.entries(rawRow).reduce<Record<string, string>>((acc, [key, value]) => {
+      acc[normalizeImportHeader(key)] = toImportString(value);
+      return acc;
+    }, {});
+
+    return {
+      studentName: getImportField(normalizedRow, ['studentname', 'name', 'student']),
+      studentEmail: getImportField(normalizedRow, ['studentemail', 'email', 'mail']),
+      studentPhone: getImportField(normalizedRow, ['studentphone', 'phone', 'mobileno', 'mobile', 'contact', 'contactnumber']),
+      studentClass: getImportField(normalizedRow, ['studentclass', 'class', 'grade', 'standard']),
+      message: getImportField(normalizedRow, ['message', 'notes', 'remark', 'remarks']),
+      studentAddress: getImportField(normalizedRow, ['studentaddress', 'address']),
+      studentState: getImportField(normalizedRow, ['studentstate', 'state']),
+      studentAge: getImportField(normalizedRow, ['studentage', 'age']),
+      studentGender: getImportField(normalizedRow, ['studentgender', 'gender', 'sex']),
+    };
+  };
+
+  const handleImportExcel = async (event: ChangeEvent<HTMLInputElement>) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportingEnquiries(true);
+    try {
+      const workbookData = await file.arrayBuffer();
+      const workbook = XLSX.read(workbookData, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+
+      if (!firstSheetName) {
+        toast.error('No sheet found in the selected Excel file');
+        return;
+      }
+
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
+
+      if (rows.length === 0) {
+        toast.error('Excel file is empty');
+        return;
+      }
+
+      const parsedRows = rows
+        .map(parseImportRow)
+        .filter((row) =>
+          [
+            row.studentName,
+            row.studentEmail,
+            row.studentPhone,
+            row.studentClass,
+            row.message,
+            row.studentAddress,
+            row.studentState,
+            row.studentAge,
+            row.studentGender,
+          ].some((value) => value !== '')
+        );
+
+      if (parsedRows.length === 0) {
+        toast.error('No valid rows found to import');
+        return;
+      }
+
+      const response = await fetch('/api/schools/enquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          allowBlank: true,
+          enquiries: parsedRows,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to import enquiries');
+      }
+
+      const importedCount = data.importedCount ?? 0;
+      const failedCount = data.failedCount ?? 0;
+      if (importedCount > 0) {
+        toast.success(
+          failedCount > 0
+            ? `${importedCount} enquiries imported, ${failedCount} rows failed`
+            : `${importedCount} enquiries imported successfully`
+        );
+      } else {
+        toast.error('No enquiries were imported');
+      }
+
+      if (failedCount > 0 && Array.isArray(data.failedRows)) {
+        console.error('Failed import rows:', data.failedRows);
+      }
+
+      await loadSchoolData();
+    } catch (error: any) {
+      console.error('Failed to import enquiries:', error);
+      toast.error(error.message || 'Failed to import Excel file');
+    } finally {
+      setImportingEnquiries(false);
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
   const exportToCSV = () => {
     if (filteredEnquiries.length === 0) {
       toast.error('No enquiries to export');
@@ -633,6 +776,31 @@ export default function SchoolDashboard() {
     document.body.removeChild(link);
   };
 
+  const downloadImportExcelTemplate = () => {
+    const headers = [
+      'Student Name',
+      'Student Email',
+      'Student Phone',
+      'Student Class',
+      'Message',
+      'Student Address',
+      'Student State',
+      'Student Age',
+      'Student Gender',
+    ];
+
+    const sampleRows = [
+      headers,
+      ['Aarav Sharma', 'aarav@example.com', '9876543210', '5th', 'Interested in admission', 'Pune', 'Maharashtra', '10', 'Male'],
+      ['', '', '', '', '', '', '', '', ''],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(sampleRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Enquiries');
+    XLSX.writeFile(workbook, 'enquiry_import_template.xlsx');
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'New':
@@ -650,10 +818,13 @@ export default function SchoolDashboard() {
 
   const filteredEnquiries = enquiries.filter((enquiry) => {
     const matchesStatus = filterStatus === 'all' || enquiry.status === filterStatus;
+    const studentName = enquiry.studentName || '';
+    const studentEmail = enquiry.studentEmail || '';
+    const studentPhone = enquiry.studentPhone || '';
     const matchesSearch =
-      enquiry.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      enquiry.studentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      enquiry.studentPhone.includes(searchTerm);
+      studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      studentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      studentPhone.includes(searchTerm);
     const matchesTag = filterTag === 'all' || ((enquiry as any).tags || []).includes(filterTag);
     const matchesLead = filterLead === 'all' || (enquiry as any).leadAssigned === filterLead;
     return matchesStatus && matchesSearch && matchesTag && matchesLead;
@@ -873,14 +1044,51 @@ export default function SchoolDashboard() {
                   <Plus className="mr-2" size={16} />
                   Add Enquiry
                 </Button>
-                <Button
-                  onClick={exportToCSV}
-                  variant="outline"
-                  className="border-cyan-200 text-cyan-700 hover:bg-cyan-50 shadow-sm"
-                >
-                  <FileDown className="mr-2" size={16} />
-                  Export to Excel
-                </Button>
+                <input
+                  ref={enquiryImportInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleImportExcel}
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-cyan-200 text-cyan-700 hover:bg-cyan-50 shadow-sm"
+                    >
+                      <FileDown className="mr-2" size={16} />
+                      Import / Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={() => enquiryImportInputRef.current?.click()}
+                      disabled={importingEnquiries}
+                      className="cursor-pointer"
+                    >
+                      {importingEnquiries ? (
+                        <>
+                          <div className="animate-spin w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full mr-2" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <FileUp className="mr-2" size={14} />
+                          Import from Excel
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportToCSV} className="cursor-pointer">
+                      <FileDown className="mr-2" size={14} />
+                      Export to Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={downloadImportExcelTemplate} className="cursor-pointer">
+                      <FileText className="mr-2" size={14} />
+                      Download Import Excel File
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 <div className="relative flex-1 md:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
@@ -961,23 +1169,23 @@ export default function SchoolDashboard() {
                       {paginatedEnquiries.map((enquiry) => (
                       <TableRow key={enquiry.id} className="border-gray-100 hover:bg-cyan-50/50 transition-colors">
                         <TableCell className="font-semibold">
-                          {enquiry.studentName}
+                          {enquiry.studentName || '—'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
                             <Mail size={12} className="text-cyan-600" />
-                            <span className="text-muted-foreground">{enquiry.studentEmail}</span>
+                            <span className="text-muted-foreground">{enquiry.studentEmail || '—'}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
                             <Phone size={12} className="text-cyan-600" />
-                            <span className="text-muted-foreground">{enquiry.studentPhone}</span>
+                            <span className="text-muted-foreground">{enquiry.studentPhone || '—'}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="border-cyan-200 text-cyan-700 bg-cyan-50">
-                            {enquiry.studentClass}
+                            {enquiry.studentClass || '—'}
                           </Badge>
                         </TableCell>
                           <TableCell>

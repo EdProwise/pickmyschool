@@ -10,6 +10,23 @@ interface JWTPayload {
   role: string;
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeForDuplicate(value: string) {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function buildDuplicateQuery(schoolId: number, payload: { studentName: string; studentPhone: string; studentClass: string }) {
+  return {
+    schoolId,
+    studentName: { $regex: `^\\s*${escapeRegExp(payload.studentName)}\\s*$`, $options: 'i' },
+    studentPhone: { $regex: `^\\s*${escapeRegExp(payload.studentPhone)}\\s*$` },
+    studentClass: { $regex: `^\\s*${escapeRegExp(payload.studentClass)}\\s*$`, $options: 'i' },
+  };
+}
+
 function verifySchoolToken(request: NextRequest): { user: JWTPayload | null; error: NextResponse | null } {
   const authHeader = request.headers.get('Authorization');
   
@@ -88,45 +105,154 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { studentName, studentEmail, studentPhone, studentClass, message, studentAddress, studentState, studentAge, studentGender } = body;
+    const {
+      studentName,
+      studentEmail,
+      studentPhone,
+      studentClass,
+      message,
+      studentAddress,
+      studentState,
+      studentAge,
+      studentGender,
+      enquiries,
+      allowBlank,
+    } = body;
 
-    // Validate required fields
-    if (!studentName || !studentEmail || !studentPhone || !studentClass) {
+    const shouldAllowBlank = Boolean(allowBlank);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const normalizeField = (value: unknown) => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim();
+    };
+
+    const buildEnquiryPayload = (record: any, index?: number) => {
+      const normalizedName = normalizeField(record.studentName);
+      const normalizedEmail = normalizeField(record.studentEmail).toLowerCase();
+      const normalizedPhone = normalizeField(record.studentPhone);
+      const normalizedClass = normalizeField(record.studentClass);
+
+      if (!shouldAllowBlank) {
+        if (!normalizedName || !normalizedEmail || !normalizedPhone || !normalizedClass) {
+          throw new Error('studentName, studentEmail, studentPhone, and studentClass are required');
+        }
+      }
+
+      if (normalizedEmail && !emailRegex.test(normalizedEmail)) {
+        throw new Error(index !== undefined ? `Invalid email format in row ${index + 1}` : 'Invalid email format');
+      }
+
+      return {
+        schoolId: school.id,
+        studentName: normalizedName,
+        studentEmail: normalizedEmail,
+        studentPhone: normalizedPhone,
+        studentClass: normalizedClass,
+        message: normalizeField(record.message) || null,
+        status: 'New',
+        studentAddress: normalizeField(record.studentAddress) || null,
+        studentState: normalizeField(record.studentState) || null,
+        studentAge: normalizeField(record.studentAge) || null,
+        studentGender: normalizeField(record.studentGender) || null,
+      };
+    };
+
+    if (Array.isArray(enquiries)) {
+      const created: any[] = [];
+      const failed: Array<{ row: number; error: string }> = [];
+      const seenInBatch = new Set<string>();
+
+      for (let i = 0; i < enquiries.length; i += 1) {
+        try {
+          const payload = buildEnquiryPayload(enquiries[i], i);
+
+          // Duplicate detection requires all 3 fields to be present.
+          if (payload.studentName && payload.studentPhone && payload.studentClass) {
+            const duplicateKey = `${normalizeForDuplicate(payload.studentName)}|${normalizeForDuplicate(payload.studentPhone)}|${normalizeForDuplicate(payload.studentClass)}`;
+            if (seenInBatch.has(duplicateKey)) {
+              throw new Error('Duplicate enquiry: same Student Name, Phone and Class already exists in import file');
+            }
+
+            const existingDuplicate = await Enquiry.findOne(
+              buildDuplicateQuery(school.id, {
+                studentName: payload.studentName,
+                studentPhone: payload.studentPhone,
+                studentClass: payload.studentClass,
+              })
+            ).lean();
+
+            if (existingDuplicate) {
+              throw new Error('Duplicate enquiry: same Student Name, Phone and Class already exists');
+            }
+
+            seenInBatch.add(duplicateKey);
+          }
+
+          const createdEnquiry = await Enquiry.create(payload);
+          created.push({ ...createdEnquiry.toObject(), id: createdEnquiry._id });
+        } catch (rowError: any) {
+          failed.push({ row: i + 1, error: rowError?.message || 'Failed to import row' });
+        }
+      }
+
       return NextResponse.json(
-        { 
-          error: 'studentName, studentEmail, studentPhone, and studentClass are required',
-          code: 'MISSING_FIELDS'
+        {
+          message: 'Enquiries import processed',
+          importedCount: created.length,
+          failedCount: failed.length,
+          failedRows: failed,
+          enquiries: created,
+        },
+        { status: 201 }
+      );
+    }
+
+    let newEnquiryPayload: any;
+    try {
+      newEnquiryPayload = buildEnquiryPayload({
+        studentName,
+        studentEmail,
+        studentPhone,
+        studentClass,
+        message,
+        studentAddress,
+        studentState,
+        studentAge,
+        studentGender,
+      });
+    } catch (validationError: any) {
+      return NextResponse.json(
+        {
+          error: validationError?.message || 'Invalid enquiry payload',
+          code: 'VALIDATION_ERROR',
         },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const trimmedEmail = studentEmail.trim().toLowerCase();
-    if (!emailRegex.test(trimmedEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format', code: 'INVALID_EMAIL' },
-        { status: 400 }
-      );
+    if (newEnquiryPayload.studentName && newEnquiryPayload.studentPhone && newEnquiryPayload.studentClass) {
+      const existingDuplicate = await Enquiry.findOne(
+        buildDuplicateQuery(school.id, {
+          studentName: newEnquiryPayload.studentName,
+          studentPhone: newEnquiryPayload.studentPhone,
+          studentClass: newEnquiryPayload.studentClass,
+        })
+      ).lean();
+
+      if (existingDuplicate) {
+        return NextResponse.json(
+          {
+            error: 'Duplicate enquiry: same Student Name, Phone and Class already exists',
+            code: 'DUPLICATE_ENQUIRY',
+          },
+          { status: 409 }
+        );
+      }
     }
 
-    // Create the enquiry
-    const newEnquiry = await Enquiry.create({
-      schoolId: school.id,
-      studentName: studentName.trim(),
-      studentEmail: trimmedEmail,
-      studentPhone: studentPhone.trim(),
-      studentClass: studentClass.trim(),
-      message: message ? message.trim() : null,
-      status: 'New',
-      studentAddress: studentAddress ? studentAddress.trim() : null,
-      studentState: studentState || null,
-      studentAge: studentAge || null,
-      studentGender: studentGender || null,
-    });
+    const newEnquiry = await Enquiry.create(newEnquiryPayload);
 
-    // Forward to EdproWise Booster Webhook (use school's configured webhook or default)
     const webhookUrl = school.whatsappWebhookUrl || 'https://edprowisebooster.edprowise.com/api/webhooks/external-enquiry';
     const apiKey = school.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
 
@@ -136,10 +262,10 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey: apiKey,
-          name: studentName.trim(),
-          phone: studentPhone.trim(),
-          email: trimmedEmail,
-          message: message ? message.trim() : `Manual enquiry added for class ${studentClass.trim()}`,
+          name: newEnquiryPayload.studentName,
+          phone: newEnquiryPayload.studentPhone,
+          email: newEnquiryPayload.studentEmail,
+          message: newEnquiryPayload.message || `Manual enquiry added for class ${newEnquiryPayload.studentClass}`,
           source: 'PickMySchool - Manual'
         })
       });
