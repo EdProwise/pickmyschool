@@ -2026,7 +2026,7 @@ export default function SchoolDashboard() {
                   {/* Available tags to pick */}
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">Select Tags</Label>
-                    <div className="space-y-1.5 p-3 bg-gray-50 rounded-xl border border-gray-200 min-h-[60px]">
+                    <div className="space-y-1.5 p-3 bg-gray-50 rounded-xl border border-gray-200 min-h-[60px] max-h-56 overflow-y-auto overscroll-contain pr-2">
                       {(profile?.enquiryTags || []).length === 0 && (
                         <span className="text-xs text-muted-foreground">No tags defined yet. Add one above.</span>
                       )}
@@ -2149,7 +2149,7 @@ export default function SchoolDashboard() {
                   {/* Staff list to pick from */}
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">Assign To</Label>
-                    <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                    <div className="space-y-1.5 p-3 bg-gray-50 rounded-xl border border-gray-200 min-h-[60px] max-h-56 overflow-y-auto overscroll-contain pr-2">
                       {(profile?.leadStaff || []).length === 0 && (
                         <p className="text-xs text-muted-foreground p-2">No staff defined yet. Add one above.</p>
                       )}
