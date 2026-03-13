@@ -1223,7 +1223,7 @@ export default function SchoolDashboard() {
     }
   };
 
-  const getLatestNoteText = (notesValue: unknown): string => {
+  function getLatestNoteText(notesValue: unknown): string {
     if (!notesValue) return '';
     if (typeof notesValue !== 'string') return String(notesValue);
 
@@ -1240,7 +1240,7 @@ export default function SchoolDashboard() {
     }
 
     return notesValue.trim();
-  };
+  }
 
   const renderEnquirySection = () => (
     <div className="space-y-6">
