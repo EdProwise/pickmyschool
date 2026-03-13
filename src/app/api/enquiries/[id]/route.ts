@@ -217,3 +217,86 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectToDatabase();
+
+    const { id: paramId } = await params;
+
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'No authorization token provided', code: 'NO_TOKEN' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    let decoded: any;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
+        { status: 401 }
+      );
+    }
+
+    if (decoded.role !== 'school') {
+      return NextResponse.json(
+        { error: 'Only school admins can delete enquiries', code: 'FORBIDDEN' },
+        { status: 403 }
+      );
+    }
+
+    const userRecord = await User.findById(decoded.userId);
+    if (!userRecord || !userRecord.schoolId) {
+      return NextResponse.json(
+        { error: 'School admin account not found or not associated with a school', code: 'USER_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    const school = await School.findById(userRecord.schoolId);
+    if (!school) {
+      return NextResponse.json(
+        { error: 'Associated school not found', code: 'SCHOOL_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+    const numericSchoolId = school.id;
+
+    const enquiryRecord = await Enquiry.findById(paramId);
+    if (!enquiryRecord) {
+      return NextResponse.json(
+        { error: 'Enquiry not found', code: 'ENQUIRY_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    if (Number(enquiryRecord.schoolId) !== Number(numericSchoolId)) {
+      return NextResponse.json(
+        { error: 'Not authorized to delete this enquiry', code: 'NOT_AUTHORIZED' },
+        { status: 403 }
+      );
+    }
+
+    await Enquiry.deleteOne({ _id: paramId });
+
+    return NextResponse.json(
+      { message: 'Enquiry deleted successfully', deletedId: paramId },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('DELETE enquiry error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') },
+      { status: 500 }
+    );
+  }
+}

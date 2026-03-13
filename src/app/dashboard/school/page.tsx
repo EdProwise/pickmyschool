@@ -152,6 +152,7 @@ export default function SchoolDashboard() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [deletingEnquiryId, setDeletingEnquiryId] = useState<string | null>(null);
 
   const normalizeEnquiryId = (value: any) => {
     if (value === null || value === undefined) return '';
@@ -552,6 +553,56 @@ export default function SchoolDashboard() {
       toast.error('Failed to save lead assigned');
     } finally {
       setSavingLead(false);
+    }
+  };
+
+  const handleDeleteEnquiry = async (enquiry: Enquiry) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const enquiryId = normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id);
+    const confirmed = window.confirm(`Delete enquiry for ${enquiry.studentName || 'this student'}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingEnquiryId(enquiryId);
+    try {
+      const response = await fetch(`/api/enquiries/${enquiryId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || 'Failed to delete enquiry');
+      }
+
+      setEnquiries((prev) =>
+        prev.filter((item) => normalizeEnquiryId((item as any).id ?? (item as any)._id) !== enquiryId)
+      );
+
+      if (selectedEnquiry && normalizeEnquiryId((selectedEnquiry as any).id ?? (selectedEnquiry as any)._id) === enquiryId) {
+        setSelectedEnquiry(null);
+      }
+      if (viewMessageEnquiry && normalizeEnquiryId((viewMessageEnquiry as any).id ?? (viewMessageEnquiry as any)._id) === enquiryId) {
+        setViewMessageEnquiry(null);
+      }
+      if (tagsEnquiry && normalizeEnquiryId((tagsEnquiry as any).id ?? (tagsEnquiry as any)._id) === enquiryId) {
+        setTagsEnquiry(null);
+      }
+      if (leadEnquiry && normalizeEnquiryId((leadEnquiry as any).id ?? (leadEnquiry as any)._id) === enquiryId) {
+        setLeadEnquiry(null);
+      }
+      if (additionalDataEnquiry && normalizeEnquiryId((additionalDataEnquiry as any).id ?? (additionalDataEnquiry as any)._id) === enquiryId) {
+        setAdditionalDataEnquiry(null);
+      }
+
+      toast.success('Enquiry deleted successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete enquiry');
+    } finally {
+      setDeletingEnquiryId(null);
     }
   };
 
@@ -1400,6 +1451,14 @@ export default function SchoolDashboard() {
                                   >
                                     <UserPlus className="mr-2" size={14} />
                                     Add Additional Data
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => void handleDeleteEnquiry(enquiry)}
+                                    disabled={deletingEnquiryId === normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id)}
+                                    className="cursor-pointer text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="mr-2" size={14} />
+                                    {deletingEnquiryId === normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id) ? 'Deleting...' : 'Delete Enquiry'}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                           </DropdownMenu>
