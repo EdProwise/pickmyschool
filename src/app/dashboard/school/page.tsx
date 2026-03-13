@@ -384,6 +384,28 @@ export default function SchoolDashboard() {
   const handleUpdateEnquiry = async (enquiryId: string | number) => {
     const token = localStorage.getItem('token');
     if (!token) return;
+    const normalizedId = normalizeEnquiryId(enquiryId);
+
+    const previousEnquiry = enquiries.find(
+      (item) => normalizeEnquiryId((item as any).id ?? (item as any)._id) === normalizedId
+    );
+
+    // Optimistic UI update so status appears immediately.
+    setEnquiries((prev) =>
+      prev.map((item) =>
+        normalizeEnquiryId((item as any).id ?? (item as any)._id) === normalizedId
+          ? ({
+              ...item,
+              status: enquiryStatus || item.status,
+              message: enquiryMessage,
+              notes: enquiryNotes || item.notes,
+            } as Enquiry)
+          : item
+      )
+    );
+    setSelectedEnquiry(null);
+    setEnquiryNotes('');
+    setEnquiryMessage('');
 
     try {
       const response = await fetch(`/api/enquiries/${enquiryId}`, {
@@ -411,11 +433,12 @@ export default function SchoolDashboard() {
       }
 
       toast.success('Enquiry updated successfully');
-      setSelectedEnquiry(null);
-      setEnquiryNotes('');
-      setEnquiryMessage('');
       void refreshEnquiriesSilently();
     } catch (error) {
+      // Revert optimistic update if API failed.
+      if (previousEnquiry) {
+        mergeUpdatedEnquiry(previousEnquiry);
+      }
       toast.error('Failed to update enquiry');
     }
   };
