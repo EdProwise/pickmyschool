@@ -1008,13 +1008,21 @@ export default function SchoolDashboard() {
 
   const filteredEnquiries = enquiries.filter((enquiry) => {
     const matchesStatus = filterStatus === 'all' || enquiry.status === filterStatus;
-    const studentName = enquiry.studentName || '';
-    const studentEmail = enquiry.studentEmail || '';
-    const studentPhone = enquiry.studentPhone || '';
-    const matchesSearch =
-      studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      studentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      studentPhone.includes(searchTerm);
+    const query = searchTerm.trim().toLowerCase();
+    const tags = ((enquiry as any).tags || []) as string[];
+    const searchableFields = [
+      enquiry.studentName || '',
+      enquiry.studentEmail || '',
+      enquiry.studentPhone || '',
+      enquiry.studentClass || '',
+      enquiry.status || '',
+      (enquiry as any).leadAssigned || '',
+      enquiry.message || '',
+      getLatestNoteText((enquiry as any).notes),
+      tags.join(' '),
+      new Date(enquiry.createdAt).toLocaleDateString(),
+    ];
+    const matchesSearch = query === '' || searchableFields.some((value) => String(value).toLowerCase().includes(query));
     const matchesTag = filterTag === 'all' || ((enquiry as any).tags || []).includes(filterTag);
     const matchesLead = filterLead === 'all' || (enquiry as any).leadAssigned === filterLead;
     return matchesStatus && matchesSearch && matchesTag && matchesLead;
