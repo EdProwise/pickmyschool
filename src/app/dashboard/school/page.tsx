@@ -78,6 +78,9 @@ const sidebarItems = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
+const NO_TAGS_FILTER = '__no_tags__';
+const NO_LEAD_FILTER = '__no_lead__';
+
 export default function SchoolDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -1010,21 +1013,32 @@ export default function SchoolDashboard() {
     const matchesStatus = filterStatus === 'all' || enquiry.status === filterStatus;
     const query = searchTerm.trim().toLowerCase();
     const tags = ((enquiry as any).tags || []) as string[];
+    const leadAssigned = ((enquiry as any).leadAssigned || '').toString().trim();
     const searchableFields = [
       enquiry.studentName || '',
       enquiry.studentEmail || '',
       enquiry.studentPhone || '',
       enquiry.studentClass || '',
       enquiry.status || '',
-      (enquiry as any).leadAssigned || '',
+      leadAssigned,
       enquiry.message || '',
       getLatestNoteText((enquiry as any).notes),
       tags.join(' '),
       new Date(enquiry.createdAt).toLocaleDateString(),
     ];
     const matchesSearch = query === '' || searchableFields.some((value) => String(value).toLowerCase().includes(query));
-    const matchesTag = filterTag === 'all' || ((enquiry as any).tags || []).includes(filterTag);
-    const matchesLead = filterLead === 'all' || (enquiry as any).leadAssigned === filterLead;
+    const matchesTag =
+      filterTag === 'all'
+        ? true
+        : filterTag === NO_TAGS_FILTER
+          ? tags.length === 0
+          : tags.includes(filterTag);
+    const matchesLead =
+      filterLead === 'all'
+        ? true
+        : filterLead === NO_LEAD_FILTER
+          ? leadAssigned === ''
+          : leadAssigned === filterLead;
     return matchesStatus && matchesSearch && matchesTag && matchesLead;
   });
 
@@ -1336,6 +1350,7 @@ export default function SchoolDashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Tags</SelectItem>
+                    <SelectItem value={NO_TAGS_FILTER}>No Tags</SelectItem>
                     {(profile?.enquiryTags || []).map((tag: string) => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                     ))}
@@ -1348,6 +1363,7 @@ export default function SchoolDashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Leads</SelectItem>
+                    <SelectItem value={NO_LEAD_FILTER}>No Lead</SelectItem>
                     {(profile?.leadStaff || []).map((staff: string) => (
                       <SelectItem key={staff} value={staff}>{staff}</SelectItem>
                     ))}
