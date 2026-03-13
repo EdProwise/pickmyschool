@@ -232,6 +232,39 @@ export default function SchoolDashboard() {
     return single ? [single] : [];
   };
 
+  const fetchAllEnquiries = async (token: string) => {
+    const batchSize = 1000;
+    let offset = 0;
+    let hasMore = true;
+    const all: any[] = [];
+
+    while (hasMore) {
+      const response = await fetch(`/api/schools/enquiries?limit=${batchSize}&offset=${offset}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to load enquiries');
+
+      const data = await response.json();
+      const batch = Array.isArray(data?.enquiries)
+        ? data.enquiries
+        : Array.isArray(data)
+          ? data
+          : [];
+
+      all.push(...batch);
+
+      const apiHasMore = Boolean(data?.metadata?.hasMore);
+      hasMore = apiHasMore || batch.length === batchSize;
+      offset += batch.length;
+
+      if (batch.length === 0) {
+        hasMore = false;
+      }
+    }
+
+    return all;
+  };
+
   useEffect(() => {
     loadSchoolData();
   }, []);
@@ -293,21 +326,9 @@ export default function SchoolDashboard() {
 
       setUser(userData);
 
-      // Load school enquiries
-        const response = await fetch('/api/schools/enquiries?limit=1000', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-      if (response.ok) {
-        const data = await response.json();
-        // The API returns { enquiries: [...], metadata: {...} }
-        const incoming = Array.isArray(data?.enquiries)
-          ? data.enquiries
-          : Array.isArray(data)
-            ? data
-            : [];
-        setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
-      }
+      // Load all school enquiries (API is paginated with max 1000 per request).
+      const incoming = await fetchAllEnquiries(token);
+      setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
     } catch (error) {
       console.error('Failed to load school data:', error);
       toast.error('Failed to load dashboard data');
@@ -424,16 +445,7 @@ export default function SchoolDashboard() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await fetch('/api/schools/enquiries?limit=1000', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) return;
-      const data = await response.json();
-      const incoming = Array.isArray(data?.enquiries)
-        ? data.enquiries
-        : Array.isArray(data)
-          ? data
-          : [];
+      const incoming = await fetchAllEnquiries(token);
       setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
     } catch (error) {
       console.error('Silent enquiry refresh failed:', error);
