@@ -1215,6 +1215,25 @@ export default function SchoolDashboard() {
     }
   };
 
+  const getLatestNoteText = (notesValue: unknown): string => {
+    if (!notesValue) return '';
+    if (typeof notesValue !== 'string') return String(notesValue);
+
+    try {
+      const parsed = JSON.parse(notesValue);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const latest = parsed[parsed.length - 1];
+        if (latest && typeof latest.text === 'string') {
+          return latest.text.trim();
+        }
+      }
+    } catch {
+      // Ignore parse errors for legacy plain-text notes.
+    }
+
+    return notesValue.trim();
+  };
+
   const renderEnquirySection = () => (
     <div className="space-y-6">
       <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
@@ -1351,6 +1370,7 @@ export default function SchoolDashboard() {
                         <TableHead className="font-semibold">Status</TableHead>
                         <TableHead className="font-semibold">Tags</TableHead>
                         <TableHead className="font-semibold">Lead Assigned</TableHead>
+                        <TableHead className="font-semibold">Latest Note</TableHead>
                         <TableHead className="font-semibold">Date</TableHead>
                         <TableHead className="font-semibold">Actions</TableHead>
                       </TableRow>
@@ -1401,6 +1421,15 @@ export default function SchoolDashboard() {
                               : <span className="text-xs text-muted-foreground">—</span>
                             }
                           </TableCell>
+                        <TableCell className="max-w-[220px]">
+                          {getLatestNoteText((enquiry as any).notes) ? (
+                            <p className="text-xs text-gray-700 truncate" title={getLatestNoteText((enquiry as any).notes)}>
+                              {getLatestNoteText((enquiry as any).notes)}
+                            </p>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">â€”</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(enquiry.createdAt).toLocaleDateString()}
                         </TableCell>
