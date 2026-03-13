@@ -97,6 +97,7 @@ export default function SchoolDashboard() {
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [enquiryNotes, setEnquiryNotes] = useState('');
   const [enquiryStatus, setEnquiryStatus] = useState('');
+  const [enquiryMessage, setEnquiryMessage] = useState('');
   
   // Additional data modal state
   const [additionalDataEnquiry, setAdditionalDataEnquiry] = useState<Enquiry | null>(null);
@@ -306,6 +307,38 @@ export default function SchoolDashboard() {
     }
   };
 
+  const mergeUpdatedEnquiry = (updatedEnquiry: any) => {
+    const normalized = {
+      ...updatedEnquiry,
+      id: updatedEnquiry?.id ?? updatedEnquiry?._id,
+    };
+    const updatedId = String(normalized.id ?? '');
+
+    setEnquiries((prev) =>
+      prev.map((enquiry) =>
+        String(enquiry.id) === updatedId
+          ? ({ ...enquiry, ...normalized } as Enquiry)
+          : enquiry
+      )
+    );
+
+    if (selectedEnquiry && String(selectedEnquiry.id) === updatedId) {
+      setSelectedEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
+    }
+    if (viewMessageEnquiry && String(viewMessageEnquiry.id) === updatedId) {
+      setViewMessageEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
+    }
+    if (tagsEnquiry && String(tagsEnquiry.id) === updatedId) {
+      setTagsEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
+    }
+    if (leadEnquiry && String(leadEnquiry.id) === updatedId) {
+      setLeadEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
+    }
+    if (additionalDataEnquiry && String(additionalDataEnquiry.id) === updatedId) {
+      setAdditionalDataEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
+    }
+  };
+
   const handleUpdateEnquiry = async (enquiryId: number) => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -320,14 +353,21 @@ export default function SchoolDashboard() {
         body: JSON.stringify({
           status: enquiryStatus,
           notes: enquiryNotes,
+          message: enquiryMessage,
         }),
       });
 
       if (!response.ok) throw new Error('Failed to update enquiry');
+      const data = await response.json();
+      if (data?.enquiry) {
+        mergeUpdatedEnquiry(data.enquiry);
+      }
 
       toast.success('Enquiry updated successfully');
       setSelectedEnquiry(null);
-      loadSchoolData();
+      setEnquiryNotes('');
+      setEnquiryMessage('');
+      void loadSchoolData();
     } catch (error) {
       toast.error('Failed to update enquiry');
     }
@@ -353,10 +393,14 @@ export default function SchoolDashboard() {
       });
 
       if (!response.ok) throw new Error('Failed to save additional data');
+      const data = await response.json();
+      if (data?.enquiry) {
+        mergeUpdatedEnquiry(data.enquiry);
+      }
 
       toast.success('Additional data saved successfully');
       setAdditionalDataEnquiry(null);
-      loadSchoolData();
+      void loadSchoolData();
     } catch (error) {
       toast.error('Failed to save additional data');
     }
@@ -392,6 +436,14 @@ export default function SchoolDashboard() {
         const data = await response.json();
         throw new Error(data.error || 'Failed to add enquiry');
       }
+      const data = await response.json();
+      if (data?.enquiry) {
+        const created = {
+          ...data.enquiry,
+          id: data.enquiry.id ?? data.enquiry._id,
+        } as Enquiry;
+        setEnquiries((prev) => [created, ...prev]);
+      }
 
       toast.success('Enquiry added successfully');
       setShowAddEnquiryModal(false);
@@ -400,7 +452,7 @@ export default function SchoolDashboard() {
       setNewEnquiryPhone('');
       setNewEnquiryClass('');
       setNewEnquiryMessage('');
-      loadSchoolData();
+      void loadSchoolData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to add enquiry');
     } finally {
@@ -420,9 +472,13 @@ export default function SchoolDashboard() {
         body: JSON.stringify({ tags: editTags }),
       });
       if (!response.ok) throw new Error('Failed to save tags');
+      const data = await response.json();
+      if (data?.enquiry) {
+        mergeUpdatedEnquiry(data.enquiry);
+      }
       toast.success('Tags updated successfully');
       setTagsEnquiry(null);
-      loadSchoolData();
+      void loadSchoolData();
     } catch {
       toast.error('Failed to save tags');
     } finally {
@@ -442,9 +498,13 @@ export default function SchoolDashboard() {
         body: JSON.stringify({ leadAssigned: editLeadAssigned }),
       });
       if (!response.ok) throw new Error('Failed to save lead assigned');
+      const data = await response.json();
+      if (data?.enquiry) {
+        mergeUpdatedEnquiry(data.enquiry);
+      }
       toast.success('Lead assigned updated successfully');
       setLeadEnquiry(null);
-      loadSchoolData();
+      void loadSchoolData();
     } catch {
       toast.error('Failed to save lead assigned');
     } finally {
@@ -1244,6 +1304,7 @@ export default function SchoolDashboard() {
                                       setSelectedEnquiry(enquiry);
                                       setEnquiryStatus(enquiry.status);
                                       setEnquiryNotes(enquiry.notes || '');
+                                      setEnquiryMessage(enquiry.message || '');
                                     }}
                                     className="cursor-pointer"
                                   >
@@ -1255,6 +1316,7 @@ export default function SchoolDashboard() {
                                       setSelectedEnquiry(enquiry);
                                       setEnquiryStatus(enquiry.status);
                                       setEnquiryNotes('');
+                                      setEnquiryMessage(enquiry.message || '');
                                     }}
                                     className="cursor-pointer"
                                   >
@@ -1367,6 +1429,18 @@ export default function SchoolDashboard() {
                   <SelectItem value="Lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="enquiryMessage" className="text-sm font-semibold">Message</Label>
+              <Textarea
+                id="enquiryMessage"
+                value={enquiryMessage}
+                onChange={(e) => setEnquiryMessage(e.target.value)}
+                rows={3}
+                placeholder="Update enquiry message..."
+                className="bg-white/50 resize-none"
+              />
             </div>
 
             <div className="space-y-4">

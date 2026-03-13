@@ -79,7 +79,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { status, notes, followUpDate, studentAddress, studentState, studentAge, studentGender, tags, leadAssigned } = body;
+    const { status, notes, message, followUpDate, studentAddress, studentState, studentAge, studentGender, tags, leadAssigned } = body;
 
     if (status !== undefined) {
       if (!VALID_STATUSES.includes(status)) {
@@ -125,6 +125,15 @@ export async function PUT(
         updateData.notes = JSON.stringify(notesHistory);
       } else if (Array.isArray(notes)) {
         updateData.notes = JSON.stringify(notes);
+      }
+    }
+
+    if (message !== undefined) {
+      if (typeof message === 'string') {
+        const trimmedMessage = message.trim();
+        updateData.message = trimmedMessage === '' ? null : trimmedMessage;
+      } else {
+        updateData.message = null;
       }
     }
 
