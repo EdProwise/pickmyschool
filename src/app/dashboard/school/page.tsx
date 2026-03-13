@@ -561,8 +561,10 @@ export default function SchoolDashboard() {
     if (!token) return;
 
     const enquiryId = normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id);
-    const confirmed = window.confirm(`Delete enquiry for ${enquiry.studentName || 'this student'}? This cannot be undone.`);
-    if (!confirmed) return;
+    if (!enquiryId) {
+      toast.error('Invalid enquiry id');
+      return;
+    }
 
     setDeletingEnquiryId(enquiryId);
     try {
