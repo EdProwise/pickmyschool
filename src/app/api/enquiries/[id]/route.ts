@@ -5,6 +5,68 @@ import jwt from 'jsonwebtoken';
 
 const VALID_STATUSES = ['New', 'In Progress', 'Converted', 'Lost'];
 
+type NotesHistoryItem = {
+  date: string;
+  text: string;
+};
+
+function normalizeNotesDate(value: unknown, fallbackDate: Date | string) {
+  if (typeof value === 'string' && value.trim()) return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (fallbackDate instanceof Date) return fallbackDate.toISOString();
+  if (typeof fallbackDate === 'string' && fallbackDate.trim()) return fallbackDate;
+  return new Date().toISOString();
+}
+
+function normalizeNotesHistory(value: unknown, fallbackDate: Date | string): NotesHistoryItem[] {
+  const toEntry = (candidate: unknown): NotesHistoryItem | null => {
+    if (typeof candidate === 'string') {
+      const text = candidate.trim();
+      if (!text) return null;
+      return { date: normalizeNotesDate(undefined, fallbackDate), text };
+    }
+
+    if (candidate && typeof candidate === 'object') {
+      const rawText =
+        typeof (candidate as any).text === 'string'
+          ? (candidate as any).text
+          : typeof (candidate as any).message === 'string'
+            ? (candidate as any).message
+            : '';
+      const text = rawText.trim();
+      if (!text) return null;
+      const date = normalizeNotesDate((candidate as any).date ?? (candidate as any).createdAt, fallbackDate);
+      return { date, text };
+    }
+
+    return null;
+  };
+
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map(toEntry).filter((entry): entry is NotesHistoryItem => Boolean(entry));
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.map(toEntry).filter((entry): entry is NotesHistoryItem => Boolean(entry));
+      }
+      const single = toEntry(parsed);
+      return single ? [single] : [{ date: normalizeNotesDate(undefined, fallbackDate), text: trimmed }];
+    } catch {
+      return [{ date: normalizeNotesDate(undefined, fallbackDate), text: trimmed }];
+    }
+  }
+
+  const single = toEntry(value);
+  return single ? [single] : [];
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -107,24 +169,19 @@ export async function PUT(
     }
 
     if (notes !== undefined) {
-      let notesHistory = [];
-      try {
-        notesHistory = JSON.parse(enquiryRecord.notes || '[]');
-        if (!Array.isArray(notesHistory)) {
-          notesHistory = enquiryRecord.notes ? [{ date: enquiryRecord.createdAt, text: enquiryRecord.notes }] : [];
-        }
-      } catch (e) {
-        notesHistory = enquiryRecord.notes ? [{ date: enquiryRecord.createdAt, text: enquiryRecord.notes }] : [];
-      }
+      const notesHistory = normalizeNotesHistory((enquiryRecord as any).notes, enquiryRecord.createdAt || new Date());
 
-      if (typeof notes === 'string' && notes.trim() !== '') {
-        notesHistory.push({
-          date: new Date().toISOString(),
-          text: notes.trim(),
-        });
-        updateData.notes = JSON.stringify(notesHistory);
-      } else if (Array.isArray(notes)) {
-        updateData.notes = JSON.stringify(notes);
+      if (typeof notes === 'string') {
+        const trimmedNotes = notes.trim();
+        if (trimmedNotes !== '') {
+          notesHistory.push({
+            date: new Date().toISOString(),
+            text: trimmedNotes,
+          });
+          updateData.notes = JSON.stringify(notesHistory);
+        }
+      } else if (Array.isArray(notes) || (notes && typeof notes === 'object')) {
+        updateData.notes = JSON.stringify(normalizeNotesHistory(notes, enquiryRecord.createdAt || new Date()));
       }
     }
 

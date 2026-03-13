@@ -176,6 +176,62 @@ export default function SchoolDashboard() {
     } as Enquiry;
   };
 
+  const normalizeNoteDate = (value: unknown, fallbackDate?: string) => {
+    if (typeof value === 'string' && value.trim()) return value;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+    if (fallbackDate) return fallbackDate;
+    return new Date().toISOString();
+  };
+
+  const normalizeNotesHistory = (notesValue: unknown, fallbackDate?: string): Array<{ date: string; text: string }> => {
+    const toEntry = (candidate: unknown): { date: string; text: string } | null => {
+      if (typeof candidate === 'string') {
+        const text = candidate.trim();
+        if (!text) return null;
+        return { date: normalizeNoteDate(undefined, fallbackDate), text };
+      }
+
+      if (candidate && typeof candidate === 'object') {
+        const rawText =
+          typeof (candidate as any).text === 'string'
+            ? (candidate as any).text
+            : typeof (candidate as any).message === 'string'
+              ? (candidate as any).message
+              : '';
+        const text = rawText.trim();
+        if (!text) return null;
+        const date = normalizeNoteDate((candidate as any).date ?? (candidate as any).createdAt, fallbackDate);
+        return { date, text };
+      }
+
+      return null;
+    };
+
+    if (!notesValue) return [];
+
+    if (Array.isArray(notesValue)) {
+      return notesValue.map(toEntry).filter((entry): entry is { date: string; text: string } => Boolean(entry));
+    }
+
+    if (typeof notesValue === 'string') {
+      const trimmed = notesValue.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map(toEntry).filter((entry): entry is { date: string; text: string } => Boolean(entry));
+        }
+        const single = toEntry(parsed);
+        return single ? [single] : [{ date: normalizeNoteDate(undefined, fallbackDate), text: trimmed }];
+      } catch {
+        return [{ date: normalizeNoteDate(undefined, fallbackDate), text: trimmed }];
+      }
+    }
+
+    const single = toEntry(notesValue);
+    return single ? [single] : [];
+  };
+
   useEffect(() => {
     loadSchoolData();
   }, []);
@@ -393,6 +449,8 @@ export default function SchoolDashboard() {
       (item) => normalizeEnquiryId((item as any).id ?? (item as any)._id) === normalizedId
     );
 
+    const trimmedNotes = enquiryNotes.trim();
+
     // Optimistic UI update so status appears immediately.
     setEnquiries((prev) =>
       prev.map((item) =>
@@ -401,7 +459,7 @@ export default function SchoolDashboard() {
               ...item,
               status: enquiryStatus || item.status,
               message: enquiryMessage,
-              notes: enquiryNotes || item.notes,
+              notes: trimmedNotes ? trimmedNotes : item.notes,
             } as Enquiry)
           : item
       )
@@ -419,8 +477,8 @@ export default function SchoolDashboard() {
         },
         body: JSON.stringify({
           status: enquiryStatus,
-          notes: enquiryNotes,
           message: enquiryMessage,
+          ...(trimmedNotes ? { notes: trimmedNotes } : {}),
         }),
       });
 
@@ -925,17 +983,8 @@ export default function SchoolDashboard() {
 
     const headers = ['Student Name', 'Email', 'Phone', 'Class', 'Status', 'Date', 'Message', 'Address', 'State', 'Age', 'Gender', 'Tags', 'Lead Assigned', 'Notes'];
     const csvData = filteredEnquiries.map(enquiry => {
-      let notesText = '';
-      try {
-        const notes = JSON.parse(enquiry.notes || '[]');
-        if (Array.isArray(notes)) {
-          notesText = notes.map((n: any) => `${n.date}: ${n.text}`).join(' | ');
-        } else {
-          notesText = enquiry.notes || '';
-        }
-      } catch (e) {
-        notesText = enquiry.notes || '';
-      }
+      const notesHistory = normalizeNotesHistory((enquiry as any).notes, (enquiry as any).createdAt);
+      const notesText = notesHistory.map((n) => `${n.date}: ${n.text}`).join(' | ');
 
       return [
         enquiry.studentName,
@@ -1238,22 +1287,9 @@ export default function SchoolDashboard() {
   };
 
   function getLatestNoteText(notesValue: unknown): string {
-    if (!notesValue) return '';
-    if (typeof notesValue !== 'string') return String(notesValue);
-
-    try {
-      const parsed = JSON.parse(notesValue);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const latest = parsed[parsed.length - 1];
-        if (latest && typeof latest.text === 'string') {
-          return latest.text.trim();
-        }
-      }
-    } catch {
-      // Ignore parse errors for legacy plain-text notes.
-    }
-
-    return notesValue.trim();
+    const notesHistory = normalizeNotesHistory(notesValue);
+    if (notesHistory.length === 0) return '';
+    return notesHistory[notesHistory.length - 1].text;
   }
 
   const renderEnquirySection = () => (
@@ -1476,7 +1512,7 @@ export default function SchoolDashboard() {
                                     onClick={() => {
                                       setSelectedEnquiry(enquiry);
                                       setEnquiryStatus(enquiry.status);
-                                      setEnquiryNotes(enquiry.notes || '');
+                                      setEnquiryNotes(getLatestNoteText((enquiry as any).notes));
                                       setEnquiryMessage(enquiry.message || '');
                                     }}
                                     className="cursor-pointer"
@@ -1629,15 +1665,7 @@ export default function SchoolDashboard() {
               <div className="space-y-3 max-h-60 overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-200">
                 {(() => {
                   if (!selectedEnquiry) return null;
-                  let notes = [];
-                  try {
-                    notes = JSON.parse(selectedEnquiry.notes || '[]');
-                    if (!Array.isArray(notes)) {
-                      notes = selectedEnquiry.notes ? [{ date: selectedEnquiry.createdAt, text: selectedEnquiry.notes }] : [];
-                    }
-                  } catch (e) {
-                    notes = selectedEnquiry.notes ? [{ date: selectedEnquiry.createdAt, text: selectedEnquiry.notes }] : [];
-                  }
+                  const notes = normalizeNotesHistory((selectedEnquiry as any).notes, (selectedEnquiry as any).createdAt);
 
                   if (notes.length === 0) {
                     return <p className="text-sm text-muted-foreground text-center py-4">No notes recorded yet</p>;
