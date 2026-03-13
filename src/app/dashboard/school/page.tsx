@@ -153,6 +153,25 @@ export default function SchoolDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const normalizeEnquiryId = (value: any) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    if (typeof value === 'object') {
+      if (typeof value.$oid === 'string') return value.$oid;
+      if (typeof value.toString === 'function') return value.toString();
+    }
+    return String(value);
+  };
+
+  const normalizeEnquiryForState = (enquiry: any) => {
+    const normalizedId = normalizeEnquiryId(enquiry?.id ?? enquiry?._id);
+    return {
+      ...enquiry,
+      id: normalizedId,
+      _id: normalizedId,
+    } as Enquiry;
+  };
+
   useEffect(() => {
     loadSchoolData();
   }, []);
@@ -222,7 +241,12 @@ export default function SchoolDashboard() {
       if (response.ok) {
         const data = await response.json();
         // The API returns { enquiries: [...], metadata: {...} }
-        setEnquiries(data.enquiries || data);
+        const incoming = Array.isArray(data?.enquiries)
+          ? data.enquiries
+          : Array.isArray(data)
+            ? data
+            : [];
+        setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
@@ -308,38 +332,55 @@ export default function SchoolDashboard() {
   };
 
   const mergeUpdatedEnquiry = (updatedEnquiry: any) => {
-    const normalized = {
-      ...updatedEnquiry,
-      id: updatedEnquiry?.id ?? updatedEnquiry?._id,
-    };
-    const updatedId = String(normalized.id ?? '');
+    const normalized = normalizeEnquiryForState(updatedEnquiry);
+    const updatedId = normalizeEnquiryId(normalized.id ?? (normalized as any)._id);
 
     setEnquiries((prev) =>
       prev.map((enquiry) =>
-        String(enquiry.id) === updatedId
+        normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id) === updatedId
           ? ({ ...enquiry, ...normalized } as Enquiry)
           : enquiry
       )
     );
 
-    if (selectedEnquiry && String(selectedEnquiry.id) === updatedId) {
+    if (selectedEnquiry && normalizeEnquiryId((selectedEnquiry as any).id ?? (selectedEnquiry as any)._id) === updatedId) {
       setSelectedEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
     }
-    if (viewMessageEnquiry && String(viewMessageEnquiry.id) === updatedId) {
+    if (viewMessageEnquiry && normalizeEnquiryId((viewMessageEnquiry as any).id ?? (viewMessageEnquiry as any)._id) === updatedId) {
       setViewMessageEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
     }
-    if (tagsEnquiry && String(tagsEnquiry.id) === updatedId) {
+    if (tagsEnquiry && normalizeEnquiryId((tagsEnquiry as any).id ?? (tagsEnquiry as any)._id) === updatedId) {
       setTagsEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
     }
-    if (leadEnquiry && String(leadEnquiry.id) === updatedId) {
+    if (leadEnquiry && normalizeEnquiryId((leadEnquiry as any).id ?? (leadEnquiry as any)._id) === updatedId) {
       setLeadEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
     }
-    if (additionalDataEnquiry && String(additionalDataEnquiry.id) === updatedId) {
+    if (additionalDataEnquiry && normalizeEnquiryId((additionalDataEnquiry as any).id ?? (additionalDataEnquiry as any)._id) === updatedId) {
       setAdditionalDataEnquiry((prev) => (prev ? ({ ...prev, ...normalized } as Enquiry) : prev));
     }
   };
 
-  const handleUpdateEnquiry = async (enquiryId: number) => {
+  const refreshEnquiriesSilently = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await fetch('/api/schools/enquiries?limit=1000', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const incoming = Array.isArray(data?.enquiries)
+        ? data.enquiries
+        : Array.isArray(data)
+          ? data
+          : [];
+      setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
+    } catch (error) {
+      console.error('Silent enquiry refresh failed:', error);
+    }
+  };
+
+  const handleUpdateEnquiry = async (enquiryId: string | number) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -361,19 +402,24 @@ export default function SchoolDashboard() {
       const data = await response.json();
       if (data?.enquiry) {
         mergeUpdatedEnquiry(data.enquiry);
+        if (filterStatus !== 'all' && data.enquiry.status && filterStatus !== data.enquiry.status) {
+          setFilterStatus('all');
+          setEnquiryPage(1);
+          toast.info('Status updated. Showing all statuses so the updated enquiry remains visible.');
+        }
       }
 
       toast.success('Enquiry updated successfully');
       setSelectedEnquiry(null);
       setEnquiryNotes('');
       setEnquiryMessage('');
-      void loadSchoolData();
+      void refreshEnquiriesSilently();
     } catch (error) {
       toast.error('Failed to update enquiry');
     }
   };
 
-  const handleSaveAdditionalData = async (enquiryId: number) => {
+  const handleSaveAdditionalData = async (enquiryId: string | number) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -400,7 +446,7 @@ export default function SchoolDashboard() {
 
       toast.success('Additional data saved successfully');
       setAdditionalDataEnquiry(null);
-      void loadSchoolData();
+      void refreshEnquiriesSilently();
     } catch (error) {
       toast.error('Failed to save additional data');
     }
@@ -438,10 +484,7 @@ export default function SchoolDashboard() {
       }
       const data = await response.json();
       if (data?.enquiry) {
-        const created = {
-          ...data.enquiry,
-          id: data.enquiry.id ?? data.enquiry._id,
-        } as Enquiry;
+        const created = normalizeEnquiryForState(data.enquiry);
         setEnquiries((prev) => [created, ...prev]);
       }
 
@@ -452,7 +495,7 @@ export default function SchoolDashboard() {
       setNewEnquiryPhone('');
       setNewEnquiryClass('');
       setNewEnquiryMessage('');
-      void loadSchoolData();
+      void refreshEnquiriesSilently();
     } catch (error: any) {
       toast.error(error.message || 'Failed to add enquiry');
     } finally {
@@ -478,7 +521,7 @@ export default function SchoolDashboard() {
       }
       toast.success('Tags updated successfully');
       setTagsEnquiry(null);
-      void loadSchoolData();
+      void refreshEnquiriesSilently();
     } catch {
       toast.error('Failed to save tags');
     } finally {
@@ -504,7 +547,7 @@ export default function SchoolDashboard() {
       }
       toast.success('Lead assigned updated successfully');
       setLeadEnquiry(null);
-      void loadSchoolData();
+      void refreshEnquiriesSilently();
     } catch {
       toast.error('Failed to save lead assigned');
     } finally {
