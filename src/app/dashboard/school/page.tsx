@@ -599,6 +599,7 @@ export default function SchoolDashboard() {
       }
 
       toast.success('Enquiry deleted successfully');
+      void refreshEnquiriesSilently();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete enquiry');
     } finally {

@@ -254,7 +254,7 @@ export async function DELETE(
       );
     }
 
-    const userRecord = await User.findById(decoded.userId);
+    const userRecord = await User.findById(decoded.userId).lean();
     if (!userRecord || !userRecord.schoolId) {
       return NextResponse.json(
         { error: 'School admin account not found or not associated with a school', code: 'USER_NOT_FOUND' },
@@ -262,16 +262,24 @@ export async function DELETE(
       );
     }
 
-    const school = await School.findById(userRecord.schoolId);
-    if (!school) {
+    let numericSchoolId: number | null = null;
+    const school = await School.findById(userRecord.schoolId).lean();
+    if (school?.id !== undefined && school?.id !== null) {
+      numericSchoolId = Number(school.id);
+    } else if (!Number.isNaN(Number(userRecord.schoolId))) {
+      numericSchoolId = Number(userRecord.schoolId);
+    }
+    if (numericSchoolId === null || Number.isNaN(numericSchoolId)) {
       return NextResponse.json(
         { error: 'Associated school not found', code: 'SCHOOL_NOT_FOUND' },
         { status: 404 }
       );
     }
-    const numericSchoolId = school.id;
 
-    const enquiryRecord = await Enquiry.findById(paramId);
+    let enquiryRecord = await Enquiry.findById(paramId);
+    if (!enquiryRecord && !Number.isNaN(Number(paramId))) {
+      enquiryRecord = await Enquiry.findOne({ id: Number(paramId) });
+    }
     if (!enquiryRecord) {
       return NextResponse.json(
         { error: 'Enquiry not found', code: 'ENQUIRY_NOT_FOUND' },
@@ -286,10 +294,16 @@ export async function DELETE(
       );
     }
 
-    await Enquiry.deleteOne({ _id: paramId });
+    const deleteResult = await Enquiry.deleteOne({ _id: enquiryRecord._id });
+    if (!deleteResult.deletedCount) {
+      return NextResponse.json(
+        { error: 'Failed to delete enquiry', code: 'DELETE_FAILED' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
-      { message: 'Enquiry deleted successfully', deletedId: paramId },
+      { message: 'Enquiry deleted successfully', deletedId: String(enquiryRecord._id) },
       { status: 200 }
     );
   } catch (error) {
