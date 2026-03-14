@@ -847,6 +847,8 @@ export default function SchoolDashboard() {
     studentPhone: string;
     studentClass: string;
     message: string;
+    status: string;
+    latestNote: string;
     studentAddress: string;
     studentState: string;
     studentAge: string;
@@ -883,6 +885,8 @@ export default function SchoolDashboard() {
       studentPhone: getImportField(normalizedRow, ['studentphone', 'phone', 'mobileno', 'mobile', 'contact', 'contactnumber']),
       studentClass: getImportField(normalizedRow, ['studentclass', 'class', 'grade', 'standard']),
       message: getImportField(normalizedRow, ['message', 'notes', 'remark', 'remarks']),
+      status: getImportField(normalizedRow, ['status', 'enquirystatus']),
+      latestNote: getImportField(normalizedRow, ['latestnote', 'note', 'latestremarks', 'latestremark']),
       studentAddress: getImportField(normalizedRow, ['studentaddress', 'address']),
       studentState: getImportField(normalizedRow, ['studentstate', 'state']),
       studentAge: getImportField(normalizedRow, ['studentage', 'age']),
@@ -927,6 +931,8 @@ export default function SchoolDashboard() {
             row.studentPhone,
             row.studentClass,
             row.message,
+            row.status,
+            row.latestNote,
             row.studentAddress,
             row.studentState,
             row.studentAge,
@@ -960,15 +966,16 @@ export default function SchoolDashboard() {
       }
 
       const importedCount = data.importedCount ?? 0;
+      const updatedCount = data.updatedCount ?? 0;
       const failedCount = data.failedCount ?? 0;
-      if (importedCount > 0) {
+      if (importedCount > 0 || updatedCount > 0) {
         toast.success(
           failedCount > 0
-            ? `${importedCount} enquiries imported, ${failedCount} rows failed`
-            : `${importedCount} enquiries imported successfully`
+            ? `${importedCount} imported, ${updatedCount} updated, ${failedCount} rows failed`
+            : `${importedCount} imported, ${updatedCount} updated successfully`
         );
       } else {
-        toast.error('No enquiries were imported');
+        toast.error('No enquiries were imported or updated');
       }
 
       if (failedCount > 0 && Array.isArray(data.failedRows)) {
@@ -1034,6 +1041,8 @@ export default function SchoolDashboard() {
       'Student Email',
       'Student Phone',
       'Student Class',
+      'Status',
+      'Latest Note',
       'Message',
       'Student Address',
       'Student State',
@@ -1045,8 +1054,8 @@ export default function SchoolDashboard() {
 
     const sampleRows = [
       headers,
-      ['Aarav Sharma', 'aarav@example.com', '9876543210', '5th', 'Interested in admission', 'Pune', 'Maharashtra', '10', 'Male', 'Hot,Scholarship', 'Counsellor A'],
-      ['', '', '', '', '', '', '', '', '', '', ''],
+      ['Aarav Sharma', 'aarav@example.com', '9876543210', '5th', 'In Progress', 'Follow-up done', 'Interested in admission', 'Pune', 'Maharashtra', '10', 'Male', 'Hot,Scholarship', 'Counsellor A'],
+      ['', '', '9876543210', '', 'Lost', 'Not interested now', '', '', '', '', '', 'Rajiyawas', 'Counsellor A'],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(sampleRows);
@@ -1304,6 +1313,12 @@ export default function SchoolDashboard() {
     return notesHistory[notesHistory.length - 1].text;
   }
 
+  function getLatestNoteDate(notesValue: unknown): string {
+    const notesHistory = normalizeNotesHistory(notesValue);
+    if (notesHistory.length === 0) return '';
+    return notesHistory[notesHistory.length - 1].date;
+  }
+
   const renderEnquirySection = () => (
     <div className="space-y-6">
       <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
@@ -1443,6 +1458,7 @@ export default function SchoolDashboard() {
                         <TableHead className="font-semibold">Tags</TableHead>
                         <TableHead className="font-semibold">Lead Assigned</TableHead>
                         <TableHead className="font-semibold">Latest Note</TableHead>
+                        <TableHead className="font-semibold">Latest Note Date</TableHead>
                         <TableHead className="font-semibold">Date</TableHead>
                         <TableHead className="font-semibold">Actions</TableHead>
                       </TableRow>
@@ -1501,6 +1517,11 @@ export default function SchoolDashboard() {
                           ) : (
                             <span className="text-xs text-muted-foreground">â€”</span>
                           )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {getLatestNoteDate((enquiry as any).notes)
+                            ? new Date(getLatestNoteDate((enquiry as any).notes)).toLocaleDateString()
+                            : '—'}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(enquiry.createdAt).toLocaleDateString()}
