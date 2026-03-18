@@ -157,6 +157,9 @@ export default function SchoolDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [deletingEnquiryId, setDeletingEnquiryId] = useState<string | null>(null);
+  const [leadDashboardSort, setLeadDashboardSort] = useState<{ col: 'tag' | 'new' | 'inProgress' | 'converted' | 'lost' | 'total'; dir: 'asc' | 'desc' }>({ col: 'tag', dir: 'asc' });
+  const [leadAssignedSort, setLeadAssignedSort] = useState<{ col: 'lead' | 'new' | 'inProgress' | 'converted' | 'lost' | 'total'; dir: 'asc' | 'desc' }>({ col: 'lead', dir: 'asc' });
+  const [classSort, setClassSort] = useState<{ col: 'class' | 'new' | 'inProgress' | 'converted' | 'lost' | 'total'; dir: 'asc' | 'desc' }>({ col: 'class', dir: 'asc' });
 
   const normalizeEnquiryId = (value: any) => {
     if (value === null || value === undefined) return '';
@@ -2739,30 +2742,117 @@ export default function SchoolDashboard() {
           )}
 
           {activeSection === 'lead-dashboard' && (() => {
-            const allTags = Array.from(
+            // ── Tag Stats ──────────────────────────────────────────────
+            const allTagNames = Array.from(
               new Set(enquiries.flatMap(e => ((e as any).tags || []) as string[]))
             ).sort();
-            const tagStats = allTags.map(tag => {
-              const tagged = enquiries.filter(e => ((e as any).tags || []).includes(tag));
-              return {
-                tag,
-                new: tagged.filter(e => e.status === 'New').length,
-                inProgress: tagged.filter(e => e.status === 'In Progress').length,
-                converted: tagged.filter(e => e.status === 'Converted').length,
-                lost: tagged.filter(e => e.status === 'Lost').length,
-                total: tagged.length,
-              };
+            const untagged = enquiries.filter(e => ((e as any).tags || []).length === 0);
+            const tagStatsRaw = [
+              ...allTagNames.map(tag => {
+                const tagged = enquiries.filter(e => ((e as any).tags || []).includes(tag));
+                return { tag, new: tagged.filter(e => e.status === 'New').length, inProgress: tagged.filter(e => e.status === 'In Progress').length, converted: tagged.filter(e => e.status === 'Converted').length, lost: tagged.filter(e => e.status === 'Lost').length, total: tagged.length, isUnknown: false };
+              }),
+              ...(untagged.length > 0 ? [{ tag: 'Unknown', new: untagged.filter(e => e.status === 'New').length, inProgress: untagged.filter(e => e.status === 'In Progress').length, converted: untagged.filter(e => e.status === 'Converted').length, lost: untagged.filter(e => e.status === 'Lost').length, total: untagged.length, isUnknown: true }] : []),
+            ];
+            const tagTotal = { new: tagStatsRaw.reduce((s, r) => s + r.new, 0), inProgress: tagStatsRaw.reduce((s, r) => s + r.inProgress, 0), converted: tagStatsRaw.reduce((s, r) => s + r.converted, 0), lost: tagStatsRaw.reduce((s, r) => s + r.lost, 0), total: tagStatsRaw.reduce((s, r) => s + r.total, 0) };
+            const sortedTagStats = [...tagStatsRaw].sort((a, b) => {
+              if (a.isUnknown) return 1;
+              if (b.isUnknown) return -1;
+              const { col, dir } = leadDashboardSort;
+              const cmp = col === 'tag' ? a.tag.localeCompare(b.tag) : a[col] - b[col];
+              return dir === 'asc' ? cmp : -cmp;
             });
+            const handleTagSort = (col: typeof leadDashboardSort.col) => {
+              setLeadDashboardSort(prev => prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: col === 'tag' ? 'asc' : 'desc' });
+            };
+
+            // ── Lead Assigned Stats ─────────────────────────────────────
+            const allLeadNames = Array.from(
+              new Set(enquiries.map(e => ((e as any).leadAssigned || '').toString().trim()).filter(l => l !== ''))
+            ).sort();
+            const unassigned = enquiries.filter(e => !((e as any).leadAssigned || '').toString().trim());
+            const leadStatsRaw = [
+              ...allLeadNames.map(lead => {
+                const le = enquiries.filter(e => ((e as any).leadAssigned || '').toString().trim() === lead);
+                return { lead, new: le.filter(e => e.status === 'New').length, inProgress: le.filter(e => e.status === 'In Progress').length, converted: le.filter(e => e.status === 'Converted').length, lost: le.filter(e => e.status === 'Lost').length, total: le.length, isUnknown: false };
+              }),
+              ...(unassigned.length > 0 ? [{ lead: 'Unknown', new: unassigned.filter(e => e.status === 'New').length, inProgress: unassigned.filter(e => e.status === 'In Progress').length, converted: unassigned.filter(e => e.status === 'Converted').length, lost: unassigned.filter(e => e.status === 'Lost').length, total: unassigned.length, isUnknown: true }] : []),
+            ];
+            const leadTotal = { new: leadStatsRaw.reduce((s, r) => s + r.new, 0), inProgress: leadStatsRaw.reduce((s, r) => s + r.inProgress, 0), converted: leadStatsRaw.reduce((s, r) => s + r.converted, 0), lost: leadStatsRaw.reduce((s, r) => s + r.lost, 0), total: leadStatsRaw.reduce((s, r) => s + r.total, 0) };
+            const sortedLeadStats = [...leadStatsRaw].sort((a, b) => {
+              if (a.isUnknown) return 1;
+              if (b.isUnknown) return -1;
+              const { col, dir } = leadAssignedSort;
+              const cmp = col === 'lead' ? a.lead.localeCompare(b.lead) : a[col] - b[col];
+              return dir === 'asc' ? cmp : -cmp;
+            });
+            const handleLeadSort = (col: typeof leadAssignedSort.col) => {
+              setLeadAssignedSort(prev => prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: col === 'lead' ? 'asc' : 'desc' });
+            };
+
+            // ── Class Stats ─────────────────────────────────────────────
+            const CLASS_ORDER = ['Nursery','LKG','UKG','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
+            const allClassNames = Array.from(
+              new Set(enquiries.map(e => (e.studentClass || '').toString().trim()).filter(c => c !== ''))
+            ).sort((a, b) => {
+              const ai = CLASS_ORDER.indexOf(a), bi = CLASS_ORDER.indexOf(b);
+              if (ai !== -1 && bi !== -1) return ai - bi;
+              if (ai !== -1) return -1;
+              if (bi !== -1) return 1;
+              return a.localeCompare(b);
+            });
+            const noClass = enquiries.filter(e => !(e.studentClass || '').toString().trim());
+            const classStatsRaw = [
+              ...allClassNames.map(cls => {
+                const ce = enquiries.filter(e => (e.studentClass || '').toString().trim() === cls);
+                return { class: cls, new: ce.filter(e => e.status === 'New').length, inProgress: ce.filter(e => e.status === 'In Progress').length, converted: ce.filter(e => e.status === 'Converted').length, lost: ce.filter(e => e.status === 'Lost').length, total: ce.length, isUnknown: false };
+              }),
+              ...(noClass.length > 0 ? [{ class: 'Unknown', new: noClass.filter(e => e.status === 'New').length, inProgress: noClass.filter(e => e.status === 'In Progress').length, converted: noClass.filter(e => e.status === 'Converted').length, lost: noClass.filter(e => e.status === 'Lost').length, total: noClass.length, isUnknown: true }] : []),
+            ];
+            const classTotal = { new: classStatsRaw.reduce((s, r) => s + r.new, 0), inProgress: classStatsRaw.reduce((s, r) => s + r.inProgress, 0), converted: classStatsRaw.reduce((s, r) => s + r.converted, 0), lost: classStatsRaw.reduce((s, r) => s + r.lost, 0), total: classStatsRaw.reduce((s, r) => s + r.total, 0) };
+            const sortedClassStats = [...classStatsRaw].sort((a, b) => {
+              if (a.isUnknown) return 1;
+              if (b.isUnknown) return -1;
+              const { col, dir } = classSort;
+              let cmp = 0;
+              if (col === 'class') {
+                const ai = CLASS_ORDER.indexOf(a.class), bi = CLASS_ORDER.indexOf(b.class);
+                cmp = (ai !== -1 && bi !== -1) ? ai - bi : ai !== -1 ? -1 : bi !== -1 ? 1 : a.class.localeCompare(b.class);
+              } else {
+                cmp = a[col] - b[col];
+              }
+              return dir === 'asc' ? cmp : -cmp;
+            });
+            const handleClassSort = (col: typeof classSort.col) => {
+              setClassSort(prev => prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: col === 'class' ? 'asc' : 'desc' });
+            };
+
+            // ── Shared helpers ──────────────────────────────────────────
+            const SortIcon = ({ active, isAsc }: { active: boolean; isAsc: boolean }) => (
+              <span className={`ml-1 inline-flex flex-col leading-none text-[10px] ${active ? 'opacity-100' : 'opacity-30'}`}>
+                <span className={isAsc ? 'text-current' : 'opacity-40'}>▲</span>
+                <span className={!isAsc ? 'text-current' : 'opacity-40'}>▼</span>
+              </span>
+            );
+
+            const numCell = (val: number, bg: string, text: string) => val > 0
+              ? <span className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full ${bg} ${text} font-semibold text-sm`}>{val}</span>
+              : <span className="text-gray-300 text-sm">—</span>;
+
+            const totalNumCell = (val: number, bg: string, text: string) => (
+              <span className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full ${bg} ${text} font-bold text-sm`}>{val}</span>
+            );
+
             return (
-              <div className="space-y-6">
-                <div className="mb-6">
+              <div className="space-y-8">
+                <div className="mb-2">
                   <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
                     Lead Dashboard
                   </h2>
-                  <p className="text-muted-foreground text-lg">
-                    Enquiry counts by tag across all statuses
-                  </p>
+                  <p className="text-muted-foreground text-lg">Enquiry counts across all statuses</p>
                 </div>
+
+                {/* ── Tag-wise Table ── */}
                 <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3">
@@ -2773,12 +2863,12 @@ export default function SchoolDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {tagStats.length === 0 ? (
+                    {tagStatsRaw.length === 0 ? (
                       <div className="text-center py-16 text-muted-foreground">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
                           <Tag className="opacity-40" size={40} />
                         </div>
-                        <p className="text-lg font-medium">No tags found</p>
+                        <p className="text-lg font-medium">No data yet</p>
                         <p className="text-sm mt-1">Add tags to your enquiries to see data here.</p>
                       </div>
                     ) : (
@@ -2786,66 +2876,209 @@ export default function SchoolDashboard() {
                         <Table>
                           <TableHeader>
                             <TableRow className="border-b border-gray-200">
-                              <TableHead className="font-semibold text-gray-700">Tag</TableHead>
-                              <TableHead className="text-center font-semibold text-purple-600">New</TableHead>
-                              <TableHead className="text-center font-semibold text-yellow-600">In Progress</TableHead>
-                              <TableHead className="text-center font-semibold text-green-600">Converted</TableHead>
-                              <TableHead className="text-center font-semibold text-red-600">Lost</TableHead>
-                              <TableHead className="text-center font-semibold text-cyan-600">Total</TableHead>
+                              <TableHead className="font-semibold text-gray-700 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleTagSort('tag')}>
+                                Tag <SortIcon active={leadDashboardSort.col === 'tag'} isAsc={leadDashboardSort.col === 'tag' && leadDashboardSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-purple-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleTagSort('new')}>
+                                New <SortIcon active={leadDashboardSort.col === 'new'} isAsc={leadDashboardSort.col === 'new' && leadDashboardSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-yellow-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleTagSort('inProgress')}>
+                                In Progress <SortIcon active={leadDashboardSort.col === 'inProgress'} isAsc={leadDashboardSort.col === 'inProgress' && leadDashboardSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-green-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleTagSort('converted')}>
+                                Converted <SortIcon active={leadDashboardSort.col === 'converted'} isAsc={leadDashboardSort.col === 'converted' && leadDashboardSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-red-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleTagSort('lost')}>
+                                Lost <SortIcon active={leadDashboardSort.col === 'lost'} isAsc={leadDashboardSort.col === 'lost' && leadDashboardSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-cyan-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleTagSort('total')}>
+                                Total <SortIcon active={leadDashboardSort.col === 'total'} isAsc={leadDashboardSort.col === 'total' && leadDashboardSort.dir === 'asc'} />
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {tagStats.map(row => (
+                            {sortedTagStats.map(row => (
                               <TableRow key={row.tag} className="hover:bg-gray-50/80 transition-colors">
                                 <TableCell>
-                                  <Badge variant="secondary" className="font-medium">
+                                  <Badge variant={row.isUnknown ? 'outline' : 'secondary'} className={`font-medium ${row.isUnknown ? 'border-gray-300 text-gray-400 italic' : ''}`}>
                                     {row.tag}
                                   </Badge>
                                 </TableCell>
+                                <TableCell className="text-center">{numCell(row.new, 'bg-purple-100', 'text-purple-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.inProgress, 'bg-yellow-100', 'text-yellow-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.converted, 'bg-green-100', 'text-green-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.lost, 'bg-red-100', 'text-red-700')}</TableCell>
                                 <TableCell className="text-center">
-                                  {row.new > 0 ? (
-                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold text-sm">
-                                      {row.new}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-300 text-sm">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {row.inProgress > 0 ? (
-                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-                                      {row.inProgress}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-300 text-sm">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {row.converted > 0 ? (
-                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
-                                      {row.converted}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-300 text-sm">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {row.lost > 0 ? (
-                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
-                                      {row.lost}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-300 text-sm">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">
-                                    {row.total}
-                                  </span>
+                                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{row.total}</span>
                                 </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
+                          <tfoot>
+                            <TableRow className="bg-gray-50/80 border-t-2 border-gray-200 font-bold">
+                              <TableCell className="font-bold text-gray-800">Total</TableCell>
+                              <TableCell className="text-center">{totalNumCell(tagTotal.new, 'bg-purple-200', 'text-purple-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(tagTotal.inProgress, 'bg-yellow-200', 'text-yellow-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(tagTotal.converted, 'bg-green-200', 'text-green-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(tagTotal.lost, 'bg-red-200', 'text-red-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(tagTotal.total, 'bg-cyan-200', 'text-cyan-800')}</TableCell>
+                            </TableRow>
+                          </tfoot>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* ── Lead Assigned Table ── */}
+                <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                        <Users className="text-white" size={20} />
+                      </div>
+                      Lead Assigned Enquiry Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {leadStatsRaw.length === 0 ? (
+                      <div className="text-center py-16 text-muted-foreground">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
+                          <Users className="opacity-40" size={40} />
+                        </div>
+                        <p className="text-lg font-medium">No data yet</p>
+                        <p className="text-sm mt-1">Assign leads to your enquiries to see data here.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-b border-gray-200">
+                              <TableHead className="font-semibold text-gray-700 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleLeadSort('lead')}>
+                                Lead Assigned <SortIcon active={leadAssignedSort.col === 'lead'} isAsc={leadAssignedSort.col === 'lead' && leadAssignedSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-purple-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleLeadSort('new')}>
+                                New <SortIcon active={leadAssignedSort.col === 'new'} isAsc={leadAssignedSort.col === 'new' && leadAssignedSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-yellow-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleLeadSort('inProgress')}>
+                                In Progress <SortIcon active={leadAssignedSort.col === 'inProgress'} isAsc={leadAssignedSort.col === 'inProgress' && leadAssignedSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-green-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleLeadSort('converted')}>
+                                Converted <SortIcon active={leadAssignedSort.col === 'converted'} isAsc={leadAssignedSort.col === 'converted' && leadAssignedSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-red-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleLeadSort('lost')}>
+                                Lost <SortIcon active={leadAssignedSort.col === 'lost'} isAsc={leadAssignedSort.col === 'lost' && leadAssignedSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-cyan-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleLeadSort('total')}>
+                                Total <SortIcon active={leadAssignedSort.col === 'total'} isAsc={leadAssignedSort.col === 'total' && leadAssignedSort.dir === 'asc'} />
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sortedLeadStats.map(row => (
+                              <TableRow key={row.lead} className="hover:bg-gray-50/80 transition-colors">
+                                <TableCell>
+                                  <Badge variant={row.isUnknown ? 'outline' : 'secondary'} className={`font-medium ${row.isUnknown ? 'border-gray-300 text-gray-400 italic' : ''}`}>
+                                    {row.lead}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">{numCell(row.new, 'bg-purple-100', 'text-purple-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.inProgress, 'bg-yellow-100', 'text-yellow-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.converted, 'bg-green-100', 'text-green-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.lost, 'bg-red-100', 'text-red-700')}</TableCell>
+                                <TableCell className="text-center">
+                                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{row.total}</span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                          <tfoot>
+                            <TableRow className="bg-gray-50/80 border-t-2 border-gray-200 font-bold">
+                              <TableCell className="font-bold text-gray-800">Total</TableCell>
+                              <TableCell className="text-center">{totalNumCell(leadTotal.new, 'bg-purple-200', 'text-purple-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(leadTotal.inProgress, 'bg-yellow-200', 'text-yellow-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(leadTotal.converted, 'bg-green-200', 'text-green-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(leadTotal.lost, 'bg-red-200', 'text-red-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(leadTotal.total, 'bg-cyan-200', 'text-cyan-800')}</TableCell>
+                            </TableRow>
+                          </tfoot>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                {/* ── Class-wise Table ── */}
+                <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                        <GraduationCap className="text-white" size={20} />
+                      </div>
+                      Class-wise Enquiry Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {classStatsRaw.length === 0 ? (
+                      <div className="text-center py-16 text-muted-foreground">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
+                          <GraduationCap className="opacity-40" size={40} />
+                        </div>
+                        <p className="text-lg font-medium">No data yet</p>
+                        <p className="text-sm mt-1">Enquiries with a class assigned will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-b border-gray-200">
+                              <TableHead className="font-semibold text-gray-700 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleClassSort('class')}>
+                                Class <SortIcon active={classSort.col === 'class'} isAsc={classSort.col === 'class' && classSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-purple-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleClassSort('new')}>
+                                New <SortIcon active={classSort.col === 'new'} isAsc={classSort.col === 'new' && classSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-yellow-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleClassSort('inProgress')}>
+                                In Progress <SortIcon active={classSort.col === 'inProgress'} isAsc={classSort.col === 'inProgress' && classSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-green-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleClassSort('converted')}>
+                                Converted <SortIcon active={classSort.col === 'converted'} isAsc={classSort.col === 'converted' && classSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-red-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleClassSort('lost')}>
+                                Lost <SortIcon active={classSort.col === 'lost'} isAsc={classSort.col === 'lost' && classSort.dir === 'asc'} />
+                              </TableHead>
+                              <TableHead className="text-center font-semibold text-cyan-600 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => handleClassSort('total')}>
+                                Total <SortIcon active={classSort.col === 'total'} isAsc={classSort.col === 'total' && classSort.dir === 'asc'} />
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sortedClassStats.map(row => (
+                              <TableRow key={row.class} className="hover:bg-gray-50/80 transition-colors">
+                                <TableCell>
+                                  <Badge variant={row.isUnknown ? 'outline' : 'secondary'} className={`font-medium ${row.isUnknown ? 'border-gray-300 text-gray-400 italic' : 'bg-teal-50 text-teal-700 border-teal-200'}`}>
+                                    {row.class}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">{numCell(row.new, 'bg-purple-100', 'text-purple-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.inProgress, 'bg-yellow-100', 'text-yellow-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.converted, 'bg-green-100', 'text-green-700')}</TableCell>
+                                <TableCell className="text-center">{numCell(row.lost, 'bg-red-100', 'text-red-700')}</TableCell>
+                                <TableCell className="text-center">
+                                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{row.total}</span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                          <tfoot>
+                            <TableRow className="bg-gray-50/80 border-t-2 border-gray-200 font-bold">
+                              <TableCell className="font-bold text-gray-800">Total</TableCell>
+                              <TableCell className="text-center">{totalNumCell(classTotal.new, 'bg-purple-200', 'text-purple-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(classTotal.inProgress, 'bg-yellow-200', 'text-yellow-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(classTotal.converted, 'bg-green-200', 'text-green-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(classTotal.lost, 'bg-red-200', 'text-red-800')}</TableCell>
+                              <TableCell className="text-center">{totalNumCell(classTotal.total, 'bg-cyan-200', 'text-cyan-800')}</TableCell>
+                            </TableRow>
+                          </tfoot>
                         </Table>
                       </div>
                     )}
@@ -3136,7 +3369,7 @@ export default function SchoolDashboard() {
           )}
 
           {/* Other sections - Coming Soon */}
-          {!['dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page'].includes(activeSection) && (
+          {!['dashboard', 'lead-dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page'].includes(activeSection) && (
             <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="p-16">
                 <div className="text-center text-muted-foreground">
