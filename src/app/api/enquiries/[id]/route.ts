@@ -141,7 +141,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { status, notes, message, followUpDate, studentAddress, studentState, studentAge, studentGender, tags, leadAssigned } = body;
+    const { status, notes, message, followUpDate, studentAddress, studentState, studentAge, studentGender, tags, leadAssigned, studentName, studentEmail, studentPhone, studentClass } = body;
 
     if (status !== undefined) {
       if (!VALID_STATUSES.includes(status)) {
@@ -220,6 +220,25 @@ export async function PUT(
 
     if (leadAssigned !== undefined) {
       updateData.leadAssigned = leadAssigned;
+    }
+
+    if (studentName !== undefined) {
+      const trimmed = typeof studentName === 'string' ? studentName.trim() : '';
+      if (trimmed) updateData.studentName = trimmed;
+    }
+
+    if (studentEmail !== undefined) {
+      const trimmed = typeof studentEmail === 'string' ? studentEmail.trim().toLowerCase() : '';
+      updateData.studentEmail = trimmed || null;
+    }
+
+    if (studentPhone !== undefined) {
+      const trimmed = typeof studentPhone === 'string' ? studentPhone.trim() : '';
+      updateData.studentPhone = trimmed || null;
+    }
+
+    if (studentClass !== undefined) {
+      updateData.studentClass = typeof studentClass === 'string' ? studentClass.trim() : '';
     }
 
     const updated = await Enquiry.findByIdAndUpdate(

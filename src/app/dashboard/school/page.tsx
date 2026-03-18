@@ -666,7 +666,10 @@ export default function SchoolDashboard() {
 
   const handleDeleteEnquiry = async (enquiry: Enquiry) => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      toast.error('Session expired. Please log in again.');
+      return;
+    }
 
     const enquiryId = normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id);
     if (!enquiryId) {
