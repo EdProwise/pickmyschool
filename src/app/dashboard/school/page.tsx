@@ -60,6 +60,7 @@ import { WhatsappAPISection } from './WhatsappAPISection';
 
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'lead-dashboard', label: 'Lead Dashboard', icon: Tag },
   { id: 'enquiry', label: 'Enquiry List', icon: MessageSquare },
   { id: 'whatsapp-api', label: 'Whatsapp API', icon: MessageSquare },
   { id: 'enquiry-settings', label: 'Enquiry Form Settings', icon: ClipboardList },
@@ -2736,6 +2737,123 @@ export default function SchoolDashboard() {
               </Card>
             </div>
           )}
+
+          {activeSection === 'lead-dashboard' && (() => {
+            const allTags = Array.from(
+              new Set(enquiries.flatMap(e => ((e as any).tags || []) as string[]))
+            ).sort();
+            const tagStats = allTags.map(tag => {
+              const tagged = enquiries.filter(e => ((e as any).tags || []).includes(tag));
+              return {
+                tag,
+                new: tagged.filter(e => e.status === 'New').length,
+                inProgress: tagged.filter(e => e.status === 'In Progress').length,
+                converted: tagged.filter(e => e.status === 'Converted').length,
+                lost: tagged.filter(e => e.status === 'Lost').length,
+                total: tagged.length,
+              };
+            });
+            return (
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                    Lead Dashboard
+                  </h2>
+                  <p className="text-muted-foreground text-lg">
+                    Enquiry counts by tag across all statuses
+                  </p>
+                </div>
+                <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <Tag className="text-white" size={20} />
+                      </div>
+                      Tag-wise Enquiry Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {tagStats.length === 0 ? (
+                      <div className="text-center py-16 text-muted-foreground">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
+                          <Tag className="opacity-40" size={40} />
+                        </div>
+                        <p className="text-lg font-medium">No tags found</p>
+                        <p className="text-sm mt-1">Add tags to your enquiries to see data here.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-b border-gray-200">
+                              <TableHead className="font-semibold text-gray-700">Tag</TableHead>
+                              <TableHead className="text-center font-semibold text-purple-600">New</TableHead>
+                              <TableHead className="text-center font-semibold text-yellow-600">In Progress</TableHead>
+                              <TableHead className="text-center font-semibold text-green-600">Converted</TableHead>
+                              <TableHead className="text-center font-semibold text-red-600">Lost</TableHead>
+                              <TableHead className="text-center font-semibold text-cyan-600">Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tagStats.map(row => (
+                              <TableRow key={row.tag} className="hover:bg-gray-50/80 transition-colors">
+                                <TableCell>
+                                  <Badge variant="secondary" className="font-medium">
+                                    {row.tag}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {row.new > 0 ? (
+                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold text-sm">
+                                      {row.new}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300 text-sm">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {row.inProgress > 0 ? (
+                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
+                                      {row.inProgress}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300 text-sm">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {row.converted > 0 ? (
+                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                                      {row.converted}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300 text-sm">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {row.lost > 0 ? (
+                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+                                      {row.lost}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300 text-sm">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">
+                                    {row.total}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
 
           {activeSection === 'enquiry' && renderEnquirySection()}
           
