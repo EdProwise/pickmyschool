@@ -157,6 +157,14 @@ export default function SchoolDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [deletingEnquiryId, setDeletingEnquiryId] = useState<string | null>(null);
+
+  // Edit fields modal state
+  const [editFieldsEnquiry, setEditFieldsEnquiry] = useState<Enquiry | null>(null);
+  const [editFieldsName, setEditFieldsName] = useState('');
+  const [editFieldsEmail, setEditFieldsEmail] = useState('');
+  const [editFieldsPhone, setEditFieldsPhone] = useState('');
+  const [editFieldsClass, setEditFieldsClass] = useState('');
+  const [savingFields, setSavingFields] = useState(false);
   const [leadDashboardSort, setLeadDashboardSort] = useState<{ col: 'tag' | 'new' | 'inProgress' | 'converted' | 'lost' | 'total'; dir: 'asc' | 'desc' }>({ col: 'tag', dir: 'asc' });
   const [leadAssignedSort, setLeadAssignedSort] = useState<{ col: 'lead' | 'new' | 'inProgress' | 'converted' | 'lost' | 'total'; dir: 'asc' | 'desc' }>({ col: 'lead', dir: 'asc' });
   const [classSort, setClassSort] = useState<{ col: 'class' | 'new' | 'inProgress' | 'converted' | 'lost' | 'total'; dir: 'asc' | 'desc' }>({ col: 'class', dir: 'asc' });
@@ -706,6 +714,41 @@ export default function SchoolDashboard() {
       toast.error(error?.message || 'Failed to delete enquiry');
     } finally {
       setDeletingEnquiryId(null);
+    }
+  };
+
+  const handleSaveFields = async () => {
+    if (!editFieldsEnquiry) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    if (!editFieldsName.trim()) {
+      toast.error('Student name is required');
+      return;
+    }
+    setSavingFields(true);
+    try {
+      const response = await fetch(`/api/enquiries/${editFieldsEnquiry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          studentName: editFieldsName.trim(),
+          studentEmail: editFieldsEmail.trim(),
+          studentPhone: editFieldsPhone.trim(),
+          studentClass: editFieldsClass,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save enquiry fields');
+      const data = await response.json();
+      if (data?.enquiry) {
+        mergeUpdatedEnquiry(data.enquiry);
+      }
+      toast.success('Enquiry updated successfully');
+      setEditFieldsEnquiry(null);
+      void refreshEnquiriesSilently();
+    } catch {
+      toast.error('Failed to save enquiry fields');
+    } finally {
+      setSavingFields(false);
     }
   };
 
@@ -1605,6 +1648,19 @@ export default function SchoolDashboard() {
                                     Add Additional Data
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
+                                    onClick={() => {
+                                      setEditFieldsEnquiry(enquiry);
+                                      setEditFieldsName(enquiry.studentName || '');
+                                      setEditFieldsEmail(enquiry.studentEmail || '');
+                                      setEditFieldsPhone(enquiry.studentPhone || '');
+                                      setEditFieldsClass(enquiry.studentClass || '');
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <Pencil className="mr-2" size={14} />
+                                    Edit Enquiry
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
                                     onClick={() => void handleDeleteEnquiry(enquiry)}
                                     disabled={deletingEnquiryId === normalizeEnquiryId((enquiry as any).id ?? (enquiry as any)._id)}
                                     className="cursor-pointer text-red-600 focus:text-red-600"
@@ -2261,6 +2317,95 @@ export default function SchoolDashboard() {
                     Save Lead Assigned
                   </Button>
                   <Button variant="outline" onClick={() => setLeadEnquiry(null)} className="border-2 flex-1">
+                    <XCircle className="mr-2" size={18} />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Enquiry Fields Modal */}
+          <Dialog open={!!editFieldsEnquiry} onOpenChange={(open) => !open && setEditFieldsEnquiry(null)}>
+            <DialogContent className="max-w-lg bg-white max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <Pencil className="text-white" size={20} />
+                  </div>
+                  Edit Enquiry — {editFieldsEnquiry?.studentName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editName" className="text-sm font-semibold">
+                    Student Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="editName"
+                    value={editFieldsName}
+                    onChange={(e) => setEditFieldsName(e.target.value)}
+                    placeholder="Enter student name"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editEmail" className="text-sm font-semibold">Email</Label>
+                  <Input
+                    id="editEmail"
+                    type="email"
+                    value={editFieldsEmail}
+                    onChange={(e) => setEditFieldsEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editPhone" className="text-sm font-semibold">Phone Number</Label>
+                  <Input
+                    id="editPhone"
+                    type="tel"
+                    value={editFieldsPhone}
+                    onChange={(e) => setEditFieldsPhone(e.target.value)}
+                    placeholder="Enter phone number"
+                    className="bg-white/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editClass" className="text-sm font-semibold">Class</Label>
+                  <Select value={editFieldsClass} onValueChange={setEditFieldsClass}>
+                    <SelectTrigger className="bg-white/50">
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Nursery">Nursery</SelectItem>
+                      <SelectItem value="LKG">LKG</SelectItem>
+                      <SelectItem value="UKG">UKG</SelectItem>
+                      <SelectItem value="1st">1st</SelectItem>
+                      <SelectItem value="2nd">2nd</SelectItem>
+                      <SelectItem value="3rd">3rd</SelectItem>
+                      <SelectItem value="4th">4th</SelectItem>
+                      <SelectItem value="5th">5th</SelectItem>
+                      <SelectItem value="6th">6th</SelectItem>
+                      <SelectItem value="7th">7th</SelectItem>
+                      <SelectItem value="8th">8th</SelectItem>
+                      <SelectItem value="9th">9th</SelectItem>
+                      <SelectItem value="10th">10th</SelectItem>
+                      <SelectItem value="11th">11th</SelectItem>
+                      <SelectItem value="12th">12th</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={handleSaveFields}
+                    disabled={savingFields}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg flex-1"
+                  >
+                    {savingFields ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" /> : <CheckCircle2 className="mr-2" size={18} />}
+                    Save Changes
+                  </Button>
+                  <Button variant="outline" onClick={() => setEditFieldsEnquiry(null)} className="border-2 flex-1">
                     <XCircle className="mr-2" size={18} />
                     Cancel
                   </Button>
