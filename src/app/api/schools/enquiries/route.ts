@@ -232,6 +232,7 @@ export async function POST(request: NextRequest) {
       const tagsProvided = record.tags !== undefined && record.tags !== null && normalizeField(record.tags) !== '';
       const leadAssignedProvided = normalizedLeadAssigned !== '';
       const latestNoteProvided = normalizedLatestNote !== '';
+      const studentClassProvided = normalizedClass !== '';
 
       if (!shouldAllowBlank) {
         if (!normalizedName || !normalizedEmail || !normalizedPhone || !normalizedClass) {
@@ -259,6 +260,7 @@ export async function POST(request: NextRequest) {
         tagsProvided,
         leadAssignedProvided,
         latestNoteProvided,
+        studentClassProvided,
         latestNote: normalizedLatestNote,
         notes: normalizedLatestNote
           ? JSON.stringify([{ date: new Date().toISOString(), text: normalizedLatestNote }])
@@ -302,7 +304,8 @@ export async function POST(request: NextRequest) {
             payload.statusProvided ||
             payload.latestNoteProvided ||
             payload.leadAssignedProvided ||
-            payload.tagsProvided
+            payload.tagsProvided ||
+            payload.studentClassProvided
           );
 
           const canMatchByPhone = Boolean(payload.studentPhone);
@@ -314,6 +317,7 @@ export async function POST(request: NextRequest) {
                 if (payload.statusProvided) updateData.status = payload.status;
                 if (payload.tagsProvided) updateData.tags = payload.tags;
                 if (payload.leadAssignedProvided) updateData.leadAssigned = payload.leadAssigned;
+                if (payload.studentClassProvided) updateData.studentClass = payload.studentClass;
 
                 if (payload.latestNoteProvided) {
                   const notesHistory = normalizeNotesHistory((existing as any).notes, (existing as any).createdAt || new Date());

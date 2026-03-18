@@ -1102,7 +1102,8 @@ export default function SchoolDashboard() {
     const sampleRows = [
       headers,
       ['Aarav Sharma', 'aarav@example.com', '9876543210', '5th', 'In Progress', 'Follow-up done', 'Interested in admission', 'Pune', 'Maharashtra', '10', 'Male', 'Hot,Scholarship', 'Counsellor A'],
-      ['', '', '9876543210', '', 'Lost', 'Not interested now', '', '', '', '', '', 'Rajiyawas', 'Counsellor A'],
+      ['', '', '9876543210', '', 'Lost', 'Not interested now', '', '', '', '', '', '', 'Counsellor A'],
+      ['', '', '9123456789', '6th', '', '', '', '', '', '', '', '', ''],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(sampleRows);
