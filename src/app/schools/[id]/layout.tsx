@@ -28,6 +28,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     if (!school) {
+      const numericId = parseInt(id);
+      if (!isNaN(numericId)) {
+        school = await db.collection("schools").findOne({ id: numericId });
+      }
+    }
+
+    if (!school) {
       return {
         title: "School Not Found",
         description: "The requested school could not be found.",

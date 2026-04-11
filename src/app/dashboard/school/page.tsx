@@ -466,7 +466,10 @@ export default function SchoolDashboard() {
 
   const handleUpdateEnquiry = async (enquiryId: string | number) => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      toast.error('Session expired. Please log in again.');
+      return;
+    }
     const normalizedId = normalizeEnquiryId(enquiryId);
 
     const previousEnquiry = enquiries.find(
@@ -1596,7 +1599,7 @@ export default function SchoolDashboard() {
                                     onClick={() => {
                                       setSelectedEnquiry(enquiry);
                                       setEnquiryStatus(enquiry.status);
-                                      setEnquiryNotes(getLatestNoteText((enquiry as any).notes));
+                                      setEnquiryNotes('');
                                       setEnquiryMessage(enquiry.message || '');
                                     }}
                                     className="cursor-pointer"
