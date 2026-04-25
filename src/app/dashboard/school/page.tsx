@@ -1513,6 +1513,8 @@ export default function SchoolDashboard() {
                         <TableHead className="font-semibold">Email</TableHead>
                         <TableHead className="font-semibold">Phone</TableHead>
                         <TableHead className="font-semibold">Class</TableHead>
+                        <TableHead className="font-semibold">Parent Name</TableHead>
+                        <TableHead className="font-semibold">City</TableHead>
                         <TableHead className="font-semibold">Status</TableHead>
                         <TableHead className="font-semibold">Tags</TableHead>
                         <TableHead className="font-semibold">Lead Assigned</TableHead>
@@ -1544,6 +1546,12 @@ export default function SchoolDashboard() {
                           <Badge variant="outline" className="border-cyan-200 text-cyan-700 bg-cyan-50">
                             {enquiry.studentClass || '—'}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {(enquiry as any).parentName || '—'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {(enquiry as any).studentCity || '—'}
                         </TableCell>
                           <TableCell>
                             <Badge className={`${getStatusColor(enquiry.status)} text-white border-0 shadow-sm`}>
