@@ -1,5 +1,22 @@
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { INDIAN_STATES } from '@/lib/indian-states';
+import { INDIAN_CITIES } from '@/lib/indian-cities';
+
+function cityNameToSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// Top cities to feature in footer (major metros + popular cities)
+const FEATURED_CITIES = [
+  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad",
+  "Jaipur", "Lucknow", "Surat", "Kanpur", "Nagpur", "Indore", "Bhopal", "Patna",
+  "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot",
+  "Varanasi", "Amritsar", "Allahabad", "Ranchi", "Coimbatore", "Gwalior",
+  "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", "Chandigarh", "Noida",
+  "Bhubaneswar", "Dehradun", "Kochi", "Mysore", "Gurgaon", "Jalandhar",
+  "Vijayawada", "Visakhapatnam", "Aurangabad", "Dhanbad", "Navi Mumbai", "New Delhi", "Thane"
+];
 
 export default function Footer() {
   return (
@@ -105,7 +122,7 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
-              
+
               <li>
                 <Link href="/faq" className="text-gray-400 hover:text-[#04d3d3] transition-colors">
                   FAQ
@@ -141,6 +158,78 @@ export default function Footer() {
                 <span>info@edprowise.com</span>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Top Schools by State */}
+        <div className="border-t border-gray-800 mt-10 pt-8">
+          <h3 className="text-base font-semibold text-gray-300 mb-4">Top Schools by State</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2">
+            {INDIAN_STATES.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/schools/state/${s.slug}`}
+                className="text-gray-400 hover:text-[#04d3d3] transition-colors text-sm truncate"
+              >
+                Top Schools in {s.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Schools by City */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <h3 className="text-base font-semibold text-gray-300 mb-4">Top Schools by City</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2">
+            {FEATURED_CITIES.map((city) => (
+              <Link
+                key={city}
+                href={`/schools/city/${cityNameToSlug(city)}`}
+                className="text-gray-400 hover:text-[#04d3d3] transition-colors text-sm truncate"
+              >
+                Top Schools in {city}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-3">
+            <Link
+              href="/schools"
+              className="text-[#04d3d3] hover:underline text-sm font-medium"
+            >
+              View all cities →
+            </Link>
+          </div>
+        </div>
+
+        {/* Top School in State (singular - SEO) */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <h3 className="text-base font-semibold text-gray-300 mb-4">Top School in State</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2">
+            {INDIAN_STATES.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/schools/state/${s.slug}`}
+                className="text-gray-400 hover:text-[#04d3d3] transition-colors text-sm truncate"
+              >
+                Top School in {s.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Top School in City (singular - SEO) */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <h3 className="text-base font-semibold text-gray-300 mb-4">Top School in City</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2">
+            {FEATURED_CITIES.map((city) => (
+              <Link
+                key={city}
+                href={`/schools/city/${cityNameToSlug(city)}`}
+                className="text-gray-400 hover:text-[#04d3d3] transition-colors text-sm truncate"
+              >
+                Top School in {city}
+              </Link>
+            ))}
           </div>
         </div>
 

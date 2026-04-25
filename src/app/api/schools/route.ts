@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     const city = searchParams.get('city');
+    const state = searchParams.get('state');
     const board = searchParams.get('board');
     const feesMinParam = searchParams.get('feesMin');
     const feesMaxParam = searchParams.get('feesMax');
@@ -116,6 +117,7 @@ export async function GET(request: NextRequest) {
     
     const results = await getAllSchools({
       city: city ? (city.includes(',') ? city.split(',').map(c => c.trim()) : city) : undefined,
+      state: state || undefined,
       board: (board && board !== 'all') ? board : undefined,
       featured: featuredParam === 'true' ? true : undefined,
       isPublic: true,

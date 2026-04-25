@@ -76,6 +76,7 @@ export async function getSchool(id: number) {
 
 export async function getAllSchools(filters?: {
   city?: string | string[];
+  state?: string;
   board?: string;
   featured?: boolean;
   isPublic?: boolean;
@@ -84,9 +85,9 @@ export async function getAllSchools(filters?: {
   offset?: number;
 }) {
   await connectToDatabase();
-  
+
   const query: any = {};
-  
+
   if (filters?.city) {
     if (Array.isArray(filters.city)) {
       if (filters.city.length > 0) {
@@ -95,6 +96,10 @@ export async function getAllSchools(filters?: {
     } else {
       query.city = filters.city;
     }
+  }
+
+  if (filters?.state) {
+    query.state = { $regex: new RegExp(`^${filters.state}$`, 'i') };
   }
   
   if (filters?.board) {
