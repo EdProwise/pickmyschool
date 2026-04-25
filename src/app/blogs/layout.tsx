@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Blog - Education Insights & School Guides | PickMySchool',
   description:
-    'Explore expert articles on school admissions, education tips, career guidance, and school life. Stay informed with PickMySchool's blog for parents and students in India.',
+    "Explore expert articles on school admissions, education tips, career guidance, and school life. Stay informed with PickMySchool's blog for parents and students in India.",
   keywords: [
     'school blog India',
     'school admission tips',

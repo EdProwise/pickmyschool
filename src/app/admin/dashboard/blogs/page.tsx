@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,11 +16,21 @@ import {
   Plus, Search, Edit3, Trash2, Eye, RefreshCw, X, Save, ArrowLeft,
   FileText, Globe, Star, Clock, BarChart2, Tag, Image, BookOpen,
   Bold, Italic, Underline, List, ListOrdered, Link2, AlignLeft,
-  AlignCenter, AlignRight, Code, Quote, Heading2, Heading3, ExternalLink,
+  AlignCenter, AlignRight, AlignJustify, Code, Quote, Heading2, Heading3, ExternalLink,
+  Upload, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CATEGORIES = ['Admissions', 'School Life', 'Education Tips', 'Career Guidance', 'News & Updates', 'Technology in Education', 'General'];
+const FONT_FAMILIES = ['Arial', 'Georgia', 'Times New Roman', 'Verdana', 'Tahoma', 'Courier New'];
+const FONT_SIZES = [
+  { label: '12px', value: '2' },
+  { label: '14px', value: '3' },
+  { label: '16px', value: '4' },
+  { label: '18px', value: '5' },
+  { label: '24px', value: '6' },
+  { label: '32px', value: '7' },
+];
 
 interface Blog {
   _id: string;
@@ -54,6 +64,8 @@ const emptyForm = (): Partial<Blog> => ({
 export default function AdminBlogsPage() {
   const router = useRouter();
   const editorRef = useRef<HTMLDivElement>(null);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+  const inlineImageInputRef = useRef<HTMLInputElement>(null);
 
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [total, setTotal] = useState(0);
@@ -68,6 +80,11 @@ export default function AdminBlogsPage() {
   const [keywordInput, setKeywordInput] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
+  const [uploadingInlineImage, setUploadingInlineImage] = useState(false);
+  const [selectedFontFamily, setSelectedFontFamily] = useState('Arial');
+  const [selectedFontSize, setSelectedFontSize] = useState('4');
+  const [selectedFontColor, setSelectedFontColor] = useState('#0f172a');
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -94,6 +111,7 @@ export default function AdminBlogsPage() {
 
   // ── Editor helpers ──────────────────────────────────────────────────────────
   const execCmd = (command: string, value?: string) => {
+    document.execCommand('styleWithCSS', false, 'true');
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     syncContent();
@@ -116,6 +134,59 @@ export default function AdminBlogsPage() {
     { icon: Italic, cmd: 'italic', title: 'Italic' },
     { icon: Underline, cmd: 'underline', title: 'Underline' },
   ];
+
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/admin/blogs/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || 'Upload failed');
+    }
+
+    const data = await res.json();
+    return data.url as string;
+  };
+
+  const handleCoverImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCoverImage(true);
+    try {
+      const imageUrl = await uploadImage(file);
+      setForm(prev => ({ ...prev, coverImage: imageUrl }));
+      toast.success('Cover image uploaded');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setUploadingCoverImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleInlineImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingInlineImage(true);
+    try {
+      const imageUrl = await uploadImage(file);
+      insertHTML(`<img src="${imageUrl}" alt="" class="w-full rounded-xl my-4" />`);
+      toast.success('Image inserted');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setUploadingInlineImage(false);
+      event.target.value = '';
+    }
+  };
 
   // ── Slug generation ─────────────────────────────────────────────────────────
   const generateSlug = (title: string) =>
@@ -304,6 +375,47 @@ export default function AdminBlogsPage() {
                 <CardContent className="p-0 overflow-hidden">
                   <div className="border-b border-slate-100 px-4 py-2 flex flex-wrap gap-1 bg-slate-50/80">
                     {/* Formatting toolbar */}
+                    <select
+                      value={selectedFontFamily}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setSelectedFontFamily(value);
+                        execCmd('fontName', value);
+                      }}
+                      className="h-8 min-w-28 rounded border border-slate-300 bg-white px-2 text-xs text-slate-700"
+                      title="Font family"
+                    >
+                      {FONT_FAMILIES.map(font => (
+                        <option key={font} value={font}>{font}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedFontSize}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setSelectedFontSize(value);
+                        execCmd('fontSize', value);
+                      }}
+                      className="h-8 min-w-20 rounded border border-slate-300 bg-white px-2 text-xs text-slate-700"
+                      title="Font size"
+                    >
+                      {FONT_SIZES.map(size => (
+                        <option key={size.value} value={size.value}>{size.label}</option>
+                      ))}
+                    </select>
+                    <label className="h-8 w-8 rounded border border-slate-300 bg-white p-1 cursor-pointer" title="Font color">
+                      <input
+                        type="color"
+                        value={selectedFontColor}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setSelectedFontColor(value);
+                          execCmd('foreColor', value);
+                        }}
+                        className="h-full w-full cursor-pointer border-0 p-0"
+                      />
+                    </label>
+                    <div className="w-px bg-slate-300 mx-1" />
                     {toolbarButtons.map(({ icon: Icon, cmd, title }) => (
                       <button key={cmd} type="button" onMouseDown={e => { e.preventDefault(); execCmd(cmd); }}
                         className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors" title={title}>
@@ -347,6 +459,18 @@ export default function AdminBlogsPage() {
                     }} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors" title="Insert image">
                       <Image className="w-4 h-4" />
                     </button>
+                    <button
+                      type="button"
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        if (!uploadingInlineImage) inlineImageInputRef.current?.click();
+                      }}
+                      className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors disabled:opacity-60"
+                      title="Upload image"
+                      disabled={uploadingInlineImage}
+                    >
+                      {uploadingInlineImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    </button>
                     <div className="w-px bg-slate-300 mx-1" />
                     <button type="button" onMouseDown={e => { e.preventDefault(); execCmd('justifyLeft'); }}
                       className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors" title="Align left">
@@ -360,11 +484,22 @@ export default function AdminBlogsPage() {
                       className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors" title="Align right">
                       <AlignRight className="w-4 h-4" />
                     </button>
+                    <button type="button" onMouseDown={e => { e.preventDefault(); execCmd('justifyFull'); }}
+                      className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors" title="Justify">
+                      <AlignJustify className="w-4 h-4" />
+                    </button>
                     <div className="w-px bg-slate-300 mx-1" />
                     <button type="button" onMouseDown={e => { e.preventDefault(); execCmd('removeFormat'); }}
                       className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors text-xs font-bold" title="Clear formatting">
                       T<span className="line-through">x</span>
                     </button>
+                    <input
+                      ref={inlineImageInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                      onChange={handleInlineImageUpload}
+                      className="hidden"
+                    />
                   </div>
 
                   <div
@@ -456,6 +591,44 @@ export default function AdminBlogsPage() {
                     <Label className="mb-1.5 block">Cover Image URL</Label>
                     <Input value={form.coverImage} onChange={e => setForm(p => ({ ...p, coverImage: e.target.value }))}
                       placeholder="https://…" className="text-sm" />
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => coverImageInputRef.current?.click()}
+                        disabled={uploadingCoverImage}
+                      >
+                        {uploadingCoverImage ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3 mr-1" />
+                            Upload Cover Image
+                          </>
+                        )}
+                      </Button>
+                      {form.coverImage && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setForm(p => ({ ...p, coverImage: '' }))}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                      <input
+                        ref={coverImageInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                        onChange={handleCoverImageUpload}
+                        className="hidden"
+                      />
+                    </div>
                     {form.coverImage && <img src={form.coverImage} alt="" className="mt-2 w-full h-32 object-cover rounded-lg" />}
                   </div>
                   <div>

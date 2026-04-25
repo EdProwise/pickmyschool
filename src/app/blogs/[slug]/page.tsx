@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import connectToDatabase from '@/lib/mongodb';
 import { Blog } from '@/lib/models';
-import { Clock, Calendar, Tag, ArrowLeft, BookOpen, Eye } from 'lucide-react';
+import { Clock, Calendar, Tag, ArrowLeft, BookOpen, Eye, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface BlogDoc {
@@ -28,7 +28,7 @@ interface BlogDoc {
   updatedAt: string;
 }
 
-async function getBlog(slug: string): Promise<{ blog: BlogDoc; related: BlogDoc[] } | null> {
+async function getBlog(slug: string): Promise<{ blog: BlogDoc; related: BlogDoc[]; recent: BlogDoc[] } | null> {
   try {
     await connectToDatabase();
     const blog = await Blog.findOne({ slug, status: 'published' }).lean() as BlogDoc | null;
@@ -39,12 +39,21 @@ async function getBlog(slug: string): Promise<{ blog: BlogDoc; related: BlogDoc[
       category: blog.category,
       slug: { $ne: slug },
     })
-      .select('title slug excerpt coverImage category readTime publishedAt')
-      .sort({ publishedAt: -1 })
+      .select('title slug excerpt coverImage category readTime publishedAt createdAt')
+      .sort({ publishedAt: -1, createdAt: -1 })
       .limit(3)
       .lean() as BlogDoc[];
 
-    return { blog, related };
+    const recent = await Blog.find({
+      status: 'published',
+      slug: { $ne: slug },
+    })
+      .select('title slug coverImage category readTime publishedAt createdAt')
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .limit(5)
+      .lean() as BlogDoc[];
+
+    return { blog, related, recent };
   } catch {
     return null;
   }
@@ -102,10 +111,9 @@ export default async function BlogPostPage({
   const data = await getBlog(slug);
   if (!data) notFound();
 
-  const { blog, related } = data;
+  const { blog, related, recent } = data;
   const date = blog.publishedAt || blog.createdAt;
 
-  // JSON-LD structured data
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -132,8 +140,7 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-cyan-50/20">
-        {/* Hero with cover image */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-cyan-50/30">
         <div className="relative">
           {blog.coverImage ? (
             <div className="relative h-72 md:h-96 overflow-hidden">
@@ -180,115 +187,154 @@ export default async function BlogPostPage({
           )}
         </div>
 
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Meta bar */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-6 pb-6 border-b border-slate-200">
-            <span className="flex items-center gap-1.5 font-medium text-slate-700">
-              {blog.authorAvatar ? (
-                <img src={blog.authorAvatar} alt={blog.author} className="w-6 h-6 rounded-full object-cover" />
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                  {blog.author.charAt(0)}
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-8">
+            <main>
+              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm px-5 md:px-8 py-6 md:py-8">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-6 pb-6 border-b border-slate-200">
+                  <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                    {blog.authorAvatar ? (
+                      <img src={blog.authorAvatar} alt={blog.author} className="w-6 h-6 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                        {blog.author.charAt(0)}
+                      </div>
+                    )}
+                    {blog.author}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {blog.readTime} min read
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5" />
+                    {blog.views.toLocaleString()} views
+                  </span>
+                </div>
+
+                <p className="text-lg text-slate-600 leading-relaxed mb-8 border-l-4 border-cyan-400 pl-5 italic bg-cyan-50/50 py-3 pr-4 rounded-r-xl">
+                  {blog.excerpt}
+                </p>
+
+                <article
+                  className="blog-editor-content prose max-w-none text-slate-800
+                    [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
+                    [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-5 [&_h3]:mb-2
+                    [&_p]:mb-4 [&_p]:leading-relaxed
+                    [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4
+                    [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4
+                    [&_li]:mb-1
+                    [&_blockquote]:border-l-4 [&_blockquote]:border-cyan-400 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_blockquote]:my-4
+                    [&_a]:text-cyan-600 [&_a]:underline
+                    [&_img]:rounded-xl [&_img]:my-4 [&_img]:max-w-full"
+                  dangerouslySetInnerHTML={{ __html: blog.content }}
+                />
+
+                {blog.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2 mt-8 pt-6 border-t border-slate-200">
+                    <span className="text-sm font-semibold text-slate-600 mr-1 flex items-center gap-1">
+                      <Tag className="w-4 h-4" /> Tags:
+                    </span>
+                    {blog.tags.map(tag => (
+                      <Link
+                        key={tag}
+                        href={`/blogs?tag=${encodeURIComponent(tag)}`}
+                        className="text-sm bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 transition-colors"
+                      >
+                        {tag}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {related.length > 0 && (
+                <div className="mt-10 pt-8 border-t border-slate-200">
+                  <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-cyan-500" /> Related Articles
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {related.map(post => (
+                      <Link
+                        key={post.slug}
+                        href={`/blogs/${post.slug}`}
+                        className="group bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+                      >
+                        {post.coverImage && (
+                          <img src={post.coverImage} alt={post.title} className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" />
+                        )}
+                        <div className="p-3">
+                          <Badge variant="outline" className="text-xs mb-2">{post.category}</Badge>
+                          <p className="text-sm font-semibold text-slate-800 line-clamp-2 group-hover:text-cyan-600 transition-colors">
+                            {post.title}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {post.readTime} min read
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
-              {blog.author}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              {blog.readTime} min read
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5" />
-              {blog.views.toLocaleString()} views
-            </span>
-          </div>
 
-          {/* Excerpt */}
-          <p className="text-lg text-slate-600 leading-relaxed mb-8 border-l-4 border-cyan-400 pl-5 italic bg-cyan-50/50 py-3 pr-4 rounded-r-xl">
-            {blog.excerpt}
-          </p>
-
-          {/* Article content */}
-          <article
-            className="prose prose-slate max-w-none mb-10
-              prose-headings:font-bold prose-headings:text-slate-800
-              prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4
-              prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3
-              prose-p:leading-relaxed prose-p:text-slate-700 prose-p:mb-4
-              prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
-              prose-ol:list-decimal prose-ol:pl-6 prose-ol:mb-4
-              prose-li:mb-1 prose-li:text-slate-700
-              prose-blockquote:border-l-4 prose-blockquote:border-cyan-400 prose-blockquote:pl-5
-              prose-blockquote:italic prose-blockquote:text-slate-600 prose-blockquote:bg-cyan-50/40
-              prose-blockquote:py-2 prose-blockquote:pr-4 prose-blockquote:rounded-r-lg
-              prose-a:text-cyan-600 prose-a:underline hover:prose-a:text-cyan-700
-              prose-img:rounded-xl prose-img:shadow-md
-              prose-strong:text-slate-800 prose-code:bg-slate-100 prose-code:px-1.5
-              prose-code:py-0.5 prose-code:rounded prose-code:text-sm"
-            dangerouslySetInnerHTML={{ __html: blog.content }}
-          />
-
-          {/* Tags */}
-          {blog.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-8 pt-6 border-t border-slate-200">
-              <span className="text-sm font-semibold text-slate-600 mr-1 flex items-center gap-1">
-                <Tag className="w-4 h-4" /> Tags:
-              </span>
-              {blog.tags.map(tag => (
+              <div className="mt-10 text-center">
                 <Link
-                  key={tag}
-                  href={`/blogs?tag=${encodeURIComponent(tag)}`}
-                  className="text-sm bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 transition-colors"
+                  href="/blogs"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5"
                 >
-                  {tag}
+                  <ArrowLeft className="w-4 h-4" /> Back to All Articles
                 </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Related Posts */}
-          {related.length > 0 && (
-            <div className="mt-10 pt-8 border-t border-slate-200">
-              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-cyan-500" /> Related Articles
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {related.map(post => (
-                  <Link
-                    key={post.slug}
-                    href={`/blogs/${post.slug}`}
-                    className="group bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
-                  >
-                    {post.coverImage && (
-                      <img src={post.coverImage} alt={post.title} className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" />
-                    )}
-                    <div className="p-3">
-                      <Badge variant="outline" className="text-xs mb-2">{post.category}</Badge>
-                      <p className="text-sm font-semibold text-slate-800 line-clamp-2 group-hover:text-cyan-600 transition-colors">
-                        {post.title}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {post.readTime} min read
-                      </p>
-                    </div>
-                  </Link>
-                ))}
               </div>
-            </div>
-          )}
+            </main>
 
-          {/* Back link */}
-          <div className="mt-10 text-center">
-            <Link
-              href="/blogs"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to All Articles
-            </Link>
+            <aside className="lg:sticky lg:top-24 h-fit">
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-3">
+                  <p className="text-white font-semibold text-sm tracking-wide flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-cyan-300" />
+                    Recent Posts
+                  </p>
+                </div>
+                <div className="p-3 space-y-2">
+                  {recent.length > 0 ? recent.map(post => {
+                    const postDate = post.publishedAt || post.createdAt;
+                    return (
+                      <Link
+                        key={post.slug}
+                        href={`/blogs/${post.slug}`}
+                        className="group flex gap-3 rounded-xl p-2 hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="w-20 h-16 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                          {post.coverImage ? (
+                            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen className="w-5 h-5 text-slate-300" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-cyan-700 font-medium mb-0.5">{post.category}</p>
+                          <p className="text-sm text-slate-800 font-semibold line-clamp-2 group-hover:text-cyan-600 transition-colors">
+                            {post.title}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {new Date(postDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  }) : (
+                    <p className="text-sm text-slate-500 px-2 py-3">No recent posts available.</p>
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </div>
