@@ -4,11 +4,11 @@ import { Types } from "mongoose";
 import mongoose from "mongoose";
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { slug: id } = await params;
 
   try {
     await connectToDatabase();
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title: `${schoolName} - Fees, Reviews & Admission Details`,
         description,
-        url: `https://www.pickmyschool.in/schools/${id}`,
+        url: `https://www.pickmyschool.in/schools/${school.slug || id}`,
         type: "website",
         images: school.bannerImageUrl
           ? [
@@ -83,7 +83,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: school.bannerImageUrl ? [school.bannerImageUrl] : undefined,
       },
       alternates: {
-        canonical: `https://www.pickmyschool.in/schools/${id}`,
+        canonical: `https://www.pickmyschool.in/schools/${school.slug || id}`,
       },
     };
   } catch (error) {

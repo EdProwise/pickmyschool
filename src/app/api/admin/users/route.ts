@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     const users = await User.find(query)
-      .select('name role email phone city emailVerified createdAt')
+      .select('name role email phone city emailVerified isActive createdAt')
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
@@ -67,10 +67,11 @@ export async function GET(request: NextRequest) {
     const totalStudents = await User.countDocuments({ role: 'student' });
     const totalSchools = await User.countDocuments({ role: 'school' });
     const totalVerified = await User.countDocuments({ emailVerified: true });
+    const totalActive = await User.countDocuments({ isActive: { $ne: false } });
 
     return NextResponse.json({
       users,
-      stats: { total, totalStudents, totalSchools, totalVerified },
+      stats: { total, totalStudents, totalSchools, totalVerified, totalActive },
     });
   } catch (error) {
     console.error('GET /api/admin/users error:', error);
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH: update a user's role or emailVerified
+// PATCH: update a user's role, emailVerified, or isActive
 export async function PATCH(request: NextRequest) {
   try {
     const authResult = verifyAdminToken(request);
@@ -89,7 +90,7 @@ export async function PATCH(request: NextRequest) {
 
     await connectToDatabase();
     const body = await request.json();
-    const { userId, role, emailVerified } = body;
+    const { userId, role, emailVerified, isActive } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
@@ -102,13 +103,16 @@ export async function PATCH(request: NextRequest) {
     if (emailVerified !== undefined) {
       update.emailVerified = Boolean(emailVerified);
     }
+    if (isActive !== undefined) {
+      update.isActive = Boolean(isActive);
+    }
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
     const updated = await User.findByIdAndUpdate(userId, update, { new: true })
-      .select('name role email phone city emailVerified')
+      .select('name role email phone city emailVerified isActive')
       .lean();
 
     if (!updated) {

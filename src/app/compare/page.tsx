@@ -311,7 +311,7 @@ function CompareSchoolsContent() {
                           </div>
                         </div>
                         <h3 className="font-bold text-sm sm:text-lg text-foreground mb-1.5 px-1 line-clamp-1">{school.name}</h3>
-                        <Button onClick={() => router.push(`/schools/${school.id}`)} variant="outline" size="sm" className="h-8 text-[10px] sm:text-xs">View Details</Button>
+                        <Button onClick={() => router.push(`/schools/${school.slug || school.id}`)} variant="outline" size="sm" className="h-8 text-[10px] sm:text-xs">View Details</Button>
                       </div>
                     ))}
                   </div>
@@ -566,7 +566,7 @@ function CompareSchoolsContent() {
                       <div className="sticky left-0 bg-white z-20 md:static border-r border-gray-100 md:border-r-0" />
                       {selectedSchools.map((school) => (
                         <div key={school.id} className="space-y-3">
-                          <Button onClick={() => router.push(`/schools/${school.id}`)} className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white font-semibold">View Details</Button>
+                          <Button onClick={() => router.push(`/schools/${school.slug || school.id}`)} className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white font-semibold">View Details</Button>
                           <Button onClick={() => removeSchool(school.id)} variant="outline" className="w-full border-red-300 text-red-600">Remove</Button>
                         </div>
                       ))}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { School } from '@/lib/models';
 import jwt from 'jsonwebtoken';
-import { getSchool, updateSchool, deleteSchool } from '@/lib/schoolsHelper';
+import { getSchool, getSchoolBySlug, updateSchool, deleteSchool, generateSlug, ensureUniqueSlug } from '@/lib/schoolsHelper';
 
 async function verifyToken(request: NextRequest) {
   try {
@@ -27,15 +27,26 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const schoolId = parseInt(id);
-    if (isNaN(schoolId)) {
-      return NextResponse.json({ 
-        error: "Valid ID is required",
-        code: "INVALID_ID" 
-      }, { status: 400 });
-    }
+    const numericId = parseInt(id);
+    let school: any;
 
-    const school = await getSchool(schoolId);
+    if (!isNaN(numericId)) {
+      school = await getSchool(numericId);
+      // Lazy slug generation for existing schools that don't have one
+      if (school && !school.slug) {
+        try {
+          const baseSlug = generateSlug(school.name || `school-${numericId}`);
+          const newSlug = await ensureUniqueSlug(baseSlug, numericId);
+          await School.findOneAndUpdate({ id: numericId }, { $set: { slug: newSlug } });
+          school = { ...school, slug: newSlug };
+        } catch (slugErr) {
+          console.warn('Failed to generate slug lazily:', slugErr);
+        }
+      }
+    } else {
+      // Treat as slug
+      school = await getSchoolBySlug(id);
+    }
 
     if (!school) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -43,14 +54,14 @@ export async function GET(
 
     await connectToDatabase();
     School.findOneAndUpdate(
-      { id: schoolId },
+      { id: school.id },
       { $inc: { profileViews: 1 }, updatedAt: new Date().toISOString() }
     ).catch(err => console.error('Failed to increment profile views:', err));
 
     return NextResponse.json(school, { status: 200 });
   } catch (error) {
     console.error('GET error:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error')
     }, { status: 500 });
   }

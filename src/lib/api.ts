@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface School {
   id: number;
+  slug?: string;
   name: string;
   logo: string | null;
   logoUrl?: string | null;

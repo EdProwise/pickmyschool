@@ -332,7 +332,7 @@ export const AIChat = ({ initialOpen = false }: AIChatProps) => {
                   className="cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => {
                     setIsOpen(false);
-                    router.push(`/schools/${school.id}`);
+                    router.push(`/schools/${school.slug || school.id}`);
                   }}
                 >
                   <CardContent className="p-2.5 sm:p-3">

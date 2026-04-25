@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { EnquiryFormSettings } from '@/lib/models';
+import { getSchoolBySlug } from '@/lib/schoolsHelper';
 
 export async function GET(
   request: NextRequest,
@@ -8,19 +9,26 @@ export async function GET(
 ) {
   try {
     await connectToDatabase();
-    
+
     const { id } = await params;
-    const schoolId = parseInt(id);
+    let schoolId = parseInt(id);
     if (isNaN(schoolId)) {
-      return NextResponse.json({ error: 'Invalid school ID' }, { status: 400 });
+      // Treat as slug — resolve to numeric ID
+      const school = await getSchoolBySlug(id);
+      if (!school) {
+        return NextResponse.json({ error: 'School not found' }, { status: 404 });
+      }
+      schoolId = school.id;
     }
 
     const settings = await EnquiryFormSettings.findOne({ schoolId }).lean();
 
     const defaultFields = [
       { id: 'name', label: 'Student Name', type: 'text', required: true, enabled: true },
+      { id: 'parentName', label: 'Parent Name', type: 'text', required: true, enabled: true },
       { id: 'email', label: 'Email Address', type: 'email', required: true, enabled: true },
       { id: 'phone', label: 'Phone Number', type: 'tel', required: true, enabled: true },
+      { id: 'city', label: 'City', type: 'text', required: true, enabled: true },
       { id: 'class', label: 'Applying for Class', type: 'text', required: true, enabled: true },
       { id: 'message', label: 'Message/Questions', type: 'textarea', required: false, enabled: true },
     ];

@@ -148,7 +148,7 @@ function calculateFeesRange(feesStructure: any): { min: number | null; max: numb
 export default function SchoolDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const schoolId = parseInt(params.id as string);
+  const slug = (params.slug ?? params.id) as string;
 
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
@@ -210,9 +210,11 @@ export default function SchoolDetailPage() {
   // Enquiry form state
   const [enquiryForm, setEnquiryForm] = useState({
     studentName: '',
+    parentName: '',
     studentEmail: '',
     studentPhone: '',
     studentPhoneCode: '+91',
+    studentCity: '',
     studentClass: '',
     message: '',
   });
@@ -250,7 +252,7 @@ export default function SchoolDetailPage() {
   useEffect(() => {
     loadSchool();
     loadSavedSchools();
-  }, [schoolId]);
+  }, [slug]);
 
   useEffect(() => {
     const fetchSimilarSchools = async () => {
@@ -283,7 +285,8 @@ export default function SchoolDetailPage() {
       return;
     }
     setSavingSchool(true);
-    const isCurrentlySaved = savedSchools.includes(schoolId);
+    const numericId = school?.id ?? 0;
+    const isCurrentlySaved = savedSchools.includes(numericId);
     try {
       const response = await fetch('/api/auth/saved-schools', {
         method: 'POST',
@@ -292,7 +295,7 @@ export default function SchoolDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          schoolId,
+          schoolId: numericId,
           action: isCurrentlySaved ? 'remove' : 'add',
         }),
       });
@@ -332,13 +335,14 @@ export default function SchoolDetailPage() {
   };
 
     const handleCompare = () => {
+      const schoolNumId = school?.id ?? 0;
       const existingIds = localStorage.getItem('compare_schools')?.split(',').filter(Boolean) || [];
-      if (!existingIds.includes(schoolId.toString())) {
+      if (!existingIds.includes(schoolNumId.toString())) {
         if (existingIds.length >= 4) {
           toast.error('You can compare up to 4 schools. Please remove some from the compare page.');
           return;
         }
-        const newIds = [...existingIds, schoolId.toString()];
+        const newIds = [...existingIds, schoolNumId.toString()];
         localStorage.setItem('compare_schools', newIds.join(','));
         toast.success(`${school?.name} added to comparison!`);
       } else {
@@ -346,7 +350,7 @@ export default function SchoolDetailPage() {
       }
     };
 
-  const isSchoolSaved = savedSchools.includes(schoolId);
+  const isSchoolSaved = savedSchools.includes(school?.id ?? -1);
 
   // Load reviews and stats when Reviews tab is active or page changes
   useEffect(() => {
@@ -389,7 +393,7 @@ export default function SchoolDetailPage() {
 
   const loadSchool = async () => {
     try {
-      const response = await fetch(`/api/schools?id=${schoolId}`);
+      const response = await fetch(`/api/schools/${slug}`);
       if (!response.ok) throw new Error('Failed to fetch school');
       const data = await response.json();
       console.log('School data loaded on public page:', data);
@@ -468,9 +472,10 @@ export default function SchoolDetailPage() {
   };
 
   const loadReviews = async (page: number = 1) => {
+    if (!school?.id) return;
     setReviewsLoading(true);
     try {
-      const response = await fetch(`/api/schools/${schoolId}/reviews?page=${page}&limit=${REVIEWS_PER_PAGE}`);
+      const response = await fetch(`/api/schools/${school.id}/reviews?page=${page}&limit=${REVIEWS_PER_PAGE}`);
       if (response.ok) {
         const data = await response.json();
         setReviews(data.reviews || []);
@@ -484,9 +489,10 @@ export default function SchoolDetailPage() {
   };
 
   const loadReviewStats = async () => {
+    if (!school?.id) return;
     setStatsLoading(true);
     try {
-      const response = await fetch(`/api/schools/${schoolId}/reviews/stats`);
+      const response = await fetch(`/api/schools/${school.id}/reviews/stats`);
       if (response.ok) {
         const data = await response.json();
         setReviewStats(data);
@@ -499,9 +505,10 @@ export default function SchoolDetailPage() {
   };
 
   const loadResults = async () => {
+    if (!school?.id) return;
     setResultsLoading(true);
     try {
-      const response = await fetch(`/api/schools/results?schoolId=${schoolId}`);
+      const response = await fetch(`/api/schools/results?schoolId=${school.id}`);
       if (response.ok) {
         const data = await response.json();
         setResults(data);
@@ -514,9 +521,10 @@ export default function SchoolDetailPage() {
   };
 
   const loadStudentAchievements = async () => {
+    if (!school?.id) return;
     setAchievementsLoading(true);
     try {
-      const response = await fetch(`/api/schools/student-achievements?schoolId=${schoolId}`);
+      const response = await fetch(`/api/schools/student-achievements?schoolId=${school.id}`);
       if (response.ok) {
         const data = await response.json();
         setStudentAchievements(data);
@@ -529,9 +537,10 @@ export default function SchoolDetailPage() {
   };
 
   const loadAlumni = async () => {
+    if (!school?.id) return;
     setAlumniLoading(true);
     try {
-      const response = await fetch(`/api/schools/alumni?schoolId=${schoolId}`);
+      const response = await fetch(`/api/schools/alumni?schoolId=${school.id}`);
       if (response.ok) {
         const data = await response.json();
         setAlumni(data);
@@ -544,9 +553,10 @@ export default function SchoolDetailPage() {
   };
 
   const loadNews = async () => {
+    if (!school?.id) return;
     setNewsLoading(true);
     try {
-      const response = await fetch(`/api/schools/news?schoolId=${schoolId}&isPublished=true`);
+      const response = await fetch(`/api/schools/news?schoolId=${school.id}&isPublished=true`);
       if (response.ok) {
         const data = await response.json();
         setNews(data);
@@ -590,10 +600,12 @@ export default function SchoolDetailPage() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          schoolId,
+          schoolId: school?.id,
           studentName: enquiryForm.studentName,
+          parentName: enquiryForm.parentName,
           studentEmail: enquiryForm.studentEmail,
           studentPhone: fullPhoneNumber,
+          city: enquiryForm.studentCity,
           studentClass: enquiryForm.studentClass,
           message: enquiryForm.message,
         }),
@@ -604,9 +616,11 @@ export default function SchoolDetailPage() {
       toast.success('Enquiry submitted successfully! The school will contact you soon.');
       setEnquiryForm({
         studentName: '',
+        parentName: '',
         studentEmail: '',
         studentPhone: '',
         studentPhoneCode: '+91',
+        studentCity: '',
         studentClass: '',
         message: '',
       });
@@ -3134,6 +3148,26 @@ export default function SchoolDetailPage() {
                           />
                         </div>
 
+                        {/* Parent Name */}
+                        <div className="relative">
+                          <Label htmlFor="parentName" className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-orange-500 to-rose-600 flex items-center justify-center">
+                              <Users className="text-white" size={14} />
+                            </div>
+                            Parent Name *
+                          </Label>
+                          <Input
+                            id="parentName"
+                            required
+                            className="h-12 text-base border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 rounded-xl transition-colors shadow-sm"
+                            placeholder="Enter parent's full name"
+                            value={enquiryForm.parentName}
+                            onChange={(e) =>
+                              setEnquiryForm({ ...enquiryForm, parentName: e.target.value })
+                            }
+                          />
+                        </div>
+
                         {/* Email */}
                         <div className="relative">
                           <Label htmlFor="studentEmail" className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
@@ -3200,6 +3234,26 @@ export default function SchoolDetailPage() {
                             />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">Enter 10-digit mobile number</p>
+                        </div>
+
+                        {/* City */}
+                        <div className="relative">
+                          <Label htmlFor="studentCity" className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                              <MapPin className="text-white" size={14} />
+                            </div>
+                            City *
+                          </Label>
+                          <Input
+                            id="studentCity"
+                            required
+                            className="h-12 text-base border-2 border-gray-200 hover:border-emerald-300 focus:border-emerald-500 rounded-xl transition-colors shadow-sm"
+                            placeholder="Enter your city"
+                            value={enquiryForm.studentCity}
+                            onChange={(e) =>
+                              setEnquiryForm({ ...enquiryForm, studentCity: e.target.value })
+                            }
+                          />
                         </div>
 
                         {/* Class */}

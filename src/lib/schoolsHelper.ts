@@ -2,6 +2,35 @@ import connectToDatabase from '@/lib/mongodb';
 import { School, Review, ISchool } from '@/lib/models';
 import mongoose from 'mongoose';
 
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+export async function ensureUniqueSlug(baseSlug: string, excludeId?: number): Promise<string> {
+  await connectToDatabase();
+  let slug = baseSlug;
+  let suffix = 1;
+  while (true) {
+    const query: any = { slug };
+    if (excludeId !== undefined) query.id = { $ne: excludeId };
+    const existing = await School.findOne(query).lean();
+    if (!existing) return slug;
+    slug = `${baseSlug}-${suffix++}`;
+  }
+}
+
+export async function getSchoolBySlug(slug: string) {
+  await connectToDatabase();
+  const school = await School.findOne({ slug }).lean();
+  if (!school) return null;
+  return { ...school, id: school.id };
+}
+
 export async function updateSchoolStats(schoolId: number) {
   await connectToDatabase();
   
@@ -108,14 +137,19 @@ export async function getAllSchools(filters?: {
 
 export async function createSchool(data: any) {
   await connectToDatabase();
-  
+
   const lastSchool = await School.findOne().sort({ id: -1 }).select('id').lean();
   const newId = (lastSchool?.id || 0) + 1;
-  
+
   const now = new Date().toISOString();
-  
+
+  // Auto-generate slug from school name
+  const baseSlug = generateSlug(data.name || `school-${newId}`);
+  const slug = await ensureUniqueSlug(baseSlug);
+
   const school = new School({
     id: newId,
+    slug,
     userId: data.userId,
     name: data.name,
     establishmentYear: data.establishmentYear,

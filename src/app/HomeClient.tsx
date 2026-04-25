@@ -171,7 +171,7 @@ export default function HomeClient({
                       ))}
                     </div>
                   </div>
-                  <Link href={`/schools/${initialSpotlightSchool.id}`}>
+                  <Link href={`/schools/${initialSpotlightSchool.slug || initialSpotlightSchool.id}`}>
                     <Button size="lg" className="h-14 px-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold">
                       View Profile <ArrowRight className="ml-2" size={20} />
                     </Button>

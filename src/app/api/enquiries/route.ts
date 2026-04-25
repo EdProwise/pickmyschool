@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { schoolId, studentName, studentEmail, studentPhone, studentClass, message } = body;
+    const { schoolId, studentName, studentEmail, studentPhone, studentClass, message, parentName, city } = body;
 
     if (!schoolId || !studentName || !studentEmail || !studentPhone || !studentClass) {
       return NextResponse.json(
@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
       studentPhone: studentPhone.trim(),
       studentClass: studentClass.trim(),
       message: message ? message.trim() : null,
+      parentName: parentName ? parentName.trim() : null,
+      studentCity: city ? city.trim() : null,
       status: 'New',
     });
 
@@ -139,7 +141,9 @@ export async function POST(request: NextRequest) {
             phone: studentPhone.trim(),
             email: trimmedEmail,
             message: message ? message.trim() : `Interested in admission for class ${studentClass.trim()}`,
-            source: 'PickMySchool'
+            source: 'PickMySchool',
+            parentName: parentName ? parentName.trim() : undefined,
+            city: city ? city.trim() : undefined,
           })
         });
         console.log('Enquiry forwarded to EdproWise Booster:', webhookUrl, 'Response status:', webhookResponse.status);

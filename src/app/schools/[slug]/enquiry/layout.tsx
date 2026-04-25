@@ -4,11 +4,11 @@ import { Types } from "mongoose";
 import mongoose from "mongoose";
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { slug: id } = await params;
 
   try {
     await connectToDatabase();
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         follow: false,
       },
       alternates: {
-        canonical: `https://www.pickmyschool.in/schools/${id}/enquiry`,
+        canonical: `https://www.pickmyschool.in/schools/${school?.slug || id}/enquiry`,
       },
     };
   } catch {

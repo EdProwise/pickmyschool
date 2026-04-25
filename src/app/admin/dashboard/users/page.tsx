@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Search, Users, GraduationCap, Building2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Search, Users, GraduationCap, Building2, CheckCircle2, XCircle, RefreshCw, ShieldCheck, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UserRecord {
@@ -21,6 +21,7 @@ interface UserRecord {
   phone?: string;
   city?: string;
   emailVerified: boolean;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -29,15 +30,17 @@ interface Stats {
   totalStudents: number;
   totalSchools: number;
   totalVerified: number;
+  totalActive: number;
 }
 
 export default function UserDatabasePage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserRecord[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, totalStudents: 0, totalSchools: 0, totalVerified: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, totalStudents: 0, totalSchools: 0, totalVerified: 0, totalActive: 0 });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,7 +74,7 @@ export default function UserDatabasePage() {
     }
   };
 
-  const updateUser = async (userId: string, updates: { role?: string; emailVerified?: boolean }) => {
+  const updateUser = async (userId: string, updates: { role?: string; emailVerified?: boolean; isActive?: boolean }) => {
     const token = localStorage.getItem('admin_token');
     if (!token) return;
     setUpdatingId(userId);
@@ -98,6 +101,10 @@ export default function UserDatabasePage() {
 
   const filteredUsers = users.filter((u) => {
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && u.isActive !== false) ||
+      (statusFilter === 'inactive' && u.isActive === false);
     const term = searchTerm.toLowerCase();
     const matchesSearch =
       !term ||
@@ -105,7 +112,7 @@ export default function UserDatabasePage() {
       u.email?.toLowerCase().includes(term) ||
       u.city?.toLowerCase().includes(term) ||
       u.phone?.includes(term);
-    return matchesRole && matchesSearch;
+    return matchesRole && matchesStatus && matchesSearch;
   });
 
   if (loading) {
@@ -134,7 +141,7 @@ export default function UserDatabasePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <Card className="border-0 shadow-md">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
@@ -179,6 +186,17 @@ export default function UserDatabasePage() {
             </div>
           </CardContent>
         </Card>
+        <Card className="border-0 shadow-md">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Active</p>
+              <p className="text-2xl font-bold text-slate-800">{stats.totalActive}</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-teal-50 flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-teal-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -202,6 +220,16 @@ export default function UserDatabasePage() {
             <SelectItem value="school">Schools</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
         <div className="text-sm text-slate-500 flex items-center">
           {filteredUsers.length} result{filteredUsers.length !== 1 ? 's' : ''}
         </div>
@@ -219,19 +247,23 @@ export default function UserDatabasePage() {
                 <TableHead className="font-semibold text-slate-700">Phone Number</TableHead>
                 <TableHead className="font-semibold text-slate-700">City</TableHead>
                 <TableHead className="font-semibold text-slate-700">Email Verified</TableHead>
+                <TableHead className="font-semibold text-slate-700">Status</TableHead>
                 <TableHead className="font-semibold text-slate-700">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={8} className="text-center py-12 text-slate-500">
                     No users found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredUsers.map((user) => (
-                  <TableRow key={user._id} className="hover:bg-slate-50 transition-colors">
+                  <TableRow
+                    key={user._id}
+                    className={`transition-colors ${user.isActive === false ? 'bg-red-50/40 hover:bg-red-50/60' : 'hover:bg-slate-50'}`}
+                  >
                     <TableCell className="font-medium text-slate-800">
                       {user.name || <span className="text-slate-400 italic">—</span>}
                     </TableCell>
@@ -267,7 +299,28 @@ export default function UserDatabasePage() {
                       )}
                     </TableCell>
                     <TableCell>
+                      {user.isActive !== false ? (
+                        <span className="inline-flex items-center gap-1 text-teal-600 text-sm font-medium">
+                          <ShieldCheck className="w-4 h-4" /> Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-red-500 text-sm font-medium">
+                          <ShieldOff className="w-4 h-4" /> Inactive
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
+                        {/* Toggle active/inactive */}
+                        <Button
+                          size="sm"
+                          variant={user.isActive !== false ? 'destructive' : 'default'}
+                          disabled={updatingId === user._id}
+                          onClick={() => updateUser(user._id, { isActive: user.isActive === false })}
+                          className="text-xs h-7 px-2"
+                        >
+                          {user.isActive !== false ? 'Deactivate' : 'Activate'}
+                        </Button>
                         {/* Toggle email verified */}
                         <Button
                           size="sm"

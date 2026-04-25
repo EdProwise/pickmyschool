@@ -12,6 +12,7 @@ export interface IUser extends Document {
   schoolId?: mongoose.Types.ObjectId;
   savedSchools?: number[];
   emailVerified: boolean;
+  isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -27,11 +28,13 @@ const UserSchema = new Schema<IUser>({
   schoolId: { type: Schema.Types.ObjectId, ref: 'School' },
   savedSchools: [{ type: Number }],
   emailVerified: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 
 export interface ISchool extends Document {
   _id: mongoose.Types.ObjectId;
   id: number;
+  slug?: string;
   userId?: mongoose.Types.ObjectId;
   name: string;
   establishmentYear?: number;
@@ -139,6 +142,7 @@ export interface ISchool extends Document {
 
 const SchoolSchema = new Schema<ISchool>({
   id: { type: Number, required: true, unique: true },
+  slug: { type: String, unique: true, sparse: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User' },
   name: { type: String, required: true },
   establishmentYear: { type: Number },
@@ -260,6 +264,8 @@ export interface IEnquiry extends Document {
   status: string;
   notes?: string;
   followUpDate?: string;
+  parentName?: string;
+  studentCity?: string;
   studentAddress?: string;
   studentState?: string;
   studentAge?: string;
@@ -281,6 +287,8 @@ const EnquirySchema = new Schema<IEnquiry>({
   status: { type: String, required: true, default: 'New' },
   notes: { type: String },
   followUpDate: { type: String },
+  parentName: { type: String },
+  studentCity: { type: String },
   studentAddress: { type: String },
   studentState: { type: String },
   studentAge: { type: String },

@@ -51,7 +51,7 @@ export default function SchoolCard({ school }: SchoolCardProps) {
         </div>
 
         {/* School Name with Hover Effect */}
-        <Link href={`/schools/${school.id}`} className="block mb-3">
+        <Link href={`/schools/${school.slug || school.id}`} className="block mb-3">
           <h3 className="text-xl font-bold text-foreground group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-300 line-clamp-2 leading-snug">
             {school.name}
           </h3>
@@ -125,7 +125,7 @@ export default function SchoolCard({ school }: SchoolCardProps) {
 
         {/* Premium Action Buttons */}
         <div className="flex gap-3 mt-auto">
-          <Link href={`/schools/${school.id}`} className="flex-1">
+          <Link href={`/schools/${school.slug || school.id}`} className="flex-1">
             <Button className="w-full h-11 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn">
               <span>View Details</span>
               <svg className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

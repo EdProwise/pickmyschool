@@ -47,7 +47,7 @@ const phoneCountryCodes = [
 
 export default function PublicEnquiryPage() {
   const params = useParams();
-  const schoolId = params.id as string;
+  const schoolId = (params.slug ?? params.id) as string;
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -110,10 +110,12 @@ export default function PublicEnquiryPage() {
       const fullPhoneNumber = formData.phone ? `${phoneCode}${formData.phone}` : '';
       
       const submissionData = {
-        schoolId: parseInt(schoolId),
+        schoolId: settings?.schoolId ?? parseInt(schoolId),
         studentName: formData.name || '',
+        parentName: formData.parentName || '',
         studentEmail: formData.email || '',
         studentPhone: fullPhoneNumber,
+        city: formData.city || '',
         studentClass: formData.class || '',
         message: formData.message || '',
       };

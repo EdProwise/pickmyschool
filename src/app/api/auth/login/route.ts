@@ -36,9 +36,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.isActive === false) {
+      return NextResponse.json(
+        {
+          error: 'Your account has been deactivated. Please contact support.',
+          code: 'ACCOUNT_INACTIVE'
+        },
+        { status: 403 }
+      );
+    }
+
     if (!user.emailVerified) {
       return NextResponse.json(
-        { 
+        {
           error: 'Please verify your email before logging in. Check your inbox for the verification link.',
           code: 'EMAIL_NOT_VERIFIED'
         },

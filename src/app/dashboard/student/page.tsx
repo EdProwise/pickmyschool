@@ -599,7 +599,7 @@ export default function StudentDashboard() {
                         <div
                           key={school.id}
                           className="p-4 border border-gray-100 rounded-xl bg-white/50 hover:shadow-md transition-all duration-300 hover:scale-[1.02] cursor-pointer group"
-                          onClick={() => router.push(`/schools/${school.id}`)}
+                          onClick={() => router.push(`/schools/${school.slug || school.id}`)}
                         >
                           <div className="flex items-start gap-3">
                             {school.logo && (

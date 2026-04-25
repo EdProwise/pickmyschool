@@ -277,7 +277,7 @@ export default function SchoolsPage() {
                   <div className="flex items-start justify-between mb-2">
                     <h3 
                       className="font-bold text-slate-800 text-lg truncate cursor-pointer hover:text-cyan-600"
-                      onClick={() => window.open(`/schools/${school.id}`, '_blank')}
+                      onClick={() => window.open(`/schools/${school.slug || school.id}`, '_blank')}
                     >
                       {school.name}
                     </h3>

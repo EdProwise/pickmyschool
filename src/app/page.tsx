@@ -382,7 +382,7 @@ export default function HomePage() {
                 <div className="flex flex-col gap-5">
                   <Card
                     className="overflow-hidden border-0 rounded-3xl shadow-2xl bg-white hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 group relative cursor-pointer"
-                    onClick={() => router.push(`/schools/${spotlightSchool.id}`)}
+                    onClick={() => router.push(`/schools/${spotlightSchool.slug || spotlightSchool.id}`)}
                   >
                     {/* Premium Top Accent Border with animated gradient */}
                     <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 animate-gradient" />
@@ -498,7 +498,7 @@ export default function HomePage() {
                           className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn relative overflow-hidden"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/schools/${spotlightSchool.id}`);
+                            router.push(`/schools/${spotlightSchool.slug || spotlightSchool.id}`);
                           }}
                         >
                           {/* Button shine effect */}
