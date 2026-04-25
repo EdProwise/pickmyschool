@@ -41,8 +41,10 @@ export async function GET(request: NextRequest) {
       // Return default settings
       const defaultFields = [
         { id: 'name', label: 'Student Name', type: 'text', required: true, enabled: true },
+        { id: 'parentName', label: 'Parent Name', type: 'text', required: true, enabled: true },
         { id: 'email', label: 'Email Address', type: 'email', required: true, enabled: true },
         { id: 'phone', label: 'Phone Number', type: 'tel', required: true, enabled: true },
+        { id: 'city', label: 'City', type: 'text', required: true, enabled: true },
         { id: 'class', label: 'Applying for Class', type: 'text', required: true, enabled: true },
         { id: 'message', label: 'Message/Questions', type: 'textarea', required: false, enabled: true },
       ];
@@ -58,7 +60,19 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(settings);
+    // Migrate existing settings: inject parentName and city if missing
+    const existingFields: any[] = (settings as any).fields || [];
+    const newFields = [...existingFields];
+    if (!newFields.find((f: any) => f.id === 'parentName')) {
+      const nameIdx = newFields.findIndex((f: any) => f.id === 'name');
+      newFields.splice(nameIdx + 1, 0, { id: 'parentName', label: 'Parent Name', type: 'text', required: true, enabled: true });
+    }
+    if (!newFields.find((f: any) => f.id === 'city')) {
+      const phoneIdx = newFields.findIndex((f: any) => f.id === 'phone');
+      const insertAt = phoneIdx >= 0 ? phoneIdx + 1 : newFields.length - 1;
+      newFields.splice(insertAt, 0, { id: 'city', label: 'City', type: 'text', required: true, enabled: true });
+    }
+    return NextResponse.json({ ...settings, fields: newFields });
   } catch (error) {
     console.error('GET enquiry-settings error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
