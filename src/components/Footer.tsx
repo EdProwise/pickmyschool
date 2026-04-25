@@ -1,22 +1,7 @@
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 import { INDIAN_STATES } from '@/lib/indian-states';
-import { INDIAN_CITIES } from '@/lib/indian-cities';
-
-function cityNameToSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-// Top cities to feature in footer (major metros + popular cities)
-const FEATURED_CITIES = [
-  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad",
-  "Jaipur", "Lucknow", "Surat", "Kanpur", "Nagpur", "Indore", "Bhopal", "Patna",
-  "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot",
-  "Varanasi", "Amritsar", "Allahabad", "Ranchi", "Coimbatore", "Gwalior",
-  "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", "Chandigarh", "Noida",
-  "Bhubaneswar", "Dehradun", "Kochi", "Mysore", "Gurgaon", "Jalandhar",
-  "Vijayawada", "Visakhapatnam", "Aurangabad", "Dhanbad", "Navi Mumbai", "New Delhi", "Thane"
-];
+import { FEATURED_CITIES, cityNameToSlug } from '@/lib/featured-cities';
 
 export default function Footer() {
   return (
