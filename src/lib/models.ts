@@ -654,3 +654,53 @@ const AdminPasswordResetTokenSchema = new Schema<IAdminPasswordResetToken>({
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
 export const AdminPasswordResetToken: Model<IAdminPasswordResetToken> = mongoose.models.AdminPasswordResetToken || mongoose.model<IAdminPasswordResetToken>('AdminPasswordResetToken', AdminPasswordResetTokenSchema);
+
+// ─── Blog ────────────────────────────────────────────────────────────────────
+export interface IBlog extends Document {
+  _id: mongoose.Types.ObjectId;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImage?: string;
+  author: string;
+  authorAvatar?: string;
+  category: string;
+  tags: string[];
+  status: 'draft' | 'published';
+  featured: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords: string[];
+  readTime: number;
+  views: number;
+  publishedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const BlogSchema = new Schema<IBlog>({
+  title: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  excerpt: { type: String, required: true },
+  content: { type: String, required: true },
+  coverImage: { type: String },
+  author: { type: String, required: true, default: 'PickMySchool Team' },
+  authorAvatar: { type: String },
+  category: { type: String, required: true, default: 'General' },
+  tags: [{ type: String }],
+  status: { type: String, enum: ['draft', 'published'], default: 'draft' },
+  featured: { type: Boolean, default: false },
+  metaTitle: { type: String },
+  metaDescription: { type: String },
+  metaKeywords: [{ type: String }],
+  readTime: { type: Number, default: 5 },
+  views: { type: Number, default: 0 },
+  publishedAt: { type: Date },
+}, { timestamps: true });
+
+BlogSchema.index({ slug: 1 }, { unique: true });
+BlogSchema.index({ status: 1, publishedAt: -1 });
+BlogSchema.index({ category: 1, status: 1 });
+
+export const Blog: Model<IBlog> = mongoose.models.Blog || mongoose.model<IBlog>('Blog', BlogSchema);

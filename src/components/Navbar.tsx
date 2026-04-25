@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, LogOut, Sparkles, Home, School, Building2, GitCompare, Info, HelpCircle, Headphones, ChevronDown, LayoutGrid, ExternalLink } from 'lucide-react';
+import { Menu, X, User, LogOut, Sparkles, Home, School, Building2, GitCompare, Info, HelpCircle, Headphones, ChevronDown, LayoutGrid, ExternalLink, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -153,6 +153,12 @@ export default function Navbar() {
                     <Link href="/faq" className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
                       <HelpCircle className="h-4 w-4 mr-2.5 text-blue-500" />
                       <span className="font-medium">FAQ</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/blogs" className="flex items-center cursor-pointer px-3 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 transition-all duration-200">
+                      <BookOpen className="h-4 w-4 mr-2.5 text-cyan-600" />
+                      <span className="font-medium">Blogs</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -406,6 +412,14 @@ export default function Navbar() {
                     >
                       <HelpCircle size={18} className="text-blue-500" />
                       FAQ
+                    </Link>
+                    <Link
+                      href="/blogs"
+                      className="flex items-center gap-3 px-4 py-3 text-foreground hover:text-cyan-600 transition-colors font-medium rounded-xl hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <BookOpen size={18} className="text-cyan-600" />
+                      Blogs
                     </Link>
                     <Link
                       href="/contact-expert"
