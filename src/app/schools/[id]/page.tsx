@@ -186,6 +186,16 @@ export default function SchoolDetailPage() {
   const [news, setNews] = useState<any[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
 
+  // Google Maps API key (fetched from DB)
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((r) => r.json())
+      .then((d) => setGoogleMapsApiKey(d.googleMapsApiKey || ''))
+      .catch(() => {});
+  }, []);
+
   // Image preview state
   const [imagePreview, setImagePreview] = useState<{
     isOpen: boolean;
@@ -3046,7 +3056,7 @@ export default function SchoolDetailPage() {
                         {school.googleMapUrl ? (
                           <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
                             <iframe
-                              src={school.googleMapUrl.replace('key=AIzaSyBFw0Qbyq9zTFTd-tuzjaj0qsMROiZ2P', `key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`)}
+                              src={school.googleMapUrl.replace(/key=[^&]+/, `key=${googleMapsApiKey}`)}
                               width="100%"
                               height="100%"
                               style={{ border: 0 }}

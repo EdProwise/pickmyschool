@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, Eye, EyeOff, Check, X, Bot, KeyRound } from 'lucide-react';
+import { Lock, Eye, EyeOff, Check, X, Bot, KeyRound, Mail, Map } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -32,7 +32,19 @@ export default function SettingsPage() {
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiKeyLoading, setAiKeyLoading] = useState(true);
+
+  // Email Settings
+  const [gmailUser, setGmailUser] = useState('');
+  const [gmailAppPassword, setGmailAppPassword] = useState('');
+  const [showGmailPassword, setShowGmailPassword] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  // Maps Settings
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+  const [showMapsKey, setShowMapsKey] = useState(false);
+  const [mapsLoading, setMapsLoading] = useState(false);
+
+  const [keysLoading, setKeysLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -40,10 +52,10 @@ export default function SettingsPage() {
       router.push('/admin/login');
       return;
     }
-    loadGeminiKey(token);
+    loadSettings(token);
   }, []);
 
-  const loadGeminiKey = async (token: string) => {
+  const loadSettings = async (token: string) => {
     try {
       const res = await fetch('/api/admin/settings/api-keys', {
         headers: { Authorization: `Bearer ${token}` },
@@ -51,11 +63,14 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setGeminiApiKey(data.geminiApiKey || '');
+        setGmailUser(data.gmailUser || '');
+        setGmailAppPassword(data.gmailAppPassword || '');
+        setGoogleMapsApiKey(data.googleMapsApiKey || '');
       }
     } catch {
       // silent
     } finally {
-      setAiKeyLoading(false);
+      setKeysLoading(false);
     }
   };
 
@@ -112,13 +127,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveGeminiKey = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!geminiApiKey.trim()) {
-      toast.error('Please enter a valid Gemini API key');
-      return;
-    }
-    setAiLoading(true);
+  const saveKeys = async (fields: Record<string, string>, label: string, setLoadingFn: (v: boolean) => void) => {
+    setLoadingFn(true);
     try {
       const token = localStorage.getItem('admin_token');
       const res = await fetch('/api/admin/settings/api-keys', {
@@ -127,26 +137,47 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ geminiApiKey: geminiApiKey.trim() }),
+        body: JSON.stringify(fields),
       });
       if (res.ok) {
-        toast.success('Gemini API key saved successfully!');
+        toast.success(`${label} saved successfully!`);
       } else {
         const err = await res.json();
-        toast.error(err.error || 'Failed to save API key');
+        toast.error(err.error || `Failed to save ${label}`);
       }
     } catch {
       toast.error('Something went wrong');
     } finally {
-      setAiLoading(false);
+      setLoadingFn(false);
     }
+  };
+
+  const handleSaveGeminiKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!geminiApiKey.trim()) { toast.error('Please enter a valid Gemini API key'); return; }
+    saveKeys({ geminiApiKey }, 'Gemini API key', setAiLoading);
+  };
+
+  const handleSaveEmailSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gmailUser.trim() || !gmailAppPassword.trim()) {
+      toast.error('Please fill in both Gmail User and App Password');
+      return;
+    }
+    saveKeys({ gmailUser, gmailAppPassword }, 'Email settings', setEmailLoading);
+  };
+
+  const handleSaveMapsKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleMapsApiKey.trim()) { toast.error('Please enter a valid Google Maps API key'); return; }
+    saveKeys({ googleMapsApiKey }, 'Google Maps API key', setMapsLoading);
   };
 
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Settings</h1>
-        <p className="text-slate-600">Manage your account settings and security</p>
+        <p className="text-slate-600">Manage your account settings and API credentials</p>
       </div>
 
       <div className="max-w-2xl space-y-8">
@@ -160,7 +191,7 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            {aiKeyLoading ? (
+            {keysLoading ? (
               <p className="text-sm text-slate-500">Loading...</p>
             ) : (
               <form onSubmit={handleSaveGeminiKey} className="space-y-5">
@@ -205,6 +236,145 @@ export default function SettingsPage() {
                   className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white"
                 >
                   {aiLoading ? 'Saving...' : 'Save Gemini API Key'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Email Settings */}
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-slate-800 flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Email Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {keysLoading ? (
+              <p className="text-sm text-slate-500">Loading...</p>
+            ) : (
+              <form onSubmit={handleSaveEmailSettings} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Gmail User <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    The Gmail address used to send verification and notification emails.
+                  </p>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                      type="email"
+                      value={gmailUser}
+                      onChange={(e) => setGmailUser(e.target.value)}
+                      placeholder="your@gmail.com"
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Gmail App Password <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Generate an App Password from{' '}
+                    <a
+                      href="https://myaccount.google.com/apppasswords"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-600 underline hover:text-cyan-700"
+                    >
+                      Google Account Security
+                    </a>
+                    .
+                  </p>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                      type={showGmailPassword ? 'text' : 'password'}
+                      value={gmailAppPassword}
+                      onChange={(e) => setGmailAppPassword(e.target.value)}
+                      placeholder="xxxx xxxx xxxx xxxx"
+                      required
+                      className="pl-10 pr-10 font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGmailPassword(!showGmailPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showGmailPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={emailLoading}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white"
+                >
+                  {emailLoading ? 'Saving...' : 'Save Email Settings'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Google Maps Settings */}
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-slate-800 flex items-center gap-2">
+              <Map className="w-5 h-5" />
+              Google Maps Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {keysLoading ? (
+              <p className="text-sm text-slate-500">Loading...</p>
+            ) : (
+              <form onSubmit={handleSaveMapsKey} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Google Maps API Key <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Used to display school locations. Get your key from the{' '}
+                    <a
+                      href="https://console.cloud.google.com/apis/credentials"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-600 underline hover:text-cyan-700"
+                    >
+                      Google Cloud Console
+                    </a>
+                    .
+                  </p>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                      type={showMapsKey ? 'text' : 'password'}
+                      value={googleMapsApiKey}
+                      onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      required
+                      className="pl-10 pr-10 font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowMapsKey(!showMapsKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showMapsKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={mapsLoading}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white"
+                >
+                  {mapsLoading ? 'Saving...' : 'Save Google Maps API Key'}
                 </Button>
               </form>
             )}

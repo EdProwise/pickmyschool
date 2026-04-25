@@ -1,19 +1,33 @@
 import nodemailer from 'nodemailer';
+import { getSiteSettings } from '@/lib/site-settings';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+async function getTransporter() {
+  const settings = await getSiteSettings();
+  const user = settings.gmailUser;
+  const pass = settings.gmailAppPassword;
+
+  if (!user || !pass) {
+    throw new Error('Gmail credentials not configured. Please set them in Admin > Settings > Email Settings.');
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
+
+async function getFromAddress() {
+  const settings = await getSiteSettings();
+  return settings.gmailUser || '';
+}
 
 export async function sendVerificationEmail(email: string, token: string, name: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
+  const from = await getFromAddress();
 
   const mailOptions = {
-    from: `"PickMySchool" <${process.env.GMAIL_USER}>`,
+    from: `"PickMySchool" <${from}>`,
     to: email,
     subject: 'Verify your email - PickMySchool',
     html: `
@@ -32,34 +46,34 @@ export async function sendVerificationEmail(email: string, token: string, name: 
                     <span style="color: #18181b;">Pick</span><span style="color: #04d3d3;">MySchool</span>
                   </h1>
                 </div>
-                
+
                 <h2 style="color: #18181b; margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">
                   Verify your email address
                 </h2>
-                
+
                 <p style="color: #71717a; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
                   Hi ${name},<br><br>
                   Thank you for signing up! Please verify your email address by clicking the button below.
                 </p>
-                
+
                 <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; margin: 20px 0;">
                   Verify Email Address
                 </a>
-                
+
                 <p style="color: #a1a1aa; font-size: 14px; margin: 30px 0 0 0;">
                   This link will expire in 24 hours.<br>
                   If you didn't create an account, you can safely ignore this email.
                 </p>
-                
+
                 <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 30px 0;">
-                
+
                 <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
                   If the button doesn't work, copy and paste this link:<br>
                   <a href="${verificationUrl}" style="color: #06b6d4; word-break: break-all;">${verificationUrl}</a>
                 </p>
               </div>
             </div>
-            
+
             <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 20px;">
               © ${new Date().getFullYear()} PickMySchool. All rights reserved.
             </p>
@@ -70,21 +84,23 @@ export async function sendVerificationEmail(email: string, token: string, name: 
   };
 
   try {
+    const transporter = await getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log('Verification email sent:', info.messageId);
     return info;
-    } catch (error) {
-      console.error('Failed to send verification email:', error);
-      throw new Error('Failed to send verification email');
-    }
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+    throw new Error('Failed to send verification email');
+  }
 }
 
 export async function sendPasswordResetEmail(email: string, token: string, name: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+  const from = await getFromAddress();
 
   const mailOptions = {
-    from: `"PickMySchool" <${process.env.GMAIL_USER}>`,
+    from: `"PickMySchool" <${from}>`,
     to: email,
     subject: 'Reset your password - PickMySchool',
     html: `
@@ -103,34 +119,34 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
                     <span style="color: #18181b;">Pick</span><span style="color: #04d3d3;">MySchool</span>
                   </h1>
                 </div>
-                
+
                 <h2 style="color: #18181b; margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">
                   Reset your password
                 </h2>
-                
+
                 <p style="color: #71717a; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
                   Hi ${name},<br><br>
                   We received a request to reset your password. If you didn't make this request, you can safely ignore this email.
                 </p>
-                
+
                 <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; margin: 20px 0;">
                   Reset Password
                 </a>
-                
+
                 <p style="color: #a1a1aa; font-size: 14px; margin: 30px 0 0 0;">
                   This link will expire in 1 hour.<br>
                   If you didn't request a password reset, please contact support.
                 </p>
-                
+
                 <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 30px 0;">
-                
+
                 <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
                   If the button doesn't work, copy and paste this link:<br>
                   <a href="${resetUrl}" style="color: #06b6d4; word-break: break-all;">${resetUrl}</a>
                 </p>
               </div>
             </div>
-            
+
             <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 20px;">
               © ${new Date().getFullYear()} PickMySchool. All rights reserved.
             </p>
@@ -141,6 +157,7 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
   };
 
   try {
+    const transporter = await getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log('Password reset email sent:', info.messageId);
     return info;
@@ -184,9 +201,10 @@ export function validatePassword(password: string): { valid: boolean; errors: st
 export async function sendAdminPasswordResetEmail(email: string, token: string, name: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const resetUrl = `${baseUrl}/admin/reset-password?token=${token}`;
+  const from = await getFromAddress();
 
   const mailOptions = {
-    from: `"PickMySchool Admin" <${process.env.GMAIL_USER}>`,
+    from: `"PickMySchool Admin" <${from}>`,
     to: email,
     subject: 'Reset your Admin password - PickMySchool',
     html: `
@@ -209,34 +227,34 @@ export async function sendAdminPasswordResetEmail(email: string, token: string, 
                   </h1>
                   <p style="color: #a78bfa; margin: 8px 0 0 0; font-size: 14px; font-weight: 600;">ADMIN PORTAL</p>
                 </div>
-                
+
                 <h2 style="color: white; margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">
                   Reset your admin password
                 </h2>
-                
+
                 <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
                   Hi ${name},<br><br>
                   We received a request to reset your admin password. Click the button below to set a new password.
                 </p>
-                
+
                 <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; margin: 20px 0;">
                   Reset Admin Password
                 </a>
-                
+
                 <p style="color: #71717a; font-size: 14px; margin: 30px 0 0 0;">
                   This link will expire in 1 hour.<br>
                   If you didn't request this, please secure your account immediately.
                 </p>
-                
+
                 <hr style="border: none; border-top: 1px solid #3f3f46; margin: 30px 0;">
-                
+
                 <p style="color: #71717a; font-size: 12px; margin: 0;">
                   If the button doesn't work, copy and paste this link:<br>
                   <a href="${resetUrl}" style="color: #06b6d4; word-break: break-all;">${resetUrl}</a>
                 </p>
               </div>
             </div>
-            
+
             <p style="color: #71717a; font-size: 12px; text-align: center; margin-top: 20px;">
               © ${new Date().getFullYear()} PickMySchool. Admin Portal - Authorized Personnel Only.
             </p>
@@ -247,6 +265,7 @@ export async function sendAdminPasswordResetEmail(email: string, token: string, 
   };
 
   try {
+    const transporter = await getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log('Admin password reset email sent:', info.messageId);
     return info;

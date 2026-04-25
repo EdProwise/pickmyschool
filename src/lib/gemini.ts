@@ -13,7 +13,7 @@ export interface SchoolFilter {
 }
 
 export async function generateAIResponse(systemPrompt: string, userMessage: string, apiKey?: string): Promise<string> {
-  const key = apiKey || process.env.GEMINI_API_KEY;
+  const key = apiKey;
   if (!key) {
     throw new Error('Gemini API key is not configured. Please set it in the Admin Panel under Settings > AI Settings.');
   }

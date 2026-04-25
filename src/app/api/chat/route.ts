@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { School, Chat, Result, StudentAchievement } from '@/lib/models';
-import mongoose from 'mongoose';
 import { extractFiltersFromQuery, buildSystemPrompt, generateAIResponse } from '@/lib/gemini';
+import { getSiteSettings } from '@/lib/site-settings';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -95,10 +95,8 @@ export async function POST(request: NextRequest) {
 
       const systemPrompt = buildSystemPrompt(schoolsWithAllData);
 
-      // Fetch Gemini API key from DB via native driver (bypasses Mongoose strict mode)
-      const col = mongoose.connection.db!.collection('sitesettings');
-      const siteSettings = await col.findOne({});
-      const geminiApiKey = (siteSettings?.geminiApiKey as string) || process.env.GEMINI_API_KEY;
+      const siteSettings = await getSiteSettings();
+      const geminiApiKey = siteSettings.geminiApiKey;
 
       const aiResponse = await generateAIResponse(systemPrompt, message, geminiApiKey);
 

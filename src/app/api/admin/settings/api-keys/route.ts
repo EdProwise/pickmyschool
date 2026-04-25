@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import { invalidateSettingsCache } from '@/lib/site-settings';
 
 interface JWTPayload {
   adminId: string;
@@ -44,6 +45,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       geminiApiKey: (settings?.geminiApiKey as string) || '',
+      gmailUser: (settings?.gmailUser as string) || '',
+      gmailAppPassword: (settings?.gmailAppPassword as string) || '',
+      googleMapsApiKey: (settings?.googleMapsApiKey as string) || '',
     });
   } catch (error) {
     console.error('GET api-keys error:', error);
@@ -61,20 +65,36 @@ export async function PUT(request: NextRequest) {
 
     await connectToDatabase();
     const body = await request.json();
-    const { geminiApiKey } = body;
+    const { geminiApiKey, gmailUser, gmailAppPassword, googleMapsApiKey } = body;
 
-    if (typeof geminiApiKey !== 'string' || !geminiApiKey.trim()) {
-      return NextResponse.json({ error: 'geminiApiKey is required' }, { status: 400 });
+    const update: Record<string, string> = {};
+
+    if (typeof geminiApiKey === 'string' && geminiApiKey.trim()) {
+      update.geminiApiKey = geminiApiKey.trim();
+    }
+    if (typeof gmailUser === 'string' && gmailUser.trim()) {
+      update.gmailUser = gmailUser.trim();
+    }
+    if (typeof gmailAppPassword === 'string' && gmailAppPassword.trim()) {
+      update.gmailAppPassword = gmailAppPassword.trim();
+    }
+    if (typeof googleMapsApiKey === 'string' && googleMapsApiKey.trim()) {
+      update.googleMapsApiKey = googleMapsApiKey.trim();
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 });
     }
 
     const col = mongoose.connection.db!.collection('sitesettings');
     await col.updateOne(
       {},
-      { $set: { geminiApiKey: geminiApiKey.trim() } },
+      { $set: update },
       { upsert: true }
     );
 
-    return NextResponse.json({ message: 'Gemini API key saved successfully' });
+    invalidateSettingsCache();
+    return NextResponse.json({ message: 'Settings saved successfully' });
   } catch (error) {
     console.error('PUT api-keys error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

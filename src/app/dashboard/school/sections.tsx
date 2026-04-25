@@ -776,6 +776,14 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
   const [formData, setFormData] = useState<Partial<SchoolProfile>>({});
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [mapPreviewUrl, setMapPreviewUrl] = useState('');
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((r) => r.json())
+      .then((d) => setGoogleMapsApiKey(d.googleMapsApiKey || ''))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (profile) {
@@ -793,8 +801,8 @@ export function ContactInfoSection({ profile, profileLoading, saving, onSave }: 
     }
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      
+      const apiKey = googleMapsApiKey;
+
       // 1. Fetch Geocoding data
       const geocodeRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(mapSearchQuery)}&key=${apiKey}`);
       const geocodeData = await geocodeRes.json();
