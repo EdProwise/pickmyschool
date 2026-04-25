@@ -222,15 +222,24 @@ export default async function BlogPostPage({
 
                 <article
                   className="blog-editor-content prose max-w-none text-slate-800
+                    [&_h1]:text-3xl [&_h1]:font-black [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:text-slate-900
                     [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
                     [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-5 [&_h3]:mb-2
+                    [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2
                     [&_p]:mb-4 [&_p]:leading-relaxed
                     [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4
                     [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4
                     [&_li]:mb-1
                     [&_blockquote]:border-l-4 [&_blockquote]:border-cyan-400 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_blockquote]:my-4
                     [&_a]:text-cyan-600 [&_a]:underline
-                    [&_img]:rounded-xl [&_img]:my-4 [&_img]:max-w-full"
+                    [&_img]:rounded-xl [&_img]:my-4 [&_img]:max-w-full
+                    [&_table]:w-full [&_table]:border-collapse [&_table]:mb-4
+                    [&_th]:border [&_th]:border-slate-300 [&_th]:px-3 [&_th]:py-2 [&_th]:bg-slate-100 [&_th]:font-semibold
+                    [&_td]:border [&_td]:border-slate-300 [&_td]:px-3 [&_td]:py-2
+                    [&_hr]:border-slate-200 [&_hr]:my-6
+                    [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono
+                    [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:overflow-x-auto [&_pre]:mb-4
+                    [&_sub]:text-xs [&_sub]:align-sub [&_sup]:text-xs [&_sup]:align-super"
                   dangerouslySetInnerHTML={{ __html: blog.content }}
                 />
 
@@ -297,11 +306,11 @@ export default async function BlogPostPage({
                 <div className="bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-3">
                   <p className="text-white font-semibold text-sm tracking-wide flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-cyan-300" />
-                    Recent Posts
+                    Recent Posts (5)
                   </p>
                 </div>
                 <div className="p-3 space-y-2">
-                  {recent.length > 0 ? recent.map(post => {
+                  {recent.length > 0 ? recent.map((post: BlogDoc) => {
                     const postDate = post.publishedAt || post.createdAt;
                     return (
                       <Link
@@ -323,15 +332,29 @@ export default async function BlogPostPage({
                           <p className="text-sm text-slate-800 font-semibold line-clamp-2 group-hover:text-cyan-600 transition-colors">
                             {post.title}
                           </p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {new Date(postDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-slate-400">
+                              {new Date(postDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-xs text-slate-400 flex items-center gap-0.5">
+                              <Clock className="w-3 h-3" /> {post.readTime} min
+                            </span>
+                          </div>
                         </div>
                       </Link>
                     );
                   }) : (
                     <p className="text-sm text-slate-500 px-2 py-3">No recent posts available.</p>
                   )}
+                </div>
+                <div className="px-3 pb-3">
+                  <Link
+                    href="/blogs"
+                    className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold hover:shadow-md transition-all hover:opacity-90"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" /> View all blogs
+                  </Link>
                 </div>
               </div>
             </aside>
