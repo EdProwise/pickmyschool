@@ -338,9 +338,14 @@ export default function SchoolDashboard() {
 
       setUser(userData);
 
-      // Load all school enquiries (API is paginated with max 1000 per request).
-      const incoming = await fetchAllEnquiries(token);
-      setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
+      // Load all school enquiries – may return empty if school profile isn't linked yet
+      try {
+        const incoming = await fetchAllEnquiries(token);
+        setEnquiries(incoming.map((enquiry: any) => normalizeEnquiryForState(enquiry)));
+      } catch (enquiriesError) {
+        console.warn('Could not load enquiries (school profile may not be set up yet):', enquiriesError);
+        setEnquiries([]);
+      }
     } catch (error) {
       console.error('Failed to load school data:', error);
       toast.error('Failed to load dashboard data');
