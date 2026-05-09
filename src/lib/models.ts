@@ -704,3 +704,110 @@ BlogSchema.index({ status: 1, publishedAt: -1 });
 BlogSchema.index({ category: 1, status: 1 });
 
 export const Blog: Model<IBlog> = mongoose.models.Blog || mongoose.model<IBlog>('Blog', BlogSchema);
+
+// ─── Freelancer ───────────────────────────────────────────────────────────────
+export interface IFreelancer extends Document {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  city?: string;
+  referralCode: string;
+  referredBy?: string;
+  status: 'active' | 'inactive';
+  bankDetails?: {
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    bankName?: string;
+    upiId?: string;
+  };
+  totalLeads: number;
+  totalEarnings: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const FreelancerSchema = new Schema<IFreelancer>({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  phone: { type: String },
+  city: { type: String },
+  referralCode: { type: String, required: true, unique: true },
+  referredBy: { type: String },
+  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  bankDetails: {
+    accountName: { type: String },
+    accountNumber: { type: String },
+    ifscCode: { type: String },
+    bankName: { type: String },
+    upiId: { type: String },
+  },
+  totalLeads: { type: Number, default: 0 },
+  totalEarnings: { type: Number, default: 0 },
+}, { timestamps: true });
+
+export interface IFreelancerLead extends Document {
+  _id: mongoose.Types.ObjectId;
+  freelancerId: mongoose.Types.ObjectId;
+  parentName: string;
+  studentName: string;
+  phone: string;
+  email?: string;
+  city: string;
+  grade: string;
+  schoolInterested?: string;
+  status: 'new' | 'contacted' | 'converted' | 'rejected';
+  earnings: number;
+  notes?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const FreelancerLeadSchema = new Schema<IFreelancerLead>({
+  freelancerId: { type: Schema.Types.ObjectId, ref: 'Freelancer', required: true },
+  parentName: { type: String, required: true },
+  studentName: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String },
+  city: { type: String, required: true },
+  grade: { type: String, required: true },
+  schoolInterested: { type: String },
+  status: { type: String, enum: ['new', 'contacted', 'converted', 'rejected'], default: 'new' },
+  earnings: { type: Number, default: 0 },
+  notes: { type: String },
+}, { timestamps: true });
+
+FreelancerLeadSchema.index({ freelancerId: 1 });
+FreelancerLeadSchema.index({ status: 1 });
+
+export interface IFreelancerEarning extends Document {
+  _id: mongoose.Types.ObjectId;
+  freelancerId: mongoose.Types.ObjectId;
+  leadId?: mongoose.Types.ObjectId;
+  amount: number;
+  type: 'commission' | 'bonus' | 'referral';
+  status: 'pending' | 'paid';
+  description?: string;
+  paidAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const FreelancerEarningSchema = new Schema<IFreelancerEarning>({
+  freelancerId: { type: Schema.Types.ObjectId, ref: 'Freelancer', required: true },
+  leadId: { type: Schema.Types.ObjectId, ref: 'FreelancerLead' },
+  amount: { type: Number, required: true },
+  type: { type: String, enum: ['commission', 'bonus', 'referral'], default: 'commission' },
+  status: { type: String, enum: ['pending', 'paid'], default: 'pending' },
+  description: { type: String },
+  paidAt: { type: Date },
+}, { timestamps: true });
+
+FreelancerEarningSchema.index({ freelancerId: 1 });
+
+export const Freelancer: Model<IFreelancer> = mongoose.models.Freelancer || mongoose.model<IFreelancer>('Freelancer', FreelancerSchema);
+export const FreelancerLead: Model<IFreelancerLead> = mongoose.models.FreelancerLead || mongoose.model<IFreelancerLead>('FreelancerLead', FreelancerLeadSchema);
+export const FreelancerEarning: Model<IFreelancerEarning> = mongoose.models.FreelancerEarning || mongoose.model<IFreelancerEarning>('FreelancerEarning', FreelancerEarningSchema);
