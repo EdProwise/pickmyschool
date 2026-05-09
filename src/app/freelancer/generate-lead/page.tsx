@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, User, Phone, MapPin, GraduationCap, School, FileText, Search, X, CheckCircle2, Circle } from 'lucide-react';
+import { PlusCircle, User, Phone, MapPin, GraduationCap, School, FileText, Search, X, CheckCircle2, Circle, MapPinIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,15 +10,113 @@ import { toast } from 'sonner';
 
 interface SchoolOption { id: number; name: string; city: string; }
 
+// ─── Multi-Select Location Picker ─────────────────────────────────────────────
+function LocationMultiSelect({
+  locations,
+  selected,
+  onChange,
+}: {
+  locations: string[];
+  selected: string[];
+  onChange: (locs: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggle = (city: string) => {
+    onChange(selected.includes(city) ? selected.filter(c => c !== city) : [...selected, city]);
+  };
+
+  const remove = (city: string) => onChange(selected.filter(c => c !== city));
+
+  return (
+    <div ref={wrapperRef} className="space-y-2">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="w-full h-11 rounded-md border border-input bg-background px-3 py-2 text-sm text-left flex items-center justify-between text-slate-700 hover:bg-slate-50"
+        >
+          <span>{selected.length > 0 ? `${selected.length} selected` : 'Select school locations...'}</span>
+          <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+        </button>
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+            <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between sticky top-0">
+              <span className="text-xs text-slate-500 font-medium">{locations.length} location{locations.length !== 1 ? 's' : ''}</span>
+              {selected.length > 0 && (
+                <span className="text-xs text-emerald-600 font-semibold">{selected.length} selected</span>
+              )}
+            </div>
+            {locations.map(city => {
+              const isChecked = selected.includes(city);
+              return (
+                <button
+                  key={city}
+                  type="button"
+                  onClick={() => toggle(city)}
+                  className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors border-b border-slate-50 last:border-0 ${
+                    isChecked ? 'bg-emerald-50 hover:bg-emerald-100' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  {isChecked
+                    ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    : <Circle className="w-5 h-5 text-slate-300 shrink-0" />
+                  }
+                  <span className={`text-sm font-medium ${isChecked ? 'text-emerald-800' : 'text-slate-800'}`}>
+                    {city}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Selected chips */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {selected.map(city => (
+            <span
+              key={city}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-full text-sm font-medium"
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              {city}
+              <button
+                type="button"
+                onClick={() => remove(city)}
+                className="text-emerald-400 hover:text-red-500 transition-colors ml-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Multi-Select School Picker ───────────────────────────────────────────────
 function SchoolMultiSelect({
   selected,
   onChange,
-  selectedCity,
+  selectedCities,
 }: {
   selected: SchoolOption[];
   onChange: (schools: SchoolOption[]) => void;
-  selectedCity?: string;
+  selectedCities?: string[];
 }) {
   const [query, setQuery] = useState('');
   const [options, setOptions] = useState<SchoolOption[]>([]);
@@ -47,11 +145,11 @@ function SchoolMultiSelect({
       if (q?.trim()) {
         params.append('search', q);
       }
-      // Filter by city if selectedCity is provided
-      if (selectedCity?.trim()) {
-        params.append('city', selectedCity);
+      // Filter by cities if selectedCities is provided
+      if (selectedCities && selectedCities.length > 0) {
+        params.append('city', selectedCities.join(','));
       }
-      if (!q?.trim() && !selectedCity?.trim()) {
+      if (!q?.trim() && (!selectedCities || selectedCities.length === 0)) {
         params.append('limit', '100');
       }
 
@@ -72,7 +170,7 @@ function SchoolMultiSelect({
         .map((s: any) => ({ id: s.id, name: s.name, city: s.city }))
         .filter(s => s.id && s.name && s.city);
 
-      console.log('Loaded schools:', list.length, 'for city:', selectedCity);
+      console.log('Loaded schools:', list.length, 'for cities:', selectedCities);
       setOptions(list);
       setOpen(list.length > 0);
     } catch (e) {
@@ -201,7 +299,8 @@ function SchoolMultiSelect({
 export default function GenerateLeadPage() {
   const router = useRouter();
   const [token, setToken] = useState('');
-  const [form, setForm] = useState({ parentName: '', studentName: '', phone: '', city: '', grade: '', notes: '' });
+  const [form, setForm] = useState({ parentName: '', studentName: '', phone: '', grade: '', notes: '' });
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedSchools, setSelectedSchools] = useState<SchoolOption[]>([]);
   const [schoolLocations, setSchoolLocations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -241,15 +340,17 @@ export default function GenerateLeadPage() {
     setIsLoading(true);
     try {
       const schoolInterested = selectedSchools.map(s => s.name).join(', ');
+      const city = selectedCities.join(', ');
       const res = await fetch('/api/freelancer/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, schoolInterested }),
+        body: JSON.stringify({ ...form, city, schoolInterested }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Failed to submit lead'); return; }
       toast.success('Lead submitted successfully!');
-      setForm({ parentName: '', studentName: '', phone: '', city: '', grade: '', notes: '' });
+      setForm({ parentName: '', studentName: '', phone: '', grade: '', notes: '' });
+      setSelectedCities([]);
       setSelectedSchools([]);
     } catch {
       toast.error('Something went wrong');
@@ -295,17 +396,11 @@ export default function GenerateLeadPage() {
                 <label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
                   <MapPin className="w-4 h-4" /> Location of School
                 </label>
-                <select
-                  value={form.city}
-                  onChange={handleChange}
-                  name="city"
-                  className="h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Select school location...</option>
-                  {schoolLocations.map(city => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </select>
+                <LocationMultiSelect
+                  locations={schoolLocations}
+                  selected={selectedCities}
+                  onChange={setSelectedCities}
+                />
               </div>
             </div>
 
@@ -331,7 +426,7 @@ export default function GenerateLeadPage() {
                   </span>
                 )}
               </label>
-              <SchoolMultiSelect selected={selectedSchools} onChange={setSelectedSchools} selectedCity={form.city} />
+              <SchoolMultiSelect selected={selectedSchools} onChange={setSelectedSchools} selectedCities={selectedCities} />
             </div>
 
             <div className="space-y-1.5">
