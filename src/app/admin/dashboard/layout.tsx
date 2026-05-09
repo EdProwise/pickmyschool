@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, MessageSquareQuote, Star, Building2, Settings, LogOut, Mail, Users, Database, BookOpen } from 'lucide-react';
+import { LayoutDashboard, MessageSquareQuote, Star, Building2, Settings, LogOut, Mail, Users, Database, BookOpen, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/admin/dashboard/users', icon: Database, label: 'User Database' },
   { href: '/admin/dashboard/blogs', icon: BookOpen, label: 'Blogs' },
   { href: '/admin/dashboard/contact-submissions', icon: Mail, label: 'Contact Submissions' },
+  { href: '/admin/dashboard/freelancers', icon: Briefcase, label: 'Freelancers' },
   { href: '/admin/dashboard/admins', icon: Users, label: 'Manage Admins' },
   { href: '/admin/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
