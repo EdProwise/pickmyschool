@@ -9,7 +9,8 @@
     LayoutDashboard, MessageSquare, Info, Contact2, Building,
     Image, DollarSign, Trophy, GraduationCap, Newspaper,
     Star, BarChart3, Bell, User as UserIcon, Sparkles, Target,
-    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus, FileDown, FileUp, Tag, UserCog, Pencil, Trash2
+    CheckCircle2, XCircle, AlertCircle, ArrowUpRight, Menu, X, LogOut, Settings, ThumbsUp, ThumbsDown, Video, Globe, ClipboardList, FileText, MapPin, UserPlus, FileDown, FileUp, Tag, UserCog, Pencil, Trash2,
+    ChevronDown, ChevronLeft, ChevronRight
   } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,40 +58,106 @@ import { AnalyticsSection } from './AnalyticsSection';
 import { EnquirySettingsSection } from './EnquirySettingsSection';
 import { SchoolPagePreview } from './SchoolPagePreview';
 import { WhatsappAPISection } from './WhatsappAPISection';
+import { PMSLeadSection } from './PMSLeadSection';
+import { PMSInvoiceSection } from './PMSInvoiceSection';
+import { StatementOfAccountSection } from './StatementOfAccountSection';
 
-const sidebarItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'lead-dashboard', label: 'Lead Dashboard', icon: Tag },
-  { id: 'enquiry', label: 'Enquiry List', icon: MessageSquare },
-  { id: 'whatsapp-api', label: 'Whatsapp API', icon: MessageSquare },
-  { id: 'enquiry-settings', label: 'Enquiry Form Settings', icon: ClipboardList },
-  { id: 'school-page', label: 'School Page', icon: Globe },
-  { id: 'basic-info', label: 'Basic Info', icon: Info },
-  { id: 'contact', label: 'Contact Information', icon: Contact2 },
-  { id: 'facilities', label: 'Facilities & Infrastructure', icon: Building },
-  { id: 'gallery', label: 'Gallery & Documents', icon: Image },
-  { id: 'virtualtour', label: 'Virtual Tour', icon: Video },
-  { id: 'fees', label: 'Fees Structure', icon: DollarSign },
-  { id: 'results', label: 'Results', icon: Trophy },
-  { id: 'alumini', label: 'Alumni', icon: Users },
-  { id: 'news', label: 'News', icon: Newspaper },
-  { id: 'review', label: 'Review', icon: Star },
-  { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+const sidebarGroups = [
+  {
+    id: 'lead-from-pms',
+    label: 'Lead from PMS',
+    icon: UserPlus,
+    gradient: 'from-violet-500 to-purple-600',
+    items: [
+      { id: 'pms-lead', label: 'PMS Lead', icon: Users },
+      { id: 'pms-invoice', label: 'Invoice from PMS', icon: FileText },
+      { id: 'statement-of-account', label: 'Statement of Account', icon: FileDown },
+    ],
+  },
+  {
+    id: 'website-enquiry',
+    label: 'Website Enquiry',
+    icon: Globe,
+    gradient: 'from-cyan-500 to-blue-600',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'lead-dashboard', label: 'Lead Dashboard', icon: Tag },
+      { id: 'enquiry', label: 'Enquiry List', icon: MessageSquare },
+    ],
+  },
+  {
+    id: 'school-information',
+    label: 'School Information',
+    icon: Building2,
+    gradient: 'from-emerald-500 to-teal-600',
+    items: [
+      { id: 'school-page', label: 'School Page', icon: Globe },
+      { id: 'basic-info', label: 'Basic Info', icon: Info },
+      { id: 'contact', label: 'Contact Information', icon: Contact2 },
+      { id: 'facilities', label: 'Facilities & Infrastructure', icon: Building },
+      { id: 'gallery', label: 'Gallery & Documents', icon: Image },
+      { id: 'virtualtour', label: 'Virtual Tour', icon: Video },
+      { id: 'fees', label: 'Fees Structure', icon: DollarSign },
+      { id: 'results', label: 'Results', icon: Trophy },
+      { id: 'alumini', label: 'Alumni', icon: Users },
+      { id: 'news', label: 'News', icon: Newspaper },
+    ],
+  },
+  {
+    id: 'review-report',
+    label: 'Review & Report',
+    icon: Star,
+    gradient: 'from-amber-500 to-orange-600',
+    items: [
+      { id: 'review', label: 'Review', icon: Star },
+      { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
+    ],
+  },
+  {
+    id: 'settings-group',
+    label: 'Settings',
+    icon: Settings,
+    gradient: 'from-slate-500 to-gray-600',
+    items: [
+      { id: 'whatsapp-api', label: 'Whatsapp API', icon: MessageSquare },
+      { id: 'enquiry-settings', label: 'Enquiry Form Settings', icon: ClipboardList },
+      { id: 'settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ];
 
 const NO_TAGS_FILTER = '__no_tags__';
 const NO_LEAD_FILTER = '__no_lead__';
 
-export default function SchoolDashboard() {
+export function SchoolDashboard({ initialTab = 'dashboard' }: { initialTab?: string }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState(initialTab);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveSection(tabId);
+    // Auto-expand the group containing this tab
+    const group = sidebarGroups.find(g => g.items.some(i => i.id === tabId));
+    if (group) {
+      setExpandedGroups(prev => ({ ...prev, [group.id]: true }));
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', `/dashboard/school/${tabId}`);
+    }
+  };
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    sidebarGroups.forEach(g => {
+      initial[g.id] = g.items.some(item => item.id === initialTab);
+    });
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   
   // School profile state
@@ -417,8 +484,14 @@ export default function SchoolDashboard() {
       console.log('Profile saved successfully:', updatedProfile);
       // Log updated profile's facility images in console
       console.log('Facility images in saved profile:', updatedProfile?.facilityImages);
-      toast.success('Profile updated successfully');
-      
+
+      // Show specific toast if fees were updated and PDF was generated
+      if (data.feesStructure !== undefined && updatedProfile.feesStructureUrl) {
+        toast.success('Fees structure updated! PDF generated and ready for freelancers 🎉');
+      } else {
+        toast.success('Profile updated successfully');
+      }
+
       // Reload profile to ensure fresh data
       await loadSchoolProfile();
     } catch (error: any) {
@@ -2441,7 +2514,7 @@ export default function SchoolDashboard() {
     return (
       <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
         {/* Sidebar skeleton */}
-        <div className="hidden lg:block w-80 bg-gradient-to-b from-cyan-600 to-blue-700 p-6">
+        <div className="hidden lg:block w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-4">
           <div className="animate-pulse space-y-3">
             <div className="h-8 bg-white/20 rounded-xl mb-8" />
             {[...Array(10)].map((_, i) => (
@@ -2483,65 +2556,171 @@ export default function SchoolDashboard() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-40 w-80 
-        bg-gradient-to-b from-cyan-500 via-cyan-600 to-blue-700 
-        p-6 flex flex-col shadow-2xl
-        transform transition-transform duration-300 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-40 flex flex-col shadow-2xl
+        bg-gradient-to-b from-[#0f172a] via-[#1e293b] to-[#0f172a]
+        border-r border-white/5
+        transform transition-all duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${sidebarCollapsed ? 'w-16' : 'w-72'}
       `}>
-        {/* Logo */}
-        <div className="mb-8 relative">
-          <div className="absolute inset-0 bg-white/10 blur-xl rounded-full" />
-          <button
-            onClick={() => router.push('/')}
-            className="relative flex items-center gap-3 w-full hover:scale-105 transition-transform duration-200 cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Sparkles className="text-white" size={24} />
+        {/* Logo + Collapse Toggle */}
+        <div className={`flex items-center border-b border-white/10 flex-shrink-0 ${sidebarCollapsed ? 'justify-center py-4 px-2' : 'justify-between px-4 py-4'}`}>
+          {!sidebarCollapsed && (
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <Sparkles className="text-white" size={17} />
+              </div>
+              <span className="text-white font-bold text-base tracking-tight">PickMySchool</span>
+            </button>
+          )}
+          {sidebarCollapsed && (
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <Sparkles className="text-white" size={17} />
             </div>
-            <h2 className="text-white text-2xl font-bold">PickMySchool</h2>
+          )}
+          <button
+            onClick={() => setSidebarCollapsed(c => !c)}
+            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all ${sidebarCollapsed ? 'mt-3 mx-auto' : ''}`}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
-        
+
         {/* Navigation */}
-        <nav className="flex-1 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-          {sidebarItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
+        <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          {sidebarGroups.map(group => {
+            const GroupIcon = group.icon;
+            const isGroupExpanded = expandedGroups[group.id] ?? false;
+            const hasActiveItem = group.items.some(i => i.id === activeSection);
+
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveSection(item.id);
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-300 group ${
-                  isActive
-                    ? 'bg-white text-cyan-600 shadow-lg scale-105 font-semibold'
-                    : 'text-white/90 hover:bg-white/10 hover:translate-x-1'
-                }`}
-              >
-                <Icon size={20} className={isActive ? 'text-cyan-600' : 'text-white/80 group-hover:text-white'} />
-                <span className="text-sm">{item.label}</span>
-                {isActive && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              <div key={group.id} className={`${sidebarCollapsed ? 'px-1.5 mb-0.5' : 'px-2 mb-0.5'}`}>
+                {/* Group Header */}
+                <button
+                  onClick={() => {
+                    if (sidebarCollapsed) {
+                      setSidebarCollapsed(false);
+                      setExpandedGroups(prev => ({ ...prev, [group.id]: true }));
+                    } else {
+                      setExpandedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }));
+                    }
+                  }}
+                  title={sidebarCollapsed ? group.label : undefined}
+                  className={`w-full flex items-center rounded-xl transition-all duration-200 group
+                    ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2.5'}
+                    ${hasActiveItem
+                      ? 'bg-white/10 text-white'
+                      : 'text-white/50 hover:bg-white/8 hover:text-white/80'
+                    }
+                  `}
+                >
+                  <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${group.gradient} flex items-center justify-center shadow-md flex-shrink-0`}>
+                    <GroupIcon size={14} className="text-white" />
+                  </div>
+                  {!sidebarCollapsed && (
+                    <>
+                      <span className="flex-1 text-left text-[11px] font-bold uppercase tracking-widest">{group.label}</span>
+                      <ChevronDown
+                        size={13}
+                        className={`transition-transform duration-200 opacity-60 ${isGroupExpanded ? 'rotate-0' : '-rotate-90'}`}
+                      />
+                    </>
+                  )}
+                </button>
+
+                {/* Group Items */}
+                {!sidebarCollapsed && (
+                  <div
+                    className={`overflow-hidden transition-all duration-200 ${
+                      isGroupExpanded ? 'max-h-96 opacity-100 mt-0.5' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="space-y-0.5 pl-2 border-l border-white/8 ml-3">
+                      {group.items.map(item => {
+                        const ItemIcon = item.icon;
+                        const isActive = activeSection === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => { handleTabChange(item.id); setSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-200 group/item
+                              ${isActive
+                                ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/20 text-cyan-300 border border-cyan-500/25 shadow-sm'
+                                : 'text-white/50 hover:bg-white/8 hover:text-white/80'
+                              }
+                            `}
+                          >
+                            <ItemIcon size={14} className={`flex-shrink-0 ${isActive ? 'text-cyan-400' : 'group-hover/item:text-white/70'}`} />
+                            <span className="text-xs font-medium truncate">{item.label}</span>
+                            {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0 animate-pulse" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-              </button>
+
+                {/* Collapsed — show item icons when group is active */}
+                {sidebarCollapsed && hasActiveItem && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {group.items.map(item => {
+                      const ItemIcon = item.icon;
+                      const isActive = activeSection === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          title={item.label}
+                          onClick={() => { handleTabChange(item.id); setSidebarOpen(false); }}
+                          className={`w-full flex items-center justify-center p-2 rounded-lg transition-all duration-200
+                            ${isActive
+                              ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/20 text-cyan-300'
+                              : 'text-white/40 hover:bg-white/10 hover:text-white/70'
+                            }
+                          `}
+                        >
+                          <ItemIcon size={14} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
 
         {/* User info at bottom */}
-        <div className="mt-6 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/20 to-white/10 flex items-center justify-center">
-              <Building2 className="text-white" size={20} />
+        <div className={`flex-shrink-0 border-t border-white/10 ${sidebarCollapsed ? 'p-2' : 'p-3'}`}>
+          {!sidebarCollapsed ? (
+            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/5 hover:bg-white/8 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
+                <Building2 className="text-cyan-300" size={15} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs font-semibold truncate">{user?.name}</p>
+                <p className="text-white/40 text-[10px]">School Admin</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors flex-shrink-0"
+                title="Logout"
+              >
+                <LogOut size={13} />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
-              <p className="text-white/70 text-xs">School Admin</p>
-            </div>
-          </div>
+          ) : (
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="w-full flex items-center justify-center p-2.5 rounded-xl text-white/30 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+            >
+              <LogOut size={15} />
+            </button>
+          )}
         </div>
       </aside>
 
@@ -2641,9 +2820,9 @@ export default function SchoolDashboard() {
                               }
                               // Navigate to relevant section based on notification type
                               if (notification.type === 'enquiry') {
-                                setActiveSection('enquiry');
+                                handleTabChange('enquiry');
                               } else if (notification.type === 'review') {
-                                setActiveSection('review');
+                                handleTabChange('review');
                               }
                               setShowNotifications(false);
                             }}
@@ -3254,7 +3433,9 @@ export default function SchoolDashboard() {
           })()}
 
           {activeSection === 'enquiry' && renderEnquirySection()}
-          
+
+          {activeSection === 'pms-lead' && <PMSLeadSection />}
+
             {activeSection === 'whatsapp-api' && (
                 <WhatsappAPISection profile={profile} onRefresh={loadSchoolProfile} />
               )}
@@ -3533,8 +3714,17 @@ export default function SchoolDashboard() {
             <AnalyticsSection schoolId={profile?.id || 0} />
           )}
 
+          {/* Invoice from PMS Section */}
+          {activeSection === 'pms-invoice' && (
+            <PMSInvoiceSection />
+          )}
+
+          {activeSection === 'statement-of-account' && (
+            <StatementOfAccountSection />
+          )}
+
           {/* Other sections - Coming Soon */}
-          {!['dashboard', 'lead-dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page'].includes(activeSection) && (
+          {!['dashboard', 'lead-dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page', 'pms-invoice', 'pms-lead', 'statement-of-account'].includes(activeSection) && (
             <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="p-16">
                 <div className="text-center text-muted-foreground">
@@ -3555,3 +3745,5 @@ export default function SchoolDashboard() {
       </div>
     );
   }
+
+export default SchoolDashboard;

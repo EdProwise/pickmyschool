@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { School } from '@/lib/models';
+import { School, FreelancerLead } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 import { getSchools } from '@/lib/schoolsHelper';
 
@@ -73,7 +73,28 @@ export async function GET(request: NextRequest) {
 
     const results = await getSchools(filters, { limit, offset });
 
-    return NextResponse.json(results, { status: 200 });
+    // Aggregate PMS lead counts per school name
+    const leadAgg = await FreelancerLead.aggregate([
+      { $group: { _id: { school: '$schoolInterested', status: '$status' }, count: { $sum: 1 } } },
+    ]);
+
+    // Build map: lowercase school name -> status counts
+    const leadMap: Record<string, { total: number; new: number; contacted: number; converted: number; rejected: number }> = {};
+    for (const row of leadAgg) {
+      const key = (row._id.school || '').toLowerCase().trim();
+      if (!key) continue;
+      if (!leadMap[key]) leadMap[key] = { total: 0, new: 0, contacted: 0, converted: 0, rejected: 0 };
+      const s = row._id.status as keyof typeof leadMap[string];
+      if (s in leadMap[key]) leadMap[key][s] = row.count;
+      leadMap[key].total += row.count;
+    }
+
+    const enriched = (Array.isArray(results) ? results : []).map((school: any) => {
+      const key = (school.name || '').toLowerCase().trim();
+      return { ...school, leadCounts: leadMap[key] || { total: 0, new: 0, contacted: 0, converted: 0, rejected: 0 } };
+    });
+
+    return NextResponse.json(enriched, { status: 200 });
 
   } catch (error) {
     console.error('GET error:', error);

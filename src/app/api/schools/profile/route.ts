@@ -308,19 +308,88 @@ export async function PUT(request: NextRequest) {
     if (isCreating) {
       updateData.userId = user.userId;
       const createdProfile = await createSchool(updateData);
-      
+
       // Update user record with schoolId
       await User.findByIdAndUpdate(user.userId, { schoolId: createdProfile._id });
 
-      return NextResponse.json({ 
-        ...createdProfile, 
+      // Trigger PDF generation if fees structure is provided during creation
+      if (body.feesStructure !== undefined && createdProfile.name) {
+        try {
+          const pdfResponse = await fetch(
+            `${request.nextUrl.origin}/api/schools/fees/generate-pdf`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                schoolId: createdProfile.id,
+                schoolName: createdProfile.name,
+                feesStructure: body.feesStructure,
+                logoUrl: createdProfile.logoUrl
+              })
+            }
+          );
+
+          if (pdfResponse.ok) {
+            const pdfData = await pdfResponse.json();
+            if (pdfData.success && pdfData.url) {
+              // Update school with the generated fees PDF URL
+              await updateSchool(createdProfile.id, { feesStructureUrl: pdfData.url });
+              createdProfile.feesStructureUrl = pdfData.url;
+              console.log(`Fees PDF generated for new school ${createdProfile.id}: ${pdfData.url}`);
+            }
+          } else {
+            console.warn(`Failed to generate fees PDF for school ${createdProfile.id}: ${pdfResponse.status}`);
+          }
+        } catch (pdfError) {
+          console.error(`Error generating fees PDF for school ${createdProfile.id}:`, pdfError);
+        }
+      }
+
+      return NextResponse.json({
+        ...createdProfile,
         id: Number(createdProfile.id),
         mongoId: createdProfile._id.toString()
       }, { status: 200 });
     } else {
       const updated = await updateSchool(targetSchoolNumericId!, updateData);
-      return NextResponse.json({ 
-        ...updated, 
+
+      // Trigger PDF generation if fees structure is being updated
+      if (body.feesStructure !== undefined && updated.name) {
+        try {
+          const pdfResponse = await fetch(
+            `${request.nextUrl.origin}/api/schools/fees/generate-pdf`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                schoolId: targetSchoolNumericId,
+                schoolName: updated.name,
+                feesStructure: body.feesStructure,
+                logoUrl: updated.logoUrl
+              })
+            }
+          );
+
+          if (pdfResponse.ok) {
+            const pdfData = await pdfResponse.json();
+            if (pdfData.success && pdfData.url) {
+              // Update school with the generated fees PDF URL
+              await updateSchool(targetSchoolNumericId!, { feesStructureUrl: pdfData.url });
+              // Update the response object with the new URL
+              updated.feesStructureUrl = pdfData.url;
+              console.log(`Fees PDF generated for school ${targetSchoolNumericId}: ${pdfData.url}`);
+            }
+          } else {
+            console.warn(`Failed to generate fees PDF for school ${targetSchoolNumericId}: ${pdfResponse.status}`);
+          }
+        } catch (pdfError) {
+          // Log error but don't block the response - fees were still saved
+          console.error(`Error generating fees PDF for school ${targetSchoolNumericId}:`, pdfError);
+        }
+      }
+
+      return NextResponse.json({
+        ...updated,
         id: Number(updated.id),
         mongoId: updated._id.toString()
       }, { status: 200 });

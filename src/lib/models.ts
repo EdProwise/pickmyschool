@@ -115,6 +115,7 @@ export interface ISchool extends Document {
   prospectusUrl?: string;
   awards?: string[];
   newsletterUrl?: string;
+  feesStructureUrl?: string;
   feesStructure?: Record<string, unknown>;
   facilityImages?: Record<string, string[]>;
   logo?: string;
@@ -136,6 +137,8 @@ export interface ISchool extends Document {
     whatsappApiKey?: string;
     enquiryTags?: string[];
     leadStaff?: string[];
+    daySchoolCommission?: { amount: number; effectiveFrom: string };
+    hostelSchoolCommission?: { amount: number; effectiveFrom: string };
     createdAt?: Date;
     updatedAt?: Date;
   }
@@ -223,6 +226,7 @@ const SchoolSchema = new Schema<ISchool>({
   prospectusUrl: { type: String },
   awards: [{ type: String }],
   newsletterUrl: { type: String },
+  feesStructureUrl: { type: String },
   feesStructure: { type: Schema.Types.Mixed },
   facilityImages: { type: Schema.Types.Mixed },
   logo: { type: String },
@@ -244,6 +248,14 @@ const SchoolSchema = new Schema<ISchool>({
     whatsappApiKey: { type: String },
     enquiryTags: [{ type: String }],
     leadStaff: [{ type: String }],
+    daySchoolCommission: {
+      amount: { type: Number },
+      effectiveFrom: { type: String },
+    },
+    hostelSchoolCommission: {
+      amount: { type: Number },
+      effectiveFrom: { type: String },
+    },
   }, { timestamps: true });
 
 SchoolSchema.index({ city: 1 });
@@ -360,6 +372,11 @@ export interface ISiteSettings extends Document {
   _id: mongoose.Types.ObjectId;
   spotlightSchoolId?: number;
   geminiApiKey?: string;
+  commissionSettings?: {
+    pmsCommissionPercent?: number;
+    freelancerCommissionPercent?: number;
+    effectiveFrom?: string;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -367,6 +384,11 @@ export interface ISiteSettings extends Document {
 const SiteSettingsSchema = new Schema<ISiteSettings>({
     spotlightSchoolId: { type: Number },
     geminiApiKey: { type: String },
+    commissionSettings: {
+      pmsCommissionPercent: { type: Number },
+      freelancerCommissionPercent: { type: Number },
+      effectiveFrom: { type: String },
+    },
   }, { timestamps: true });
 
 export interface ITestimonial extends Document {
@@ -756,12 +778,16 @@ export interface IFreelancerLead extends Document {
   studentName: string;
   phone: string;
   email?: string;
-  city: string;
+  city?: string;
+  studentCity?: string;
+  studentState?: string;
   grade: string;
   schoolInterested?: string;
+  schoolType?: string;
   status: 'new' | 'contacted' | 'converted' | 'rejected';
   earnings: number;
   notes?: string;
+  convertedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -772,12 +798,16 @@ const FreelancerLeadSchema = new Schema<IFreelancerLead>({
   studentName: { type: String, required: true },
   phone: { type: String, required: true },
   email: { type: String },
-  city: { type: String, required: true },
+  city: { type: String },
+  studentCity: { type: String },
+  studentState: { type: String },
   grade: { type: String, required: true },
   schoolInterested: { type: String },
+  schoolType: { type: String },
   status: { type: String, enum: ['new', 'contacted', 'converted', 'rejected'], default: 'new' },
   earnings: { type: Number, default: 0 },
   notes: { type: String },
+  convertedAt: { type: Date },
 }, { timestamps: true });
 
 FreelancerLeadSchema.index({ freelancerId: 1 });
@@ -811,3 +841,22 @@ FreelancerEarningSchema.index({ freelancerId: 1 });
 export const Freelancer: Model<IFreelancer> = mongoose.models.Freelancer || mongoose.model<IFreelancer>('Freelancer', FreelancerSchema);
 export const FreelancerLead: Model<IFreelancerLead> = mongoose.models.FreelancerLead || mongoose.model<IFreelancerLead>('FreelancerLead', FreelancerLeadSchema);
 export const FreelancerEarning: Model<IFreelancerEarning> = mongoose.models.FreelancerEarning || mongoose.model<IFreelancerEarning>('FreelancerEarning', FreelancerEarningSchema);
+
+export interface ISchoolPayment extends Document {
+  _id: mongoose.Types.ObjectId;
+  schoolId: mongoose.Types.ObjectId;
+  amount: number;
+  receivedDate: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const SchoolPaymentSchema = new Schema<ISchoolPayment>({
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
+  amount: { type: Number, required: true },
+  receivedDate: { type: Date, required: true },
+}, { timestamps: true });
+
+SchoolPaymentSchema.index({ schoolId: 1 });
+
+export const SchoolPayment: Model<ISchoolPayment> = mongoose.models.SchoolPayment || mongoose.model<ISchoolPayment>('SchoolPayment', SchoolPaymentSchema);

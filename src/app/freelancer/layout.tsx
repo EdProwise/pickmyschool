@@ -5,17 +5,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard, PlusCircle, ListChecks, Wallet,
-  Gift, Settings, LogOut, Briefcase, Menu, X,
+  Gift, Settings, LogOut, Briefcase, Menu, X, School,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const NAV = [
-  { href: '/freelancer/dashboard',     label: 'Dashboard',          icon: LayoutDashboard },
-  { href: '/freelancer/generate-lead', label: 'Generate Lead',       icon: PlusCircle },
-  { href: '/freelancer/track-lead',    label: 'Track Lead',          icon: ListChecks },
-  { href: '/freelancer/earning',       label: 'Earning',             icon: Wallet },
-  { href: '/freelancer/refer-earn',    label: 'Refer & Earn Policy', icon: Gift },
-  { href: '/freelancer/settings',      label: 'Settings',            icon: Settings },
+  { href: '/freelancer/dashboard',      label: 'Dashboard',          icon: LayoutDashboard },
+  { href: '/freelancer/generate-lead',  label: 'Generate Lead',       icon: PlusCircle },
+  { href: '/freelancer/track-lead',     label: 'Track Lead',          icon: ListChecks },
+  { href: '/freelancer/list-of-school', label: 'List of School',      icon: School },
+  { href: '/freelancer/earning',        label: 'Earning',             icon: Wallet },
+  { href: '/freelancer/refer-earn',     label: 'Refer & Earn Policy', icon: Gift },
+  { href: '/freelancer/settings',       label: 'Settings',            icon: Settings },
 ];
 
 const AUTH_PATHS = ['/freelancer/login', '/freelancer/register'];

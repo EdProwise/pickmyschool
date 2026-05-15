@@ -82,6 +82,8 @@ export interface School {
   featured: boolean;
   latitude: number | null;
   longitude: number | null;
+  daySchoolCommission?: { amount: number; effectiveFrom: string } | null;
+  hostelSchoolCommission?: { amount: number; effectiveFrom: string } | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -10,10 +10,10 @@ const navItems = [
   { href: '/admin/dashboard/testimonials', icon: MessageSquareQuote, label: 'Testimonials' },
   { href: '/admin/dashboard/spotlight', icon: Star, label: 'Spotlight' },
   { href: '/admin/dashboard/schools', icon: Building2, label: 'Schools' },
+  { href: '/admin/dashboard/freelancers', icon: Briefcase, label: 'Freelancers' },
   { href: '/admin/dashboard/users', icon: Database, label: 'User Database' },
   { href: '/admin/dashboard/blogs', icon: BookOpen, label: 'Blogs' },
   { href: '/admin/dashboard/contact-submissions', icon: Mail, label: 'Contact Submissions' },
-  { href: '/admin/dashboard/freelancers', icon: Briefcase, label: 'Freelancers' },
   { href: '/admin/dashboard/admins', icon: Users, label: 'Manage Admins' },
   { href: '/admin/dashboard/settings', icon: Settings, label: 'Settings' },
 ];

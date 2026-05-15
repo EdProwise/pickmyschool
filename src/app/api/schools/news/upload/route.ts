@@ -75,12 +75,12 @@ export async function POST(request: NextRequest) {
       let maxSize = 0;
 
       if (type === 'image') {
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-        isValid = validTypes.includes(file.type);
+        // Accept any image format: JPEG, JPG, PNG, GIF, BMP, WebP, TIFF, etc.
+        isValid = file.type.startsWith('image/');
         maxSize = 5 * 1024 * 1024; // 5MB
       } else if (type === 'document') {
-        const validTypes = ['application/pdf'];
-        isValid = validTypes.includes(file.type);
+        // Accept PDF and any image format for documents (prospectus, newsletter)
+        isValid = file.type === 'application/pdf' || file.type.startsWith('image/');
         maxSize = 10 * 1024 * 1024; // 10MB
       } else if (type === 'video') {
         const validTypes = ['video/mp4', 'video/webm', 'video/ogg'];

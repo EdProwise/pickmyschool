@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { FreelancerLead, Freelancer } from '@/lib/models';
+import { FreelancerLead, Freelancer, School, SiteSettings } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 function getFreelancerFromToken(request: NextRequest) {
@@ -25,8 +25,49 @@ export async function GET(request: NextRequest) {
 
   try {
     await connectToDatabase();
-    const leads = await FreelancerLead.find({ freelancerId: decoded.freelancerId }).sort({ createdAt: -1 });
-    return NextResponse.json({ leads });
+    const leads = await FreelancerLead.find({ freelancerId: decoded.freelancerId }).sort({ createdAt: -1 }).lean();
+
+    // Fetch freelancer commission % from site settings
+    const settings = await SiteSettings.findOne().select('commissionSettings').lean();
+    const freelancerCommPct: number = (settings as any)?.commissionSettings?.freelancerCommissionPercent ?? 0;
+
+    // For converted leads, look up each school's commission to compute earnings
+    const convertedLeads = leads.filter((l: any) => l.status === 'converted' && l.schoolInterested);
+    const schoolNames = [...new Set(convertedLeads.map((l: any) => l.schoolInterested as string))];
+
+    // Fetch matching schools
+    const schoolDocs = schoolNames.length > 0
+      ? await School.find({
+          name: { $in: schoolNames.map(n => new RegExp(`^${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')) },
+        }).select('name daySchoolCommission hostelSchoolCommission').lean()
+      : [];
+
+    // Build a map by lowercase name for quick lookup
+    const schoolMap: Record<string, any> = {};
+    for (const s of schoolDocs as any[]) {
+      schoolMap[s.name.toLowerCase().trim()] = s;
+    }
+
+    const result = leads.map((lead: any) => {
+      let computedEarnings: number | null = null;
+      if (lead.status === 'converted' && lead.schoolInterested && freelancerCommPct > 0) {
+        const schoolDoc = schoolMap[lead.schoolInterested.toLowerCase().trim()];
+        if (schoolDoc) {
+          const isHostel = lead.schoolType?.toLowerCase().includes('hostel') ||
+            lead.schoolType?.toLowerCase().includes('residential') ||
+            lead.schoolType?.toLowerCase().includes('boarding');
+          const commAmt = isHostel
+            ? schoolDoc.hostelSchoolCommission?.amount ?? null
+            : schoolDoc.daySchoolCommission?.amount ?? null;
+          if (commAmt != null) {
+            computedEarnings = Math.round(commAmt * (freelancerCommPct / 100));
+          }
+        }
+      }
+      return { ...lead, _id: lead._id.toString(), computedEarnings, convertedAt: (lead as any).convertedAt ?? null };
+    });
+
+    return NextResponse.json({ leads: result });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -39,11 +80,11 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { parentName, studentName, phone, email, city, grade, schoolInterested, notes } = body;
+    const { parentName, studentName, phone, email, city, grade, schoolInterested, notes, studentCity, studentState, schoolType } = body;
 
-    if (!parentName || !studentName || !phone || !city || !grade) {
+    if (!parentName || !studentName || !phone || !grade) {
       return NextResponse.json(
-        { error: 'Parent name, student name, phone, city and grade are required' },
+        { error: 'Parent name, student name, phone and grade are required' },
         { status: 400 }
       );
     }
@@ -54,10 +95,13 @@ export async function POST(request: NextRequest) {
       studentName: studentName.trim(),
       phone: phone.trim(),
       email: email?.trim(),
-      city: city.trim(),
+      city: city?.trim() || '',
       grade: grade.trim(),
       schoolInterested: schoolInterested?.trim(),
       notes: notes?.trim(),
+      studentCity: studentCity?.trim(),
+      studentState: studentState?.trim(),
+      schoolType: schoolType?.trim(),
       status: 'new',
       earnings: 0,
     });

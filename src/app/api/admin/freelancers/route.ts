@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Freelancer } from '@/lib/models';
+import { Freelancer, FreelancerLead, FreelancerEarning, School, SiteSettings } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
@@ -43,14 +43,87 @@ export async function GET(request: NextRequest) {
 
   try {
     await connectToDatabase();
-    const freelancers = await Freelancer.find().select('-password').sort({ createdAt: -1 });
-    const totalActive = freelancers.filter(f => f.status === 'active').length;
-    const totalLeads = freelancers.reduce((sum, f) => sum + (f.totalLeads || 0), 0);
-    const totalEarnings = freelancers.reduce((sum, f) => sum + (f.totalEarnings || 0), 0);
+    const freelancers = await Freelancer.find().select('-password').sort({ createdAt: -1 }).lean();
+
+    // Aggregate lead counts per freelancer per status
+    const leadCounts = await FreelancerLead.aggregate([
+      { $group: { _id: { freelancerId: '$freelancerId', status: '$status' }, count: { $sum: 1 } } },
+    ]);
+
+    // Build a map: freelancerId -> { new, contacted, converted, rejected }
+    const leadMap: Record<string, { new: number; contacted: number; converted: number; rejected: number }> = {};
+    for (const row of leadCounts) {
+      const id = row._id.freelancerId?.toString();
+      if (!id) continue;
+      if (!leadMap[id]) leadMap[id] = { new: 0, contacted: 0, converted: 0, rejected: 0 };
+      const s = row._id.status as keyof typeof leadMap[string];
+      if (s in leadMap[id]) leadMap[id][s] = row.count;
+    }
+
+    // Aggregate paid amounts per freelancer from FreelancerEarning
+    const paidAgg = await FreelancerEarning.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: '$freelancerId', totalPaid: { $sum: '$amount' } } },
+    ]);
+    const paidMap: Record<string, number> = {};
+    for (const row of paidAgg) {
+      paidMap[row._id.toString()] = row.totalPaid;
+    }
+
+    // Compute totalEarnings per freelancer from converted leads + school commissions
+    const settings = await SiteSettings.findOne().select('commissionSettings').lean();
+    const freelancerCommPct: number = (settings as any)?.commissionSettings?.freelancerCommissionPercent ?? 0;
+
+    const convertedLeads = await FreelancerLead.find({ status: 'converted' }).lean();
+    const schoolNames = [...new Set(
+      convertedLeads.map((l: any) => l.schoolInterested as string).filter(Boolean)
+    )];
+
+    const schoolDocs = schoolNames.length > 0
+      ? await School.find({
+          name: { $in: schoolNames.map(n => new RegExp(`^${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')) },
+        }).select('name daySchoolCommission hostelSchoolCommission').lean()
+      : [];
+
+    const schoolMap: Record<string, any> = {};
+    for (const s of schoolDocs as any[]) {
+      schoolMap[(s as any).name.toLowerCase().trim()] = s;
+    }
+
+    const earningsMap: Record<string, number> = {};
+    if (freelancerCommPct > 0) {
+      for (const lead of convertedLeads as any[]) {
+        if (!lead.schoolInterested) continue;
+        const schoolDoc = schoolMap[lead.schoolInterested.toLowerCase().trim()];
+        if (!schoolDoc) continue;
+        const isHostel = lead.schoolType?.toLowerCase().includes('hostel') ||
+          lead.schoolType?.toLowerCase().includes('residential') ||
+          lead.schoolType?.toLowerCase().includes('boarding');
+        const commAmt = isHostel
+          ? schoolDoc.hostelSchoolCommission?.amount ?? null
+          : schoolDoc.daySchoolCommission?.amount ?? null;
+        if (commAmt == null) continue;
+        const earned = Math.round(commAmt * (freelancerCommPct / 100));
+        const fid = lead.freelancerId?.toString();
+        if (fid) earningsMap[fid] = (earningsMap[fid] ?? 0) + earned;
+      }
+    }
+
+    const enriched = freelancers.map((f: any) => {
+      const id = f._id.toString();
+      const counts = leadMap[id] || { new: 0, contacted: 0, converted: 0, rejected: 0 };
+      const totalPaid = paidMap[id] ?? 0;
+      const totalEarnings = earningsMap[id] ?? 0;
+      return { ...f, leadCounts: counts, totalPaid, totalEarnings };
+    });
+
+    const totalActive = enriched.filter((f: any) => f.status === 'active').length;
+    const totalLeads = enriched.reduce((sum: number, f: any) => sum + (f.totalLeads || 0), 0);
+    const totalEarnings = enriched.reduce((sum: number, f: any) => sum + (f.totalEarnings || 0), 0);
 
     return NextResponse.json({
-      freelancers,
-      stats: { total: freelancers.length, totalActive, totalLeads, totalEarnings },
+      freelancers: enriched,
+      stats: { total: enriched.length, totalActive, totalLeads, totalEarnings },
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

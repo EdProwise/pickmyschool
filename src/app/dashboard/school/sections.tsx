@@ -1252,19 +1252,38 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
   const handleFacilityImageUpload = async (facilityName: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      const MAX_FACILITY_IMAGES = 3;
+      const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB per image
+
+      // Get current images for this facility
+      const currentFacilityImages = formData.facilityImages?.[facilityName] || [];
+
+      // Check if adding these files would exceed limit
+      if (currentFacilityImages.length >= MAX_FACILITY_IMAGES) {
+        toast.error(`Maximum ${MAX_FACILITY_IMAGES} images allowed per facility. Please remove some before uploading more.`);
+        return;
+      }
+
       const validFiles = Array.from(files).filter(file => {
         if (!file.type.startsWith('image/')) {
           toast.error(`${file.name} is not an image file`);
           return false;
         }
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} exceeds 5MB limit`);
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name} exceeds 2MB limit`);
           return false;
         }
         return true;
       });
 
       if (validFiles.length === 0) return;
+
+      // Ensure we don't exceed total limit
+      const availableSlots = MAX_FACILITY_IMAGES - currentFacilityImages.length;
+      if (validFiles.length > availableSlots) {
+        toast.error(`Only ${availableSlots} more image(s) can be added for ${facilityName}. Maximum is ${MAX_FACILITY_IMAGES}.`);
+        return;
+      }
 
       setUploadingFacility(facilityName);
 
@@ -1343,6 +1362,9 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
   ) => {
     const isEnabled = formData[facilityKey] as boolean || false;
     const isUploading = uploadingFacility === facilityName;
+    const MAX_FACILITY_IMAGES = 3;
+    const currentImages = formData.facilityImages?.[facilityName] || [];
+    const imagesCount = currentImages.length;
 
     return (
       <div className="md:col-span-2 space-y-3">
@@ -1364,7 +1386,7 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 multiple
                 onChange={(e) => handleFacilityImageUpload(facilityName, e)}
                 className="hidden"
-                disabled={isUploading}
+                disabled={isUploading || imagesCount >= MAX_FACILITY_IMAGES}
               />
               <Button
                 type="button"
@@ -1372,12 +1394,15 @@ export function FacilitiesSection({ profile, profileLoading, saving, onSave }: S
                 variant="outline"
                 onClick={() => document.getElementById(`${facilityName}-upload`)?.click()}
                 className="flex-1"
-                disabled={isUploading}
+                disabled={isUploading || imagesCount >= MAX_FACILITY_IMAGES}
               >
                 <Upload className="mr-2" size={14} />
                 {isUploading ? 'Uploading...' : `Upload Images for ${facilityLabel}`}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Max 3 images • 2MB each • {imagesCount}/3 uploaded
+            </p>
             {formData.facilityImages?.[facilityName] && formData.facilityImages[facilityName]!.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {formData.facilityImages[facilityName]!.map((img, idx) => (
@@ -1588,14 +1613,13 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       return;
     }
     // Don't upload images here, they're already uploaded via handleGalleryImagesUpload
-    // Just save metadata
+    // Don't save prospectusUrl/newsletterUrl here - they're handled separately via upload endpoints
+    // Just save awards metadata
     const galleryData: Partial<SchoolProfile> = {
       name: profile.name,
       board: profile.board,
       city: profile.city,
-      prospectusUrl: formData.prospectusUrl,
       awards: formData.awards,
-      newsletterUrl: formData.newsletterUrl,
     };
     onSave(galleryData);
   };
@@ -1603,19 +1627,36 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
   const handleGalleryImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      const currentImages = formData.galleryImages || [];
+      const MAX_GALLERY_IMAGES = 10;
+      const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB per image
+
+      // Check if adding these files would exceed limit
+      if (currentImages.length >= MAX_GALLERY_IMAGES) {
+        toast.error(`Maximum ${MAX_GALLERY_IMAGES} images allowed. Please remove some before uploading more.`);
+        return;
+      }
+
       const validFiles = Array.from(files).filter(file => {
         if (!file.type.startsWith('image/')) {
           toast.error(`${file.name} is not an image file`);
           return false;
         }
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} exceeds 5MB limit`);
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name} exceeds 2MB limit`);
           return false;
         }
         return true;
       });
 
       if (validFiles.length === 0) return;
+
+      // Ensure we don't exceed total limit
+      const availableSlots = MAX_GALLERY_IMAGES - currentImages.length;
+      if (validFiles.length > availableSlots) {
+        toast.error(`Only ${availableSlots} more image(s) can be added. Maximum is ${MAX_GALLERY_IMAGES}.`);
+        return;
+      }
 
       setUploading(true);
       try {
@@ -1694,13 +1735,22 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
   const handleAwardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const MAX_AWARDS = 3;
+      const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB per award image
+
       if (!file.type.startsWith('image/')) {
         toast.error('Please upload an image file');
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error('Image size should be less than 2MB');
+        return;
+      }
+
+      const currentAwards = formData.awards || [];
+      if (currentAwards.length >= MAX_AWARDS) {
+        toast.error(`Maximum ${MAX_AWARDS} awards allowed. Please remove one before adding another.`);
         return;
       }
 
@@ -1712,7 +1762,6 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        const currentAwards = formData.awards || [];
         const awardEntry = {
           text: newAwardText.trim(),
           image: dataUrl
@@ -1743,8 +1792,8 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
     return { text: award, image: '' };
   };
 
-  // NEW: Upload handler for prospectus/newsletter (PDF or image)
-  const handleDocumentUpload = (
+  // Upload handler for prospectus/newsletter (PDF or image)
+  const handleDocumentUpload = async (
     key: 'prospectusUrl' | 'newsletterUrl',
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -1753,23 +1802,108 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
 
     const isSupported = file.type === 'application/pdf' || file.type.startsWith('image/');
     if (!isSupported) {
-      toast.error('Only PDF or image files are allowed');
+      toast.error('Only PDF, JPEG, JPG, PNG, GIF, BMP, or WebP files are allowed');
       return;
     }
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      toast.error('File size should be less than 10MB');
+      toast.error('File size should be less than 5MB');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      setFormData(prev => ({ ...prev, [key]: dataUrl }));
-      toast.success(`${key === 'prospectusUrl' ? 'Prospectus' : 'Newsletter'} attached`);
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      // Upload file to server
+      const formData = new FormData();
+      formData.append('files', file);
+      formData.append('type', 'document');
+
+      const token = localStorage.getItem('token');
+      const uploadRes = await fetch('/api/schools/news/upload', {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to upload document');
+      }
+
+      const uploadData = await uploadRes.json();
+      const documentUrl = uploadData.urls?.[0];
+
+      if (!documentUrl) {
+        throw new Error('No URL returned from server');
+      }
+
+      // Update document URL via dedicated documents endpoint
+      const docRes = await fetch('/api/schools/profile/documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          [key === 'prospectusUrl' ? 'prospectusUrl' : 'newsletterUrl']: documentUrl,
+        }),
+      });
+
+      if (!docRes.ok) {
+        const err = await docRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to save document');
+      }
+
+      const docData = await docRes.json();
+      setFormData(prev => ({
+        ...prev,
+        prospectusUrl: docData.prospectusUrl,
+        newsletterUrl: docData.newsletterUrl,
+      }));
+
+      toast.success(`${key === 'prospectusUrl' ? 'Prospectus' : 'Newsletter'} uploaded successfully`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handler to remove documents
+  const handleRemoveDocument = async (documentType: 'prospectus' | 'newsletter') => {
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/schools/profile/documents', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ documentType }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to remove document');
+      }
+
+      const docData = await res.json();
+      setFormData(prev => ({
+        ...prev,
+        prospectusUrl: docData.prospectusUrl,
+        newsletterUrl: docData.newsletterUrl,
+      }));
+
+      toast.success(`${documentType === 'prospectus' ? 'Prospectus' : 'Newsletter'} removed successfully`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove document');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (profileLoading) {
@@ -1804,7 +1938,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               <Image className="text-blue-600" size={20} />
               <Label className="text-base font-semibold">Images of School</Label>
             </div>
-            <p className="text-sm text-muted-foreground">Upload multiple images of your school campus</p>
+            <p className="text-sm text-muted-foreground">Upload up to 10 images of your school campus</p>
             <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border-2 border-dashed border-blue-300">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
@@ -1823,19 +1957,19 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                   type="button"
                   onClick={() => document.getElementById('galleryImages')?.click()}
                   className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-8"
-                  disabled={uploading}
+                  disabled={uploading || (formData.galleryImages?.length ?? 0) >= 10}
                 >
                   <Upload className="mr-2" size={16} />
                   {uploading ? 'Uploading...' : 'Select Images to Upload'}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  PNG, JPG or WEBP (Max 5MB per image)
+                  PNG, JPG or WEBP (Max 2MB per image) • Maximum 10 images
                 </p>
               </div>
             </div>
             {formData.galleryImages && formData.galleryImages.length > 0 && (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">{formData.galleryImages.length} image(s) uploaded</p>
+                <p className="text-sm font-medium text-muted-foreground">{formData.galleryImages.length}/10 image(s) uploaded</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {formData.galleryImages.map((img, index) => (
                     <div key={index} className="relative group">
@@ -1873,7 +2007,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                     <Input
                       id="prospectusFile"
                       type="file"
-                      accept="application/pdf,image/*"
+                      accept=".pdf,.jpeg,.jpg,.png,.webp,.gif,.bmp,application/pdf,image/*"
                       onChange={(e) => handleDocumentUpload('prospectusUrl', e)}
                       className="hidden"
                     />
@@ -1898,7 +2032,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => setFormData(prev => ({ ...prev, prospectusUrl: '' }))}
+                          onClick={() => handleRemoveDocument('prospectus')}
                         >
                           Remove
                         </Button>
@@ -1906,7 +2040,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                     )}
                   </div>
                   {!formData.prospectusUrl && (
-                    <p className="text-xs text-muted-foreground mt-2">Accepts PDF or image files (Max 10MB)</p>
+                    <p className="text-xs text-muted-foreground mt-2">Accepts PDF, JPEG, JPG, PNG, GIF, BMP, WebP (Max 5MB)</p>
                   )}
                 </div>
               </div>
@@ -1918,7 +2052,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                     <Input
                       id="newsletterFile"
                       type="file"
-                      accept="application/pdf,image/*"
+                      accept=".pdf,.jpeg,.jpg,.png,.webp,.gif,.bmp,application/pdf,image/*"
                       onChange={(e) => handleDocumentUpload('newsletterUrl', e)}
                       className="hidden"
                     />
@@ -1943,7 +2077,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => setFormData(prev => ({ ...prev, newsletterUrl: '' }))}
+                          onClick={() => handleRemoveDocument('newsletter')}
                         >
                           Remove
                         </Button>
@@ -1951,7 +2085,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                     )}
                   </div>
                   {!formData.newsletterUrl && (
-                    <p className="text-xs text-muted-foreground mt-2">Accepts PDF or image files (Max 10MB)</p>
+                    <p className="text-xs text-muted-foreground mt-2">Accepts PDF, JPEG, JPG, PNG, GIF, BMP, WebP (Max 5MB)</p>
                   )}
                 </div>
               </div>
@@ -1964,6 +2098,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
               <Trophy className="text-yellow-600" size={20} />
               <Label className="text-base font-semibold">Awards & Achievements</Label>
             </div>
+            <p className="text-sm text-muted-foreground">Add up to 3 awards with images (2MB max per image)</p>
             <div className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border-2 border-dashed border-yellow-300 space-y-4">
               <div className="space-y-3">
                 <Input
@@ -1972,6 +2107,7 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                   onChange={(e) => setNewAwardText(e.target.value)}
                   placeholder="Award Title / Description"
                   className="bg-white"
+                  disabled={(formData.awards?.length ?? 0) >= 3}
                 />
                 <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-lg border-2 border-dashed border-yellow-200">
                   <Input
@@ -1984,18 +2120,19 @@ export function GallerySection({ profile, profileLoading, saving, onSave }: Sect
                   <Button
                     type="button"
                     onClick={() => document.getElementById('awardImage')?.click()}
-                    disabled={!newAwardText.trim()}
+                    disabled={!newAwardText.trim() || (formData.awards?.length ?? 0) >= 3}
                     className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white px-6"
                   >
                     <Upload className="mr-2" size={16} />
                     Upload Award Image
                   </Button>
+                  <p className="text-xs text-muted-foreground text-center">PNG, JPG or WEBP (Max 2MB)</p>
                 </div>
               </div>
             </div>
             {formData.awards && formData.awards.length > 0 && (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">{formData.awards.length} award(s) added</p>
+                <p className="text-sm font-medium text-muted-foreground">{formData.awards.length}/3 award(s) added</p>
                 {formData.awards.map((award, index) => {
                   const parsedAward = parseAward(award);
                   return (

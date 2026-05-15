@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Search, Users, TrendingUp, IndianRupee, RefreshCw,
-  PlusCircle, Briefcase, ShieldCheck, ShieldOff, CheckCircle2, Eye, EyeOff,
+  PlusCircle, Briefcase, ShieldCheck, ShieldOff, CheckCircle2, Eye, EyeOff, Settings2, Percent, CalendarDays,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,7 +29,9 @@ interface FreelancerRecord {
   status: 'active' | 'inactive';
   totalLeads: number;
   totalEarnings: number;
+  totalPaid: number;
   createdAt: string;
+  leadCounts?: { new: number; contacted: number; converted: number; rejected: number };
 }
 
 interface Stats {
@@ -38,7 +41,14 @@ interface Stats {
   totalEarnings: number;
 }
 
+interface CommissionSettings {
+  pmsCommissionPercent?: number;
+  freelancerCommissionPercent?: number;
+  effectiveFrom?: string;
+}
+
 const INIT_FORM = { name: '', email: '', password: '', phone: '', city: '' };
+const INIT_COMMISSION: CommissionSettings = { pmsCommissionPercent: undefined, freelancerCommissionPercent: undefined, effectiveFrom: '' };
 
 export default function AdminFreelancersPage() {
   const router = useRouter();
@@ -54,10 +64,21 @@ export default function AdminFreelancersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Payment state
+  const [manualAmounts, setManualAmounts] = useState<Record<string, string>>({});
+  const [payingId, setPayingId] = useState<string | null>(null);
+
+  // Commission settings state
+  const [showCommissionModal, setShowCommissionModal] = useState(false);
+  const [commissionSettings, setCommissionSettings] = useState<CommissionSettings>(INIT_COMMISSION);
+  const [commissionForm, setCommissionForm] = useState<CommissionSettings>(INIT_COMMISSION);
+  const [savingCommission, setSavingCommission] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (!token) { router.push('/admin/login'); return; }
     loadFreelancers();
+    loadCommissionSettings();
   }, []);
 
   const loadFreelancers = async () => {
@@ -110,6 +131,42 @@ export default function AdminFreelancersPage() {
     }
   };
 
+  const handlePayment = async (freelancerId: string, action: 'pay-now' | 'manual') => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+    const amount = action === 'manual' ? Number(manualAmounts[freelancerId] || '0') : undefined;
+    if (action === 'manual' && (!amount || amount <= 0)) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    setPayingId(freelancerId);
+    try {
+      const res = await fetch(`/api/admin/freelancers/${freelancerId}/payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action, amount }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFreelancers(prev => prev.map(f =>
+          f._id === freelancerId
+            ? { ...f, totalPaid: data.totalPaid }
+            : f
+        ));
+        if (action === 'manual') {
+          setManualAmounts(prev => ({ ...prev, [freelancerId]: '' }));
+        }
+        toast.success(action === 'pay-now' ? 'Payment recorded successfully!' : 'Manual adjustment saved!');
+      } else {
+        toast.error(data.error || 'Payment failed');
+      }
+    } catch {
+      toast.error('Payment failed');
+    } finally {
+      setPayingId(null);
+    }
+  };
+
   const createFreelancer = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('admin_token');
@@ -135,6 +192,58 @@ export default function AdminFreelancersPage() {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const loadCommissionSettings = async () => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/admin/settings/commission', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.commissionSettings) {
+          setCommissionSettings(data.commissionSettings);
+        }
+      }
+    } catch {
+      // silently ignore
+    }
+  };
+
+  const saveCommissionSettings = async () => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+    if (commissionForm.pmsCommissionPercent === undefined && commissionForm.freelancerCommissionPercent === undefined) {
+      toast.error('Please enter at least one commission percentage');
+      return;
+    }
+    setSavingCommission(true);
+    try {
+      const res = await fetch('/api/admin/settings/commission', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(commissionForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCommissionSettings(data.commissionSettings);
+        toast.success('Commission settings saved successfully');
+        setShowCommissionModal(false);
+      } else {
+        toast.error(data.error || 'Failed to save commission settings');
+      }
+    } catch {
+      toast.error('Failed to save commission settings');
+    } finally {
+      setSavingCommission(false);
+    }
+  };
+
+  const openCommissionModal = () => {
+    setCommissionForm({ ...commissionSettings });
+    setShowCommissionModal(true);
   };
 
   const filtered = freelancers.filter(f => {
@@ -172,6 +281,14 @@ export default function AdminFreelancersPage() {
           <Button variant="outline" onClick={loadFreelancers} className="gap-2">
             <RefreshCw className="w-4 h-4" />
             Refresh
+          </Button>
+          <Button
+            variant="outline"
+            onClick={openCommissionModal}
+            className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+          >
+            <Settings2 className="w-4 h-4" />
+            Commission Settings
           </Button>
           <Button onClick={() => setShowAddModal(true)} className="gap-2 text-white" style={{ background: 'linear-gradient(135deg, #04d3d3 0%, #03a9a9 100%)' }}>
             <PlusCircle className="w-4 h-4" />
@@ -242,20 +359,26 @@ export default function AdminFreelancersPage() {
             <TableHeader>
               <TableRow className="bg-slate-50 border-b border-slate-200">
                 <TableHead className="font-semibold text-slate-700">Name</TableHead>
-                <TableHead className="font-semibold text-slate-700">Email</TableHead>
                 <TableHead className="font-semibold text-slate-700">Phone</TableHead>
                 <TableHead className="font-semibold text-slate-700">City</TableHead>
-                <TableHead className="font-semibold text-slate-700">Referral Code</TableHead>
-                <TableHead className="font-semibold text-slate-700">Leads</TableHead>
-                <TableHead className="font-semibold text-slate-700">Earnings</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Leads</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Contacted</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Converted</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Rejected</TableHead>
+                <TableHead className="font-semibold text-slate-700">Total Earning</TableHead>
+                <TableHead className="font-semibold text-slate-700">Paid</TableHead>
+                <TableHead className="font-semibold text-slate-700">Balance</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Pay Now</TableHead>
+                <TableHead className="font-semibold text-slate-700">Paid (Manual Adj)</TableHead>
                 <TableHead className="font-semibold text-slate-700">Status</TableHead>
                 <TableHead className="font-semibold text-slate-700">Actions</TableHead>
+                <TableHead className="font-semibold text-slate-700">Earning</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={16} className="text-center py-12 text-slate-500">
                     <Briefcase className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                     No freelancers found
                   </TableCell>
@@ -267,16 +390,82 @@ export default function AdminFreelancersPage() {
                     className={`transition-colors ${f.status === 'inactive' ? 'bg-red-50/40 hover:bg-red-50/60' : 'hover:bg-slate-50'}`}
                   >
                     <TableCell className="font-medium text-slate-800">{f.name}</TableCell>
-                    <TableCell className="text-slate-600 text-sm">{f.email}</TableCell>
                     <TableCell className="text-slate-600 text-sm">{f.phone || <span className="text-slate-400">—</span>}</TableCell>
                     <TableCell className="text-slate-600 text-sm">{f.city || <span className="text-slate-400">—</span>}</TableCell>
-                    <TableCell>
-                      <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold tracking-widest">
-                        {f.referralCode}
-                      </span>
+                    <TableCell className="text-center">
+                      <span className="inline-block min-w-[2rem] text-center font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-sm">{(f.leadCounts?.new ?? 0) + (f.leadCounts?.contacted ?? 0)}</span>
                     </TableCell>
-                    <TableCell className="text-slate-800 font-medium">{f.totalLeads}</TableCell>
-                    <TableCell className="text-slate-800 font-medium">₹{(f.totalEarnings || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-center">
+                      <span className="inline-block min-w-[2rem] text-center font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-sm">{f.leadCounts?.contacted ?? 0}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="inline-block min-w-[2rem] text-center font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-sm">{f.leadCounts?.converted ?? 0}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="inline-block min-w-[2rem] text-center font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded text-sm">{f.leadCounts?.rejected ?? 0}</span>
+                    </TableCell>
+                    <TableCell className="text-slate-800 font-medium whitespace-nowrap">
+                      ₹{(f.totalEarnings || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="font-semibold text-blue-700">₹{(f.totalPaid || 0).toLocaleString()}</span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {(() => {
+                        const bal = Math.max(0, (f.totalEarnings || 0) - (f.totalPaid || 0));
+                        return (
+                          <span className={`font-semibold ${bal > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+                            ₹{bal.toLocaleString()}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {(() => {
+                        const bal = Math.max(0, (f.totalEarnings || 0) - (f.totalPaid || 0));
+                        return (
+                          <button
+                            onClick={() => handlePayment(f._id, 'pay-now')}
+                            disabled={bal <= 0 || payingId === f._id}
+                            className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md transition-colors whitespace-nowrap border
+                              ${bal > 0
+                                ? 'text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700'
+                                : 'text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed'
+                              }
+                            `}
+                          >
+                            {payingId === f._id ? (
+                              <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <IndianRupee className="w-3.5 h-3.5" />
+                            )}
+                            Pay Now
+                          </button>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 min-w-[160px]">
+                        <div className="relative flex-1">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Amount"
+                            value={manualAmounts[f._id] || ''}
+                            onChange={e => setManualAmounts(prev => ({ ...prev, [f._id]: e.target.value }))}
+                            className="w-full pl-5 pr-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handlePayment(f._id, 'manual')}
+                          disabled={!manualAmounts[f._id] || payingId === f._id}
+                          className="flex-shrink-0 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {f.status === 'active' ? (
                         <span className="inline-flex items-center gap-1 text-teal-600 text-sm font-medium">
@@ -299,6 +488,14 @@ export default function AdminFreelancersPage() {
                         {f.status === 'active' ? 'Deactivate' : 'Activate'}
                       </Button>
                     </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/admin/dashboard/freelancers/${f._id}/earning`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-md transition-colors whitespace-nowrap"
+                      >
+                        View Earning
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -306,6 +503,122 @@ export default function AdminFreelancersPage() {
           </Table>
         </div>
       </Card>
+
+      {/* Commission Settings Modal */}
+      <Dialog open={showCommissionModal} onOpenChange={setShowCommissionModal}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-800">
+              <Settings2 className="w-5 h-5 text-violet-600" />
+              Commission Settings
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Current active settings badge */}
+          {(commissionSettings.pmsCommissionPercent !== undefined || commissionSettings.freelancerCommissionPercent !== undefined) && (
+            <div className="rounded-lg bg-violet-50 border border-violet-100 px-4 py-3 text-xs text-violet-700 space-y-1">
+              <p className="font-semibold mb-1">Currently Active</p>
+              {commissionSettings.pmsCommissionPercent !== undefined && (
+                <p>PMS Com: <span className="font-bold">{commissionSettings.pmsCommissionPercent}%</span></p>
+              )}
+              {commissionSettings.freelancerCommissionPercent !== undefined && (
+                <p>Freelancer Com: <span className="font-bold">{commissionSettings.freelancerCommissionPercent}%</span></p>
+              )}
+              {commissionSettings.effectiveFrom && (
+                <p className="flex items-center gap-1">
+                  <CalendarDays className="w-3 h-3" />
+                  Effective from: <span className="font-bold">{new Date(commissionSettings.effectiveFrom).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <Percent className="w-3.5 h-3.5 text-violet-500" />
+                PMS Commission %
+              </label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="e.g. 10"
+                  value={commissionForm.pmsCommissionPercent ?? ''}
+                  onChange={e =>
+                    setCommissionForm(f => ({
+                      ...f,
+                      pmsCommissionPercent: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                    }))
+                  }
+                  className="pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <Percent className="w-3.5 h-3.5 text-violet-500" />
+                Freelancer Commission %
+              </label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="e.g. 5"
+                  value={commissionForm.freelancerCommissionPercent ?? ''}
+                  onChange={e =>
+                    setCommissionForm(f => ({
+                      ...f,
+                      freelancerCommissionPercent: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                    }))
+                  }
+                  className="pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <CalendarDays className="w-3.5 h-3.5 text-violet-500" />
+                Effective From
+              </label>
+              <Input
+                type="date"
+                value={commissionForm.effectiveFrom ?? ''}
+                onChange={e => setCommissionForm(f => ({ ...f, effectiveFrom: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCommissionModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveCommissionSettings}
+              disabled={savingCommission}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              {savingCommission ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : 'Save Settings'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Freelancer Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>

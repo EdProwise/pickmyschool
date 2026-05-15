@@ -1,34 +1,41 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { TrendingUp, CheckCircle2, Clock, Wallet, Calendar, Building2, Home, IndianRupee, Eye } from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import {
+  TrendingUp, Wallet, Calendar, Building2, Home,
+  IndianRupee, ArrowLeft, User, Phone, MapPin, Eye,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-interface Earning {
-  _id: string; amount: number; type: string; status: 'pending' | 'paid';
-  description?: string; createdAt: string;
-  leadId?: { studentName: string; schoolInterested?: string };
+interface FreelancerInfo {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  city?: string;
+  totalLeads: number;
+  totalEarnings: number;
+  status: string;
 }
 
 interface Lead {
   _id: string;
-  studentName: string;
-  parentName: string;
-  phone: string;
-  grade: string;
   schoolInterested?: string;
   schoolType?: string;
   status: string;
   computedEarnings?: number | null;
   earnings: number;
+  studentName: string;
+  parentName: string;
   createdAt: string;
   convertedAt?: string | null;
 }
 
 interface DaySummary {
-  date: string;      // display string
-  dateKey: string;   // YYYY-MM-DD for sorting
+  date: string;
+  dateKey: string;
   dayAdmissions: number;
   hostelAdmissions: number;
   dayEarning: number;
@@ -42,40 +49,31 @@ function isHostelType(schoolType?: string) {
   return t.includes('hostel') || t.includes('residential') || t.includes('boarding');
 }
 
-export default function EarningPage() {
+export default function AdminFreelancerEarningPage() {
   const router = useRouter();
-  const [earnings, setEarnings] = useState<Earning[]>([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
-  const [totalPaid, setTotalPaid] = useState(0);
-  const [totalPending, setTotalPending] = useState(0);
+  const params = useParams();
+  const freelancerId = params.id as string;
+
+  const [freelancer, setFreelancer] = useState<FreelancerInfo | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('freelancer_token');
-    if (!token) { router.push('/freelancer/login'); return; }
+    const token = localStorage.getItem('admin_token');
+    if (!token) { router.push('/admin/login'); return; }
 
-    Promise.all([
-      fetch('/api/freelancer/auth/me',  { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/freelancer/earnings', { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/freelancer/leads',    { headers: { Authorization: `Bearer ${token}` } }),
-    ]).then(async ([meRes, earningsRes, leadsRes]) => {
-      if (!meRes.ok) { router.push('/freelancer/login'); return; }
-      const meData = await meRes.json();
-      setTotalEarnings(meData.freelancer?.totalEarnings || 0);
-      if (earningsRes.ok) {
-        const data = await earningsRes.json();
-        setEarnings(data.earnings || []);
-        setTotalPaid(data.totalPaid || 0);
-        setTotalPending(data.totalPending || 0);
-      }
-      if (leadsRes.ok) {
-        const data = await leadsRes.json();
+    fetch(`/api/admin/freelancers/${freelancerId}/earnings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async res => {
+        if (!res.ok) { router.push('/admin/dashboard/freelancers'); return; }
+        const data = await res.json();
+        setFreelancer(data.freelancer);
         setLeads(data.leads || []);
-      }
-    }).catch(() => router.push('/freelancer/login'))
+      })
+      .catch(() => router.push('/admin/dashboard/freelancers'))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [freelancerId, router]);
 
   // Build date-wise summary from converted leads
   const dateSummary = useMemo<DaySummary[]>(() => {
@@ -84,7 +82,7 @@ export default function EarningPage() {
 
     for (const lead of converted) {
       const d = new Date(lead.convertedAt ?? lead.createdAt);
-      const dateKey = d.toISOString().slice(0, 10); // YYYY-MM-DD
+      const dateKey = d.toISOString().slice(0, 10);
       const display = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
       if (!map[dateKey]) {
         map[dateKey] = { date: display, dateKey, dayAdmissions: 0, hostelAdmissions: 0, dayEarning: 0, hostelEarning: 0, total: 0 };
@@ -111,27 +109,81 @@ export default function EarningPage() {
     total: dateSummary.reduce((s, r) => s + r.total, 0),
   }), [dateSummary]);
 
+  const convertedCount = leads.filter(l => l.status === 'converted').length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  if (!freelancer) return null;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">Earnings</h2>
-        <p className="text-slate-500 mt-1">Track your commissions and payouts</p>
+    <div className="p-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="sm" onClick={() => router.push('/admin/dashboard/freelancers')} className="gap-1.5">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Freelancer Earnings</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Conversion summary for {freelancer.name}</p>
+        </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Freelancer info card */}
+      <Card className="border-0 shadow-md">
+        <CardContent className="p-5">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                <User className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800">{freelancer.name}</p>
+                <p className="text-xs text-slate-500">{freelancer.email}</p>
+              </div>
+            </div>
+            {freelancer.phone && (
+              <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                <Phone className="w-4 h-4 text-slate-400" />
+                {freelancer.phone}
+              </div>
+            )}
+            {freelancer.city && (
+              <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                <MapPin className="w-4 h-4 text-slate-400" />
+                {freelancer.city}
+              </div>
+            )}
+            <div className="ml-auto flex gap-4 text-center">
+              <div>
+                <p className="text-xs text-slate-500">Total Leads</p>
+                <p className="text-xl font-bold text-slate-800">{freelancer.totalLeads}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Converted</p>
+                <p className="text-xl font-bold text-emerald-600">{convertedCount}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Total Earned</p>
+                <p className="text-xl font-bold text-slate-800">₹{summaryTotals.total.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Total Earned', value: totalEarnings, icon: TrendingUp,   color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Paid Out',     value: totalPaid,     icon: CheckCircle2, color: 'text-blue-600',    bg: 'bg-blue-50' },
-          { label: 'Pending',      value: totalPending,  icon: Clock,        color: 'text-amber-600',   bg: 'bg-amber-50' },
+          { label: 'Day School Earnings', value: summaryTotals.dayEarning, icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Hostel School Earnings', value: summaryTotals.hostelEarning, icon: Home, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Total Earnings', value: summaryTotals.total, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
         ].map((item, i) => {
           const Icon = item.icon;
           return (
@@ -200,45 +252,31 @@ export default function EarningPage() {
                           <span className="inline-block min-w-[2rem] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs">
                             {row.dayAdmissions}
                           </span>
-                        ) : (
-                          <span className="text-slate-300 text-xs">—</span>
-                        )}
+                        ) : <span className="text-slate-300 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {row.hostelAdmissions > 0 ? (
                           <span className="inline-block min-w-[2rem] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded text-xs">
                             {row.hostelAdmissions}
                           </span>
-                        ) : (
-                          <span className="text-slate-300 text-xs">—</span>
-                        )}
+                        ) : <span className="text-slate-300 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {row.dayEarning > 0 ? (
-                          <span className="font-semibold text-blue-700 text-xs whitespace-nowrap">
-                            ₹{row.dayEarning.toLocaleString()}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300 text-xs">—</span>
-                        )}
+                          <span className="font-semibold text-blue-700 text-xs whitespace-nowrap">₹{row.dayEarning.toLocaleString()}</span>
+                        ) : <span className="text-slate-300 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {row.hostelEarning > 0 ? (
-                          <span className="font-semibold text-purple-700 text-xs whitespace-nowrap">
-                            ₹{row.hostelEarning.toLocaleString()}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300 text-xs">—</span>
-                        )}
+                          <span className="font-semibold text-purple-700 text-xs whitespace-nowrap">₹{row.hostelEarning.toLocaleString()}</span>
+                        ) : <span className="text-slate-300 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="font-bold text-emerald-700 text-xs whitespace-nowrap">
-                          ₹{row.total.toLocaleString()}
-                        </span>
+                        <span className="font-bold text-emerald-700 text-xs whitespace-nowrap">₹{row.total.toLocaleString()}</span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => router.push(`/freelancer/earning/${row.dateKey}`)}
+                          onClick={() => router.push(`/admin/dashboard/freelancers/${freelancerId}/earning/${row.dateKey}`)}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-2.5 py-1 rounded-md transition-colors whitespace-nowrap"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -248,25 +286,14 @@ export default function EarningPage() {
                     </tr>
                   ))}
                 </tbody>
-                {/* Totals row */}
                 <tfoot>
                   <tr className="bg-emerald-50 border-t-2 border-emerald-200">
                     <td className="px-4 py-3 font-bold text-slate-700 text-xs">Total</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="font-bold text-blue-700 text-xs">{summaryTotals.dayAdmissions}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="font-bold text-purple-700 text-xs">{summaryTotals.hostelAdmissions}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-bold text-blue-700 text-xs">₹{summaryTotals.dayEarning.toLocaleString()}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-bold text-purple-700 text-xs">₹{summaryTotals.hostelEarning.toLocaleString()}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-bold text-emerald-700 text-sm">₹{summaryTotals.total.toLocaleString()}</span>
-                    </td>
+                    <td className="px-4 py-3 text-center"><span className="font-bold text-blue-700 text-xs">{summaryTotals.dayAdmissions}</span></td>
+                    <td className="px-4 py-3 text-center"><span className="font-bold text-purple-700 text-xs">{summaryTotals.hostelAdmissions}</span></td>
+                    <td className="px-4 py-3 text-right"><span className="font-bold text-blue-700 text-xs">₹{summaryTotals.dayEarning.toLocaleString()}</span></td>
+                    <td className="px-4 py-3 text-right"><span className="font-bold text-purple-700 text-xs">₹{summaryTotals.hostelEarning.toLocaleString()}</span></td>
+                    <td className="px-4 py-3 text-right"><span className="font-bold text-emerald-700 text-sm">₹{summaryTotals.total.toLocaleString()}</span></td>
                     <td className="px-4 py-3" />
                   </tr>
                 </tfoot>
@@ -275,38 +302,6 @@ export default function EarningPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Transaction history */}
-      {earnings.length > 0 && (
-        <Card className="border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-slate-800">Transaction History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {earnings.map(e => (
-                <div key={e._id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                  <div>
-                    <p className="font-medium text-slate-800 text-sm capitalize">{e.type}</p>
-                    <p className="text-xs text-slate-500">
-                      {e.leadId ? `${e.leadId.studentName} · ${e.leadId.schoolInterested || 'N/A'}` : e.description || '—'}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {new Date(e.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-800">₹{e.amount.toLocaleString()}</p>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${e.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {e.status === 'paid' ? 'Paid' : 'Pending'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -6,9 +6,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, Building2, MapPin, Star, GraduationCap } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Search, Building2, MapPin, Star, ExternalLink, Pencil, IndianRupee } from 'lucide-react';
 import { toast } from 'sonner';
-import type { School } from '@/lib/api';
+import type { School as SchoolBase } from '@/lib/api';
+
+type School = SchoolBase & {
+  leadCounts?: { total: number; new: number; contacted: number; converted: number; rejected: number };
+};
+
+interface CommissionForm {
+  dayAmount: string;
+  dayEffectiveFrom: string;
+  hostelAmount: string;
+  hostelEffectiveFrom: string;
+}
 
 export default function SchoolsPage() {
   const router = useRouter();
@@ -21,6 +39,17 @@ export default function SchoolsPage() {
   const [availableCities, setAvailableCities] = useState<{ name: string; count: number }[]>([]);
   const [availableStates, setAvailableStates] = useState<{ name: string; count: number }[]>([]);
   const [availableSchoolTypes, setAvailableSchoolTypes] = useState<{ name: string; count: number }[]>([]);
+
+  // Commission dialog state
+  const [commissionDialogOpen, setCommissionDialogOpen] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [commissionForm, setCommissionForm] = useState<CommissionForm>({
+    dayAmount: '',
+    dayEffectiveFrom: '',
+    hostelAmount: '',
+    hostelEffectiveFrom: '',
+  });
+  const [savingCommission, setSavingCommission] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -89,12 +118,87 @@ export default function SchoolsPage() {
       if (response.ok) {
         const data = await response.json();
         toast.success(data.message);
-        loadSchools(); // Refresh the list
+        loadSchools();
       } else {
         toast.error('Failed to toggle featured status');
       }
     } catch (error) {
       toast.error('Failed to toggle featured status');
+    }
+  };
+
+  const openCommissionDialog = (school: School) => {
+    setSelectedSchool(school);
+    setCommissionForm({
+      dayAmount: school.daySchoolCommission?.amount?.toString() ?? '',
+      dayEffectiveFrom: school.daySchoolCommission?.effectiveFrom ?? '',
+      hostelAmount: school.hostelSchoolCommission?.amount?.toString() ?? '',
+      hostelEffectiveFrom: school.hostelSchoolCommission?.effectiveFrom ?? '',
+    });
+    setCommissionDialogOpen(true);
+  };
+
+  const saveCommission = async () => {
+    if (!selectedSchool) return;
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+
+    // At least one commission must have an amount
+    if (!commissionForm.dayAmount && !commissionForm.hostelAmount) {
+      toast.error('Please enter at least one commission amount');
+      return;
+    }
+
+    setSavingCommission(true);
+    try {
+      const body: Record<string, unknown> = {};
+
+      if (commissionForm.dayAmount) {
+        body.daySchoolCommission = {
+          amount: parseFloat(commissionForm.dayAmount),
+          effectiveFrom: commissionForm.dayEffectiveFrom,
+        };
+      }
+
+      if (commissionForm.hostelAmount) {
+        body.hostelSchoolCommission = {
+          amount: parseFloat(commissionForm.hostelAmount),
+          effectiveFrom: commissionForm.hostelEffectiveFrom,
+        };
+      }
+
+      const response = await fetch(`/api/admin/schools/${selectedSchool.id}/commission`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Commission updated successfully');
+        setSchools((prev) =>
+          prev.map((s) =>
+            s.id === selectedSchool.id
+              ? {
+                  ...s,
+                  daySchoolCommission: data.daySchoolCommission ?? s.daySchoolCommission,
+                  hostelSchoolCommission: data.hostelSchoolCommission ?? s.hostelSchoolCommission,
+                }
+              : s
+          )
+        );
+        setCommissionDialogOpen(false);
+      } else {
+        toast.error(data?.error || 'Failed to update commission');
+      }
+    } catch (error) {
+      toast.error('Failed to update commission');
+    } finally {
+      setSavingCommission(false);
     }
   };
 
@@ -106,6 +210,20 @@ export default function SchoolsPage() {
       !filterSchoolType || filterSchoolType === 'all' || school.schoolType === filterSchoolType;
     return matchesSearch && matchesCity && matchesState && matchesType;
   });
+
+  const formatCommission = (com?: { amount: number; effectiveFrom: string } | null) => {
+    if (!com || com.amount === undefined) return null;
+    return {
+      amount: `₹${com.amount.toLocaleString('en-IN')}`,
+      from: com.effectiveFrom
+        ? new Date(com.effectiveFrom).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : null,
+    };
+  };
 
   if (loading) {
     return (
@@ -251,83 +369,245 @@ export default function SchoolsPage() {
         </CardContent>
       </Card>
 
-      {/* Schools List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[700px] overflow-y-auto pr-2">
-        {filteredSchools.map((school) => (
-          <Card
-            key={school.id}
-            className="border-0 shadow-md hover:shadow-lg transition-shadow"
-          >
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                  {school.logo || school.bannerImage ? (
-                    <img
-                      src={school.logo || school.bannerImage || ''}
-                      alt={school.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Building2 className="w-10 h-10 text-slate-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 
-                      className="font-bold text-slate-800 text-lg truncate cursor-pointer hover:text-cyan-600"
-                      onClick={() => window.open(`/schools/${school.slug || school.id}`, '_blank')}
-                    >
-                      {school.name}
-                    </h3>
-                    <Button
-                      size="sm"
-                      variant={school.featured ? 'default' : 'outline'}
-                      onClick={(e) => toggleFeatured(school.id, e)}
-                      className={`ml-2 flex-shrink-0 h-8 ${
-                        school.featured
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white border-0'
-                          : ''
-                      }`}
-                      title={school.featured ? 'Remove from featured' : 'Mark as featured'}
-                    >
-                      <Star className={`w-4 h-4 ${school.featured ? 'fill-white' : ''}`} />
-                    </Button>
-                  </div>
-                  <div className="space-y-1 text-sm text-slate-600">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-slate-400" />
-                      <span>
-                        {school.city}, {school.state}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-slate-400" />
-                      <span>
-                        {school.board} • {school.schoolType}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      <span>
-                        {school.rating} ({school.reviewCount} reviews)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Schools Table */}
+      <Card className="border-0 shadow-md">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">#</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">School Name</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">City</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">State</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Board</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">School Type</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Featured</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Profile</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Day School Com.</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Hostel School Com.</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-700">Leads</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-700">Contacted</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-700">Converted</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-700">Rejected</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-700">Earning</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSchools.length === 0 ? (
+                  <tr>
+                    <td colSpan={15} className="text-center py-12 text-slate-500">
+                      <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p>No schools match your criteria</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSchools.map((school, index) => {
+                    const dayCom = formatCommission(school.daySchoolCommission);
+                    const hostelCom = formatCommission(school.hostelSchoolCommission);
+                    return (
+                      <tr
+                        key={school.id}
+                        className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-4 py-3 text-slate-400">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-slate-800 max-w-[220px]">
+                          <span className="block truncate" title={school.name}>{school.name}</span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{school.city || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600">{school.state || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600">{school.board || '—'}</td>
+                        <td className="px-4 py-3">
+                          {school.schoolType ? (
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                              {school.schoolType}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button
+                            size="sm"
+                            variant={school.featured ? 'default' : 'outline'}
+                            onClick={(e) => toggleFeatured(school.id, e)}
+                            className={`h-7 px-2 ${
+                              school.featured
+                                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white border-0'
+                                : ''
+                            }`}
+                            title={school.featured ? 'Remove from featured' : 'Mark as featured'}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${school.featured ? 'fill-white' : ''}`} />
+                          </Button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <a
+                            href={`/schools/${school.slug || school.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-cyan-600 hover:text-cyan-800 font-medium"
+                          >
+                            View <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </td>
+                        {/* Day School Commission */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              {dayCom ? (
+                                <div>
+                                  <span className="font-semibold text-slate-800">{dayCom.amount}</span>
+                                  {dayCom.from && (
+                                    <p className="text-xs text-slate-400">from {dayCom.from}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-xs">Not set</span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => openCommissionDialog(school)}
+                              className="text-slate-400 hover:text-cyan-600 transition-colors"
+                              title="Edit commission"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                        {/* Hostel School Commission */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              {hostelCom ? (
+                                <div>
+                                  <span className="font-semibold text-slate-800">{hostelCom.amount}</span>
+                                  {hostelCom.from && (
+                                    <p className="text-xs text-slate-400">from {hostelCom.from}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-xs">Not set</span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => openCommissionDialog(school)}
+                              className="text-slate-400 hover:text-cyan-600 transition-colors"
+                              title="Edit commission"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                        {/* PMS Lead counts */}
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-block min-w-[2rem] font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">{(school.leadCounts?.new ?? 0) + (school.leadCounts?.contacted ?? 0)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-block min-w-[2rem] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs">{school.leadCounts?.contacted ?? 0}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-block min-w-[2rem] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">{school.leadCounts?.converted ?? 0}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-block min-w-[2rem] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs">{school.leadCounts?.rejected ?? 0}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <a
+                            href={`/admin/dashboard/schools/${school.id}/earning`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-md transition-colors whitespace-nowrap"
+                          >
+                            <IndianRupee className="w-3.5 h-3.5" />
+                            View Details
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
-      {filteredSchools.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-500">No schools match your criteria</p>
-        </div>
-      )}
+      {/* Commission Edit Dialog */}
+      <Dialog open={commissionDialogOpen} onOpenChange={setCommissionDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-slate-800">
+              Set Commission — {selectedSchool?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* Day School Commission */}
+            <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-700">Day School Commission</p>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Amount (₹)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 5000"
+                  value={commissionForm.dayAmount}
+                  onChange={(e) =>
+                    setCommissionForm((f) => ({ ...f, dayAmount: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Effective From</label>
+                <Input
+                  type="date"
+                  value={commissionForm.dayEffectiveFrom}
+                  onChange={(e) =>
+                    setCommissionForm((f) => ({ ...f, dayEffectiveFrom: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Hostel School Commission */}
+            <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-700">Hostel School Commission</p>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Amount (₹)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 8000"
+                  value={commissionForm.hostelAmount}
+                  onChange={(e) =>
+                    setCommissionForm((f) => ({ ...f, hostelAmount: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Effective From</label>
+                <Input
+                  type="date"
+                  value={commissionForm.hostelEffectiveFrom}
+                  onChange={(e) =>
+                    setCommissionForm((f) => ({ ...f, hostelEffectiveFrom: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommissionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={saveCommission}
+              disabled={savingCommission}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {savingCommission ? 'Saving...' : 'Save Commission'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
