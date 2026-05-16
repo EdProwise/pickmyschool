@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { FreelancerLead, Freelancer, School, SiteSettings } from '@/lib/models';
 import jwt from 'jsonwebtoken';
+import { sendSchoolLeadNotificationEmail } from '@/lib/email';
 
 function getFreelancerFromToken(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
@@ -110,6 +111,39 @@ export async function POST(request: NextRequest) {
 
     // Increment total leads count
     await Freelancer.findByIdAndUpdate(decoded.freelancerId, { $inc: { totalLeads: 1 } });
+
+    // Notify the school if schoolInterested is provided
+    if (schoolInterested?.trim()) {
+      try {
+        const escapedName = schoolInterested.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const targetSchool = await School.findOne({
+          name: { $regex: `^${escapedName}$`, $options: 'i' },
+        }).select('name email contactEmail').lean();
+
+        if (targetSchool) {
+          const schoolEmail = (targetSchool as any).contactEmail || (targetSchool as any).email;
+          if (schoolEmail) {
+            const freelancerDoc = await Freelancer.findById(decoded.freelancerId).select('name').lean();
+            await sendSchoolLeadNotificationEmail(
+              schoolEmail,
+              (targetSchool as any).name,
+              parentName.trim(),
+              studentName.trim(),
+              phone.trim(),
+              grade.trim(),
+              'PMS Lead',
+              {
+                city: city?.trim(),
+                schoolType: schoolType?.trim(),
+                freelancerName: (freelancerDoc as any)?.name,
+              },
+            );
+          }
+        }
+      } catch (emailErr) {
+        console.error('Failed to send school PMS lead notification:', emailErr);
+      }
+    }
 
     return NextResponse.json({ lead, message: 'Lead submitted successfully' }, { status: 201 });
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { Enquiry, User, School, Notification } from '@/lib/models';
 import jwt from 'jsonwebtoken';
+import { sendSchoolLeadNotificationEmail } from '@/lib/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const VALID_STATUSES = ['New', 'In Progress', 'Converted', 'Lost'];
@@ -449,6 +450,25 @@ export async function POST(request: NextRequest) {
     }
 
     const newEnquiry = await Enquiry.create(createPayload);
+
+    // Notify the school's contact email (or school user's email) about the new enquiry
+    const schoolContactEmail = (school as any).contactEmail || (school as any).email || userRecord.email;
+    if (schoolContactEmail) {
+      try {
+        await sendSchoolLeadNotificationEmail(
+          schoolContactEmail,
+          school.name,
+          newEnquiryPayload.studentName,
+          newEnquiryPayload.studentName,
+          newEnquiryPayload.studentPhone,
+          newEnquiryPayload.studentClass,
+          'Enquiry',
+          { city: newEnquiryPayload.studentState || newEnquiryPayload.studentAddress || undefined },
+        );
+      } catch (emailErr) {
+        console.error('Failed to send school enquiry notification:', emailErr);
+      }
+    }
 
     const webhookUrl = school.whatsappWebhookUrl || 'https://edprowisebooster.edprowise.com/api/webhooks/external-enquiry';
     const apiKey = school.whatsappApiKey || 'epb_1100ec6ae820e021c94b3ff55b42e727871bca4f403325e4';
