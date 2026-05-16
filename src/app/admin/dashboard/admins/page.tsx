@@ -274,104 +274,88 @@ export default function AdminManagementPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {admins.map((admin) => (
-          <Card key={admin._id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      admin.isSuperAdmin ? 'bg-amber-100' : 'bg-slate-100'
-                    }`}
-                  >
-                    {admin.isSuperAdmin ? (
-                      <Crown className="w-6 h-6 text-amber-600" />
-                    ) : (
-                      <User className="w-6 h-6 text-slate-600" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-800">{admin.name}</h3>
-                      {admin.isSuperAdmin && (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
-                          Super Admin
+      <Card className="border-0 shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Name</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Email</th>
+                <th className="text-center px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Role</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Created</th>
+                <th className="text-center px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {admins.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-slate-500">
+                    <User className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    No admins found
+                  </td>
+                </tr>
+              ) : (
+                admins.map((admin) => (
+                  <tr key={admin._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${admin.isSuperAdmin ? 'bg-amber-100' : 'bg-slate-100'}`}>
+                          {admin.isSuperAdmin ? (
+                            <Crown className="w-4 h-4 text-amber-600" />
+                          ) : (
+                            <User className="w-4 h-4 text-slate-500" />
+                          )}
+                        </div>
+                        <span className="font-medium text-slate-800">{admin.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{admin.email}</td>
+                    <td className="px-4 py-3 text-center">
+                      {admin.isSuperAdmin ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          <Crown className="w-3 h-3" /> Super Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                          <Shield className="w-3 h-3" /> Admin
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {admin.email}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(admin.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  {!admin.isSuperAdmin && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Admin</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete <strong>{admin.name}</strong>? This action
-                            cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteAdmin(admin._id)}
-                            className="bg-red-500 hover:bg-red-600"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {admins.length === 0 && (
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <User className="w-8 h-8 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">No Admins Found</h3>
-              <p className="text-slate-600 mb-4">
-                Get started by adding your first admin account.
-              </p>
-              <Button
-                onClick={() => setIsDialogOpen(true)}
-                className="gap-2"
-                style={{ background: 'linear-gradient(135deg, #04d3d3 0%, #03a9a9 100%)' }}
-              >
-                <UserPlus className="w-4 h-4" />
-                Add Admin
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
+                      {new Date(admin.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {!admin.isSuperAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Admin</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete <strong>{admin.name}</strong>? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteAdmin(admin._id)} className="bg-red-500 hover:bg-red-600">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

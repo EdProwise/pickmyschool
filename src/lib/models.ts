@@ -116,6 +116,8 @@ export interface ISchool extends Document {
   awards?: string[];
   newsletterUrl?: string;
   feesStructureUrl?: string;
+  brochureUrl?: string;
+  brochureVisible?: boolean;
   feesStructure?: Record<string, unknown>;
   facilityImages?: Record<string, string[]>;
   logo?: string;
@@ -227,6 +229,8 @@ const SchoolSchema = new Schema<ISchool>({
   awards: [{ type: String }],
   newsletterUrl: { type: String },
   feesStructureUrl: { type: String },
+  brochureUrl: { type: String },
+  brochureVisible: { type: Boolean, default: true },
   feesStructure: { type: Schema.Types.Mixed },
   facilityImages: { type: Schema.Types.Mixed },
   logo: { type: String },

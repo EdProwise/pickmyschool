@@ -4,10 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Calendar, Building2, Home, IndianRupee, Eye,
   ArrowLeft, User, Phone, GraduationCap, Tag,
-  FileText, CheckCircle2, RefreshCw, Receipt,
+  FileText, CheckCircle2, RefreshCw, Receipt, Download, FileSpreadsheet,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import * as XLSX from 'xlsx';
 
 interface PmsLead {
   _id: string;
@@ -58,6 +59,8 @@ export function PMSInvoiceSection() {
   const [schoolName, setSchoolName] = useState('');
   // Detail view state: null = summary, dateKey string = detail for that date
   const [detailDate, setDetailDate] = useState<string | null>(null);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -117,15 +120,113 @@ export function PMSInvoiceSection() {
     }).sort((a, b) => b.dateKey.localeCompare(a.dateKey));
   }, [leads, dayRate, hostelRate]);
 
+  const filteredSummary = useMemo(() => {
+    if (!fromDate && !toDate) return dateSummary;
+    return dateSummary.filter(r => {
+      if (fromDate && r.dateKey < fromDate) return false;
+      if (toDate && r.dateKey > toDate) return false;
+      return true;
+    });
+  }, [dateSummary, fromDate, toDate]);
+
   const grandTotals = useMemo(() => ({
-    dayAdmissions: dateSummary.reduce((s, r) => s + r.dayAdmissions, 0),
-    hostelAdmissions: dateSummary.reduce((s, r) => s + r.hostelAdmissions, 0),
-    dayCommission: dateSummary.reduce((s, r) => s + r.dayCommission, 0),
-    hostelCommission: dateSummary.reduce((s, r) => s + r.hostelCommission, 0),
-    totalExclTax: dateSummary.reduce((s, r) => s + r.totalExclTax, 0),
-    gst: dateSummary.reduce((s, r) => s + r.gst, 0),
-    totalInvoice: dateSummary.reduce((s, r) => s + r.totalInvoice, 0),
-  }), [dateSummary]);
+    dayAdmissions: filteredSummary.reduce((s, r) => s + r.dayAdmissions, 0),
+    hostelAdmissions: filteredSummary.reduce((s, r) => s + r.hostelAdmissions, 0),
+    dayCommission: filteredSummary.reduce((s, r) => s + r.dayCommission, 0),
+    hostelCommission: filteredSummary.reduce((s, r) => s + r.hostelCommission, 0),
+    totalExclTax: filteredSummary.reduce((s, r) => s + r.totalExclTax, 0),
+    gst: filteredSummary.reduce((s, r) => s + r.gst, 0),
+    totalInvoice: filteredSummary.reduce((s, r) => s + r.totalInvoice, 0),
+  }), [filteredSummary]);
+
+  const exportExcel = () => {
+    const rows = filteredSummary.map(r => ({
+      'Date': r.date,
+      'Day Admissions': r.dayAdmissions,
+      'Hostel Admissions': r.hostelAdmissions,
+      'Day Commission (₹)': r.dayCommission,
+      'Hostel Commission (₹)': r.hostelCommission,
+      'Invoice Excl Tax (₹)': r.totalExclTax,
+      'GST @18% (₹)': r.gst,
+      'Total Invoice Amt (₹)': r.totalInvoice,
+    }));
+    rows.push({
+      'Date': 'TOTAL',
+      'Day Admissions': grandTotals.dayAdmissions,
+      'Hostel Admissions': grandTotals.hostelAdmissions,
+      'Day Commission (₹)': grandTotals.dayCommission,
+      'Hostel Commission (₹)': grandTotals.hostelCommission,
+      'Invoice Excl Tax (₹)': grandTotals.totalExclTax,
+      'GST @18% (₹)': grandTotals.gst,
+      'Total Invoice Amt (₹)': grandTotals.totalInvoice,
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 20 }, { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 22 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PMS Invoice');
+    const fileName = `PMS_Invoice${schoolName ? `_${schoolName.replace(/\s+/g, '_')}` : ''}${fromDate ? `_from_${fromDate}` : ''}${toDate ? `_to_${toDate}` : ''}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+  const exportPDF = () => {
+    const filterLabel = fromDate || toDate
+      ? `Period: ${fromDate || '—'} to ${toDate || '—'}`
+      : 'All Dates';
+
+    const rowsHtml = filteredSummary.map(r => `
+      <tr>
+        <td>${r.date}</td>
+        <td class="num">${r.dayAdmissions || '—'}</td>
+        <td class="num">${r.hostelAdmissions || '—'}</td>
+        <td class="num">${r.dayCommission > 0 ? '₹' + r.dayCommission.toLocaleString() : '—'}</td>
+        <td class="num">${r.hostelCommission > 0 ? '₹' + r.hostelCommission.toLocaleString() : '—'}</td>
+        <td class="num">${r.totalExclTax > 0 ? '₹' + r.totalExclTax.toLocaleString() : '—'}</td>
+        <td class="num">${r.gst > 0 ? '₹' + r.gst.toLocaleString() : '—'}</td>
+        <td class="num bold green">₹${r.totalInvoice.toLocaleString()}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>PMS Invoice${schoolName ? ' - ' + schoolName : ''}</title>
+      <style>
+        body{font-family:Arial,sans-serif;font-size:11px;color:#1e293b;margin:24px}
+        h2{font-size:17px;margin:0 0 4px}
+        .sub{color:#64748b;font-size:10px;margin-bottom:16px}
+        table{width:100%;border-collapse:collapse}
+        th{background:#f8fafc;color:#475569;font-size:9px;text-align:left;padding:7px 8px;border-bottom:2px solid #e2e8f0}
+        td{padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:10px}
+        .num{text-align:right}
+        .bold{font-weight:700}
+        .green{color:#15803d}
+        tfoot td{background:#f0fdf4;font-weight:700;border-top:2px solid #cbd5e1}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <h2>PMS Invoice${schoolName ? ' — ' + schoolName : ''}</h2>
+      <div class="sub">${filterLabel}</div>
+      <table>
+        <thead><tr>
+          <th>Date</th><th class="num">Day Admissions</th><th class="num">Hostel Admissions</th>
+          <th class="num">Day Commission</th><th class="num">Hostel Commission</th>
+          <th class="num">Excl Tax</th><th class="num">GST @18%</th><th class="num">Total Invoice</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr>
+          <td>Total</td>
+          <td class="num">${grandTotals.dayAdmissions}</td>
+          <td class="num">${grandTotals.hostelAdmissions}</td>
+          <td class="num">₹${grandTotals.dayCommission.toLocaleString()}</td>
+          <td class="num">₹${grandTotals.hostelCommission.toLocaleString()}</td>
+          <td class="num">₹${grandTotals.totalExclTax.toLocaleString()}</td>
+          <td class="num">₹${grandTotals.gst.toLocaleString()}</td>
+          <td class="num green">₹${grandTotals.totalInvoice.toLocaleString()}</td>
+        </tr></tfoot>
+      </table>
+      <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script>
+      </body></html>`;
+
+    const w = window.open('', '_blank', 'width=1100,height=700');
+    w?.document.write(html);
+    w?.document.close();
+  };
 
   // Detail view leads for selected date
   const detailLeads = useMemo(() => {
@@ -366,6 +467,51 @@ export function PMSInvoiceSection() {
         </button>
       </div>
 
+      {/* Filters + Export */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-slate-600 whitespace-nowrap">From</label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={e => setFromDate(e.target.value)}
+            className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-slate-600 whitespace-nowrap">To</label>
+          <input
+            type="date"
+            value={toDate}
+            onChange={e => setToDate(e.target.value)}
+            className="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          />
+        </div>
+        {(fromDate || toDate) && (
+          <button
+            onClick={() => { setFromDate(''); setToDate(''); }}
+            className="text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            Clear
+          </button>
+        )}
+        <div className="flex-1" />
+        <button
+          onClick={exportExcel}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          Export Excel
+        </button>
+        <button
+          onClick={exportPDF}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Export PDF
+        </button>
+      </div>
+
       {/* Commission rate info */}
       {(dayRate || hostelRate) && (
         <div className="flex flex-wrap gap-3">
@@ -407,14 +553,21 @@ export function PMSInvoiceSection() {
           <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
             <Calendar className="w-4 h-4 text-emerald-600" />
             Date-wise Lead Conversion Invoice
+            {(fromDate || toDate) && (
+              <span className="text-xs font-normal text-slate-500 ml-1">
+                ({fromDate || '…'} → {toDate || '…'})
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {dateSummary.length === 0 ? (
+          {filteredSummary.length === 0 ? (
             <div className="p-14 text-center">
               <Receipt className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm font-medium">No converted leads yet</p>
-              <p className="text-xs text-slate-400 mt-1">Converted leads will appear here grouped by date</p>
+              <p className="text-slate-500 text-sm font-medium">No converted leads found</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {fromDate || toDate ? 'Try adjusting your date filter' : 'Converted leads will appear here grouped by date'}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -449,7 +602,7 @@ export function PMSInvoiceSection() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {dateSummary.map(row => (
+                  {filteredSummary.map(row => (
                     <tr key={row.dateKey} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3">
                         <span className="text-slate-700 font-medium text-xs whitespace-nowrap">{row.date}</span>

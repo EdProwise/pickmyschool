@@ -1,13 +1,12 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, MessageSquareQuote, Star, Building2, Settings, LogOut, Mail, Users, Database, BookOpen, Briefcase } from 'lucide-react';
+import { LayoutDashboard, MessageSquareQuote, Star, Building2, Settings, LogOut, Mail, Users, Database, BookOpen, Briefcase, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/dashboard/testimonials', icon: MessageSquareQuote, label: 'Testimonials' },
   { href: '/admin/dashboard/spotlight', icon: Star, label: 'Spotlight' },
   { href: '/admin/dashboard/schools', icon: Building2, label: 'Schools' },
   { href: '/admin/dashboard/freelancers', icon: Briefcase, label: 'Freelancers' },
@@ -15,6 +14,8 @@ const navItems = [
   { href: '/admin/dashboard/blogs', icon: BookOpen, label: 'Blogs' },
   { href: '/admin/dashboard/contact-submissions', icon: Mail, label: 'Contact Submissions' },
   { href: '/admin/dashboard/admins', icon: Users, label: 'Manage Admins' },
+  { href: '/admin/dashboard/testimonials', icon: MessageSquareQuote, label: 'Testimonials' },
+  { href: '/admin/dashboard/gtm', icon: Tag, label: 'Google Tag Manager' },
   { href: '/admin/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 

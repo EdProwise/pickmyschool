@@ -12,18 +12,20 @@ const POLICY = [
   {
     title: 'How It Works', icon: Gift, color: 'text-emerald-600', bg: 'bg-emerald-50',
     items: [
-      'Share your unique referral code or link with potential freelancers',
-      'When they register using your code, they become your referral',
-      'Earn a bonus every time your referred freelancer converts a lead',
-      'Track all referral earnings in your Earnings dashboard',
+      'Find out the parents and students who are looking for a school from an online platform or offline platform.',
+      'Share details of the school to parents and students, do counselling and explain in detail about the school.',
+      'Ensure to share correct details of the school.',
+      'If parents/students show interest, please collect Parent Name, Student Name, Phone Number, Class, City, State, School Type (Day School / Hostel School).',
+      'Insert all the details collected in Generate Lead and select the name of the school.',
+      'Lead generated will reach the school and the school will call parents to explain in detail about the school.',
+      'If the parents/students take admission in a school then the school will change the status to Converted.',
+      'Upon Conversion, commission as per defined will be paid.',
     ],
   },
   {
     title: 'Commission Structure', icon: IndianRupee, color: 'text-blue-600', bg: 'bg-blue-50',
     items: [
-      'Lead Commission: ₹500 per successfully converted lead',
-      'Referral Bonus: ₹200 for each lead converted by your referred freelancers',
-      'Performance Bonus: Extra ₹1000 on achieving 10+ conversions in a month',
+      'Lead Commission: Successfully converted lead will be eligible to receive commission as per rate decided',
       'All payments are processed within 7 business days of conversion',
     ],
   },

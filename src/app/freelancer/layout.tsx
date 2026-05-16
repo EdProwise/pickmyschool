@@ -5,17 +5,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard, PlusCircle, ListChecks, Wallet,
-  Gift, Settings, LogOut, Briefcase, Menu, X, School,
+  Gift, Settings, LogOut, Briefcase, Menu, X, School, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const NAV = [
   { href: '/freelancer/dashboard',      label: 'Dashboard',          icon: LayoutDashboard },
+  { href: '/freelancer/list-of-school', label: 'List of School',      icon: School },
   { href: '/freelancer/generate-lead',  label: 'Generate Lead',       icon: PlusCircle },
   { href: '/freelancer/track-lead',     label: 'Track Lead',          icon: ListChecks },
-  { href: '/freelancer/list-of-school', label: 'List of School',      icon: School },
-  { href: '/freelancer/earning',        label: 'Earning',             icon: Wallet },
-  { href: '/freelancer/refer-earn',     label: 'Refer & Earn Policy', icon: Gift },
+  { href: '/freelancer/earning',                label: 'Earning',                icon: Wallet },
+  { href: '/freelancer/statement-of-account',   label: 'Statement of Account',   icon: FileText },
+  { href: '/freelancer/refer-earn',             label: 'Refer & Earn Policy',    icon: Gift },
   { href: '/freelancer/settings',       label: 'Settings',            icon: Settings },
 ];
 
@@ -139,7 +140,7 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5">
-              <span className="text-xs text-slate-500">Balance:</span>
+              <span className="text-xs text-slate-500">Earning:</span>
               <span className="text-sm font-bold text-emerald-700">₹{user.totalEarnings.toLocaleString()}</span>
             </div>
             <button

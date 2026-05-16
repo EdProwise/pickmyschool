@@ -252,115 +252,70 @@ export default function ContactSubmissionsPage() {
         </Card>
       </div>
 
-      {/* Submissions List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Submissions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {submissions.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <Building2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No submissions yet</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {submissions.map((submission) => (
-                <div
-                  key={submission.id}
-                  className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-slate-800">
-                            {submission.schoolName || submission.subject || 'Enquiry'}
-                          </h3>
-                          <Badge className={getStatusColor(submission.status)}>
-                            {getStatusLabel(submission.status)}
-                          </Badge>
-                          {submission.subject && (
-                            <Badge variant="outline" className="bg-slate-50">
-                              {submission.subject}
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-slate-600">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            <span>{submission.contactPerson}</span>
-                          </div>
-                          {submission.interestedClass && (
-                            <div className="flex items-center gap-2">
-                              <GraduationCap className="w-4 h-4" />
-                              <span>Class: {submission.interestedClass}</span>
-                            </div>
-                          )}
-
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          <span>{submission.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          <span>{submission.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          <span>{submission.city}</span>
-                        </div>
+      {/* Submissions Table */}
+      <Card className="border-0 shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">School / Subject</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Contact Person</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Phone</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">City</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Class</th>
+                <th className="text-center px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Date</th>
+                <th className="text-center px-4 py-3 font-semibold text-slate-700 text-xs whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {submissions.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-12 text-slate-500">
+                    <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    No submissions yet
+                  </td>
+                </tr>
+              ) : (
+                submissions.map((submission) => (
+                  <tr key={submission.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-800 text-sm">{submission.schoolName || submission.subject || 'Enquiry'}</div>
+                      {submission.subject && submission.schoolName && (
+                        <div className="text-xs text-slate-500 mt-0.5">{submission.subject}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700 text-sm whitespace-nowrap">{submission.contactPerson}</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm">{submission.email}</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm whitespace-nowrap">{submission.phone}</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm">{submission.city}</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm">{submission.interestedClass || <span className="text-slate-400">—</span>}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(submission.status)}`}>
+                        {getStatusLabel(submission.status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">{formatDate(submission.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Button size="sm" variant="outline" onClick={() => handleView(submission)} className="h-7 w-7 p-0">
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(submission)} className="h-7 w-7 p-0" style={{ color: '#04d3d3', borderColor: '#04d3d3' }}>
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDelete(submission.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:border-red-300">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-
-                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(submission.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleView(submission)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(submission)}
-                        style={{ color: '#04d3d3', borderColor: '#04d3d3' }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(submission.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {submission.message && (
-                    <div className="mt-3 p-3 bg-slate-50 rounded text-sm text-slate-700">
-                      <strong>Message:</strong> {submission.message}
-                    </div>
-                  )}
-
-                  {submission.notes && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded text-sm text-blue-900">
-                      <strong>Admin Notes:</strong> {submission.notes}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {/* View Dialog */}

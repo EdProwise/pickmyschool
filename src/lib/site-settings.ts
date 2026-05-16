@@ -6,6 +6,10 @@ export interface SiteSettings {
   gmailUser: string;
   gmailAppPassword: string;
   googleMapsApiKey: string;
+  gtmContainerId: string;
+  gtmHeadScript: string;
+  gtmBodyScript: string;
+  gtmEnabled: boolean;
 }
 
 let cached: SiteSettings | null = null;
@@ -51,6 +55,10 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     gmailUser: (fresh.gmailUser as string) || '',
     gmailAppPassword: (fresh.gmailAppPassword as string) || '',
     googleMapsApiKey: (fresh.googleMapsApiKey as string) || '',
+    gtmContainerId: (fresh.gtmContainerId as string) || '',
+    gtmHeadScript: (fresh.gtmHeadScript as string) || '',
+    gtmBodyScript: (fresh.gtmBodyScript as string) || '',
+    gtmEnabled: typeof fresh.gtmEnabled === 'boolean' ? fresh.gtmEnabled : false,
   };
   cacheTime = now;
 

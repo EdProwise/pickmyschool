@@ -15,8 +15,10 @@ import {
 import {
   Search, Users, TrendingUp, IndianRupee, RefreshCw,
   PlusCircle, Briefcase, ShieldCheck, ShieldOff, CheckCircle2, Eye, EyeOff, Settings2, Percent, CalendarDays,
+  CreditCard, FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 interface FreelancerRecord {
   _id: string;
@@ -32,6 +34,13 @@ interface FreelancerRecord {
   totalPaid: number;
   createdAt: string;
   leadCounts?: { new: number; contacted: number; converted: number; rejected: number };
+  bankDetails?: {
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    bankName?: string;
+    upiId?: string;
+  };
 }
 
 interface Stats {
@@ -55,6 +64,7 @@ export default function AdminFreelancersPage() {
   const [freelancers, setFreelancers] = useState<FreelancerRecord[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, totalActive: 0, totalLeads: 0, totalEarnings: 0 });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'users' | 'bank-account'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -66,6 +76,7 @@ export default function AdminFreelancersPage() {
 
   // Payment state
   const [manualAmounts, setManualAmounts] = useState<Record<string, string>>({});
+  const [manualDates, setManualDates] = useState<Record<string, string>>({});
   const [payingId, setPayingId] = useState<string | null>(null);
 
   // Commission settings state
@@ -135,8 +146,13 @@ export default function AdminFreelancersPage() {
     const token = localStorage.getItem('admin_token');
     if (!token) return;
     const amount = action === 'manual' ? Number(manualAmounts[freelancerId] || '0') : undefined;
+    const paymentDate = action === 'manual' ? (manualDates[freelancerId] || '') : undefined;
     if (action === 'manual' && (!amount || amount <= 0)) {
       toast.error('Please enter a valid amount');
+      return;
+    }
+    if (action === 'manual' && !paymentDate) {
+      toast.error('Please select a payment date');
       return;
     }
     setPayingId(freelancerId);
@@ -144,7 +160,7 @@ export default function AdminFreelancersPage() {
       const res = await fetch(`/api/admin/freelancers/${freelancerId}/payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action, amount }),
+        body: JSON.stringify({ action, amount, paymentDate }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -155,6 +171,7 @@ export default function AdminFreelancersPage() {
         ));
         if (action === 'manual') {
           setManualAmounts(prev => ({ ...prev, [freelancerId]: '' }));
+          setManualDates(prev => ({ ...prev, [freelancerId]: '' }));
         }
         toast.success(action === 'pay-now' ? 'Payment recorded successfully!' : 'Manual adjustment saved!');
       } else {
@@ -246,6 +263,29 @@ export default function AdminFreelancersPage() {
     setShowCommissionModal(true);
   };
 
+  const exportBankAccounts = () => {
+    const rows = freelancers.map(f => ({
+      'Name': f.name,
+      'Email': f.email,
+      'Phone': f.phone || '',
+      'City': f.city || '',
+      'Account Holder Name': f.bankDetails?.accountName || '',
+      'Account Number': f.bankDetails?.accountNumber || '',
+      'IFSC Code': f.bankDetails?.ifscCode || '',
+      'Bank Name': f.bankDetails?.bankName || '',
+      'UPI ID': f.bankDetails?.upiId || '',
+      'Status': f.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 28 }, { wch: 14 }, { wch: 14 },
+      { wch: 22 }, { wch: 20 }, { wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 10 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Bank Accounts');
+    XLSX.writeFile(wb, 'Freelancer_Bank_Accounts.xlsx');
+  };
+
   const filtered = freelancers.filter(f => {
     const matchesStatus = statusFilter === 'all' || f.status === statusFilter;
     const term = searchTerm.toLowerCase();
@@ -322,6 +362,95 @@ export default function AdminFreelancersPage() {
         })}
       </div>
 
+      {/* Sub-tabs */}
+      <div className="flex gap-1 mb-6 border-b border-slate-200">
+        {([
+          { key: 'users', label: 'Users', icon: Users },
+          { key: 'bank-account', label: 'Bank Account', icon: CreditCard },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === key
+                ? 'border-cyan-500 text-cyan-700 bg-cyan-50/50'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'bank-account' ? (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-slate-500">{freelancers.length} freelancer{freelancers.length !== 1 ? 's' : ''}</p>
+            <button
+              onClick={exportBankAccounts}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export to Excel
+            </button>
+          </div>
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 border-b border-slate-200">
+                    <TableHead className="font-semibold text-slate-700">Name</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Email</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Phone</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Account Holder</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Account Number</TableHead>
+                    <TableHead className="font-semibold text-slate-700">IFSC Code</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Bank Name</TableHead>
+                    <TableHead className="font-semibold text-slate-700">UPI ID</TableHead>
+                    <TableHead className="font-semibold text-slate-700 text-center">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {freelancers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-12 text-slate-500">
+                        <CreditCard className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                        No freelancers found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    freelancers.map(f => (
+                      <TableRow key={f._id} className="hover:bg-slate-50 transition-colors">
+                        <TableCell className="font-medium text-slate-800">{f.name}</TableCell>
+                        <TableCell className="text-slate-600 text-sm">{f.email}</TableCell>
+                        <TableCell className="text-slate-600 text-sm">{f.phone || <span className="text-slate-400">—</span>}</TableCell>
+                        <TableCell className="text-slate-700 text-sm">{f.bankDetails?.accountName || <span className="text-slate-400">—</span>}</TableCell>
+                        <TableCell className="font-mono text-sm text-slate-700">{f.bankDetails?.accountNumber || <span className="text-slate-400">—</span>}</TableCell>
+                        <TableCell className="font-mono text-sm text-slate-700">{f.bankDetails?.ifscCode || <span className="text-slate-400">—</span>}</TableCell>
+                        <TableCell className="text-slate-700 text-sm">{f.bankDetails?.bankName || <span className="text-slate-400">—</span>}</TableCell>
+                        <TableCell className="text-sm text-slate-700">{f.bankDetails?.upiId || <span className="text-slate-400">—</span>}</TableCell>
+                        <TableCell className="text-center">
+                          {f.status === 'active' ? (
+                            <span className="inline-flex items-center gap-1 text-teal-600 text-xs font-medium">
+                              <ShieldCheck className="w-3.5 h-3.5" /> Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-red-500 text-xs font-medium">
+                              <ShieldOff className="w-3.5 h-3.5" /> Inactive
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </>
+      ) : (
+        <>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
@@ -445,8 +574,8 @@ export default function AdminFreelancersPage() {
                       })()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5 min-w-[160px]">
-                        <div className="relative flex-1">
+                      <div className="flex flex-col gap-1.5 min-w-[170px]">
+                        <div className="relative">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
                           <input
                             type="number"
@@ -457,12 +586,18 @@ export default function AdminFreelancersPage() {
                             className="w-full pl-5 pr-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                           />
                         </div>
+                        <input
+                          type="date"
+                          value={manualDates[f._id] || ''}
+                          onChange={e => setManualDates(prev => ({ ...prev, [f._id]: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
                         <button
                           onClick={() => handlePayment(f._id, 'manual')}
-                          disabled={!manualAmounts[f._id] || payingId === f._id}
-                          className="flex-shrink-0 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap"
+                          disabled={!manualAmounts[f._id] || !manualDates[f._id] || payingId === f._id}
+                          className="w-full text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap"
                         >
-                          Save
+                          {payingId === f._id ? 'Saving...' : 'Save'}
                         </button>
                       </div>
                     </TableCell>
@@ -503,6 +638,9 @@ export default function AdminFreelancersPage() {
           </Table>
         </div>
       </Card>
+
+        </>
+      )}
 
       {/* Commission Settings Modal */}
       <Dialog open={showCommissionModal} onOpenChange={setShowCommissionModal}>

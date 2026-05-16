@@ -23,6 +23,7 @@ const VALID_TABS = [
   'review',
   'analytics',
   'pms-invoice',
+  'statement-of-account',
   'settings',
 ];
 

@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { AIChat } from "@/components/AIChat";
 import PWARegister from "@/components/PWARegister";
 import PWAInstallButton from "@/components/PWAInstallButton";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.pickmyschool.in"),
@@ -149,11 +150,23 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch GTM/tracking settings from DB (server-side, cached 1 min)
+  const siteSettings = await getSiteSettings().catch(() => null);
+  const gtmEnabled = siteSettings?.gtmEnabled ?? false;
+  const gtmId = siteSettings?.gtmContainerId?.trim() || '';
+  const gtmHeadScript = siteSettings?.gtmHeadScript?.trim() || '';
+  const gtmBodyScript = siteSettings?.gtmBodyScript?.trim() || '';
+
+  // Build auto GTM head script string
+  const autoGtmHead = gtmEnabled && gtmId
+    ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`
+    : '';
+
   return (
     <html lang="en">
       <head>
@@ -161,8 +174,40 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* GTM auto head script */}
+        {gtmEnabled && gtmId && (
+          <script
+            id="gtm-head"
+            dangerouslySetInnerHTML={{ __html: autoGtmHead }}
+          />
+        )}
+        {/* Custom head scripts from admin */}
+        {gtmEnabled && gtmHeadScript && (
+          <div
+            id="gtm-custom-head"
+            dangerouslySetInnerHTML={{ __html: gtmHeadScript }}
+          />
+        )}
       </head>
       <body className="antialiased">
+        {/* GTM noscript body tag */}
+        {gtmEnabled && gtmId && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        )}
+        {/* Custom body scripts from admin */}
+        {gtmEnabled && gtmBodyScript && (
+          <div
+            id="gtm-custom-body"
+            dangerouslySetInnerHTML={{ __html: gtmBodyScript }}
+          />
+        )}
         <PWARegister />
         <PWAInstallButton />
         <Script

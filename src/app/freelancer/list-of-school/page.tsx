@@ -17,6 +17,8 @@ interface SchoolRow {
   prospectusUrl?: string | null;
   newsletterUrl?: string | null;
   feesStructureUrl?: string | null;
+  brochureUrl?: string | null;
+  brochureVisible?: boolean;
 }
 
 export default function ListOfSchoolPage() {
@@ -83,6 +85,8 @@ export default function ListOfSchoolPage() {
             prospectusUrl: s.prospectusUrl ?? null,
             newsletterUrl: s.newsletterUrl ?? null,
             feesStructureUrl: s.feesStructureUrl ?? null,
+            brochureUrl: s.brochureUrl ?? null,
+            brochureVisible: s.brochureVisible ?? true,
           };
         });
 
@@ -311,7 +315,7 @@ export default function ListOfSchoolPage() {
 
                     {/* Download Documents */}
                     <td className="px-4 py-3 text-center">
-                      {school.prospectusUrl || school.newsletterUrl || school.feesStructureUrl ? (
+                      {school.prospectusUrl || school.newsletterUrl || school.feesStructureUrl || (school.brochureUrl && school.brochureVisible) ? (
                         <button
                           onClick={() => setDocumentModal({ isOpen: true, school })}
                           title="Download documents"
@@ -410,6 +414,24 @@ export default function ListOfSchoolPage() {
                       <span className="text-sm font-medium text-orange-900">Fees Structure</span>
                     </div>
                     <Download className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
+                  </a>
+                )}
+
+                {documentModal.school.brochureUrl && documentModal.school.brochureVisible && (
+                  <a
+                    href={documentModal.school.brochureUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-teal-600" />
+                      <div>
+                        <span className="text-sm font-medium text-teal-900">School Brochure</span>
+                        <p className="text-xs text-teal-600 mt-0.5">Premium PDF — All sections</p>
+                      </div>
+                    </div>
+                    <Download className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
                   </a>
                 )}
               </div>

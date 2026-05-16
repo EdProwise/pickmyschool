@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { SchoolPayment, School } from '@/lib/models';
+import { SchoolPayment, User } from '@/lib/models';
 import jwt from 'jsonwebtoken';
-
-interface JWTPayload {
-  schoolId: string;
-  email: string;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,23 +11,18 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as JWTPayload;
-    const schoolId = decoded.schoolId;
-
-    if (!schoolId) {
-      return NextResponse.json({ error: 'School ID not found in token' }, { status: 401 });
-    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string; schoolId?: string };
 
     await connectToDatabase();
 
-    // Fetch school to get numeric ID
-    const school = await School.findOne({ userId: schoolId }).select('_id').lean();
-    if (!school) {
-      return NextResponse.json({ error: 'School not found' }, { status: 404 });
+    // Get school's _id from the user's schoolId field
+    const userRecord = await User.findById(decoded.userId).select('schoolId').lean();
+    if (!userRecord || !userRecord.schoolId) {
+      return NextResponse.json({ error: 'No school associated with this account' }, { status: 403 });
     }
 
     // Fetch payments for this school
-    const payments = await SchoolPayment.find({ schoolId: school._id })
+    const payments = await SchoolPayment.find({ schoolId: userRecord.schoolId })
       .sort({ receivedDate: -1 })
       .lean();
 

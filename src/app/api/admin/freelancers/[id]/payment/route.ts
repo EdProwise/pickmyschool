@@ -29,7 +29,7 @@ export async function POST(
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { action, amount } = body;
+    const { action, amount, paymentDate } = body;
 
     const freelancer = await Freelancer.findById(freelancerId).select('-password');
     if (!freelancer) return NextResponse.json({ error: 'Freelancer not found' }, { status: 404 });
@@ -59,13 +59,18 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
+    // For manual adjustments, use the admin-provided date; for pay-now use current time
+    const paidAt = action === 'manual' && paymentDate
+      ? new Date(paymentDate)
+      : new Date();
+
     await FreelancerEarning.create({
       freelancerId: freelancer._id,
       amount: payAmount,
       type: 'commission',
       status: 'paid',
       description: action === 'pay-now' ? 'Admin payment (Pay Now)' : 'Manual adjustment by admin',
-      paidAt: new Date(),
+      paidAt,
     });
 
     const newTotalPaid = currentPaid + payAmount;

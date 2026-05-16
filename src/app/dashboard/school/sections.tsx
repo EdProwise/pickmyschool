@@ -13,7 +13,8 @@ import {
   Youtube, Phone, Mail, Info, Contact2, Building,
   Image, DollarSign, Link, FileText, Download, School,
   BookOpen, Laptop, Wifi, Video, Shield, Bus, Heart,
-  Home, Coffee, Trophy, Upload, GraduationCap, ChevronDown
+  Home, Coffee, Trophy, Upload, GraduationCap, ChevronDown,
+  RefreshCw, CheckCircle2, AlertCircle, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -123,6 +124,7 @@ interface SchoolProfile {
   awards?: string[];
   newsletterUrl?: string;
   feesStructure?: any;
+  feesStructureUrl?: string | null;
   facilityImages?: Record<string, string[]>;
 }
 
@@ -2547,6 +2549,52 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
     onSave(feesData);
   };
 
+  const [pdfStatus, setPdfStatus] = useState<'checking' | 'ok' | 'missing' | 'none'>('none');
+  const [regenerating, setRegenerating] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.feesStructureUrl) { setPdfStatus('none'); return; }
+    setPdfStatus('checking');
+    fetch(profile.feesStructureUrl, { method: 'HEAD' })
+      .then(r => setPdfStatus(r.ok ? 'ok' : 'missing'))
+      .catch(() => setPdfStatus('missing'));
+  }, [profile?.feesStructureUrl]);
+
+  const handleRegeneratePdf = async () => {
+    if (!profile?.feesStructure || !profile?.name || !profile?.id) {
+      toast.error('No fees data to regenerate. Save the fees structure first.');
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const res = await fetch('/api/schools/fees/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolId: profile.id,
+          schoolName: profile.name,
+          feesStructure: profile.feesStructure,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
+      // Persist the new URL back to the school record
+      const token = localStorage.getItem('token');
+      await fetch('/api/schools/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: profile.name, board: profile.board, city: profile.city, feesStructureUrl: data.url }),
+      });
+      toast.success('Fees PDF regenerated successfully!');
+      setPdfStatus('ok');
+      if (profile) profile.feesStructureUrl = data.url;
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to regenerate PDF');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const handleFeeChange = (key: string, value: string, stream?: string) => {
     if (stream) {
       setFees(prev => ({
@@ -2575,6 +2623,45 @@ export function FeesSection({ profile, profileLoading, saving, onSave }: Section
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* PDF Status Banner */}
+        {(pdfStatus === 'ok' || pdfStatus === 'missing') && (
+          <div className={`flex items-center justify-between p-3 rounded-lg mb-6 border ${
+            pdfStatus === 'ok'
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {pdfStatus === 'ok'
+                ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                : <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />}
+              <span className={`text-sm font-medium ${pdfStatus === 'ok' ? 'text-emerald-800' : 'text-red-700'}`}>
+                {pdfStatus === 'ok' ? 'Fees PDF is ready for freelancers' : 'Fees PDF is missing — needs to be regenerated'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {pdfStatus === 'ok' && profile?.feesStructureUrl && (
+                <a
+                  href={profile.feesStructureUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded border border-emerald-300 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  View PDF
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={handleRegeneratePdf}
+                disabled={regenerating}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded border border-slate-300 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${regenerating ? 'animate-spin' : ''}`} />
+                {regenerating ? 'Regenerating…' : 'Regenerate PDF'}
+              </button>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">

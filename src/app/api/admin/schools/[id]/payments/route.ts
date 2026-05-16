@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '@/lib/mongodb';
-import { SchoolPayment } from '@/lib/models';
+import { SchoolPayment, School } from '@/lib/models';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = req.headers.get('authorization')?.replace('Bearer ', '');
     if (!auth) {
@@ -16,9 +16,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     await connectToDatabase();
-    const schoolId = params.id;
+    const { id } = await params;
+    const numericId = parseInt(id);
+    const school = await School.findOne({ id: numericId }).lean() as any;
+    if (!school) {
+      return NextResponse.json({ payments: [] });
+    }
+    const schoolObjectId = school._id;
 
-    const payments = await SchoolPayment.find({ schoolId }).sort({ receivedDate: -1 }).lean();
+    const payments = await SchoolPayment.find({ schoolId: schoolObjectId }).sort({ receivedDate: -1 }).lean();
 
     return NextResponse.json({ payments });
   } catch (error: any) {

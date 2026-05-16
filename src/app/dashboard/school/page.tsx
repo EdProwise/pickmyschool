@@ -61,6 +61,7 @@ import { WhatsappAPISection } from './WhatsappAPISection';
 import { PMSLeadSection } from './PMSLeadSection';
 import { PMSInvoiceSection } from './PMSInvoiceSection';
 import { StatementOfAccountSection } from './StatementOfAccountSection';
+import { BrochureSection } from './BrochureSection';
 
 const sidebarGroups = [
   {
@@ -101,6 +102,7 @@ const sidebarGroups = [
       { id: 'results', label: 'Results', icon: Trophy },
       { id: 'alumini', label: 'Alumni', icon: Users },
       { id: 'news', label: 'News', icon: Newspaper },
+      { id: 'brochure', label: 'School Brochure', icon: FileDown },
     ],
   },
   {
@@ -3723,8 +3725,18 @@ export function SchoolDashboard({ initialTab = 'dashboard' }: { initialTab?: str
             <StatementOfAccountSection />
           )}
 
+          {activeSection === 'brochure' && (
+            <BrochureSection
+              schoolName={profile?.name}
+              brochureUrl={profile?.brochureUrl}
+              brochureVisible={profile?.brochureVisible ?? true}
+              onBrochureGenerated={(url) => setProfile((prev: any) => prev ? { ...prev, brochureUrl: url } : prev)}
+              onVisibilityChanged={(v) => setProfile((prev: any) => prev ? { ...prev, brochureVisible: v } : prev)}
+            />
+          )}
+
           {/* Other sections - Coming Soon */}
-          {!['dashboard', 'lead-dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page', 'pms-invoice', 'pms-lead', 'statement-of-account'].includes(activeSection) && (
+          {!['dashboard', 'lead-dashboard', 'enquiry', 'whatsapp-api', 'enquiry-settings', 'basic-info', 'contact', 'facilities', 'gallery', 'virtualtour', 'fees', 'settings', 'review', 'results', 'alumini', 'news', 'analytics', 'school-page', 'pms-invoice', 'pms-lead', 'statement-of-account', 'brochure'].includes(activeSection) && (
             <Card className="border-0 bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="p-16">
                 <div className="text-center text-muted-foreground">

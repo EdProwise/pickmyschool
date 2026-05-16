@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '@/lib/mongodb';
-import { SchoolPayment } from '@/lib/models';
+import { SchoolPayment, School } from '@/lib/models';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = req.headers.get('authorization')?.replace('Bearer ', '');
     if (!auth) {
@@ -22,15 +22,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Missing amount or receivedDate' }, { status: 400 });
     }
 
-    const schoolId = params.id;
+    const { id } = await params;
+    const numericId = parseInt(id);
+    const school = await School.findOne({ id: numericId }).lean() as any;
+    if (!school) {
+      return NextResponse.json({ error: 'School not found' }, { status: 404 });
+    }
+    const schoolObjectId = school._id;
+
     const payment = await SchoolPayment.create({
-      schoolId,
+      schoolId: schoolObjectId,
       amount,
       receivedDate: new Date(receivedDate),
     });
 
     // Get total paid for this school
-    const payments = await SchoolPayment.find({ schoolId }).lean();
+    const payments = await SchoolPayment.find({ schoolId: schoolObjectId }).lean();
     const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
 
     return NextResponse.json({ success: true, payment, totalPaid });
