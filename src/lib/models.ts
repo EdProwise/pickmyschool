@@ -742,6 +742,9 @@ export interface IFreelancer extends Document {
   referralCode: string;
   referredBy?: string;
   status: 'active' | 'inactive';
+  emailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpiry?: Date;
   bankDetails?: {
     accountName?: string;
     accountNumber?: string;
@@ -764,6 +767,9 @@ const FreelancerSchema = new Schema<IFreelancer>({
   referralCode: { type: String, required: true, unique: true },
   referredBy: { type: String },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  emailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String },
+  emailVerificationExpiry: { type: Date },
   bankDetails: {
     accountName: { type: String },
     accountNumber: { type: String },

@@ -20,7 +20,7 @@ const NAV = [
   { href: '/freelancer/settings',       label: 'Settings',            icon: Settings },
 ];
 
-const AUTH_PATHS = ['/freelancer/login', '/freelancer/register'];
+const AUTH_PATHS = ['/freelancer/login', '/freelancer/register', '/freelancer/verify-email'];
 
 export default function FreelancerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,6 +36,17 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
       const d = JSON.parse(localStorage.getItem('freelancer_data') || '{}');
       setUser({ name: d.name || '', email: d.email || '', totalEarnings: d.totalEarnings || 0 });
     } catch { /* empty */ }
+
+    const token = localStorage.getItem('freelancer_token');
+    if (!token) return;
+    fetch('/api/freelancer/statement', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data) return;
+        const totalEarned = (data.conversions || []).reduce((sum: number, c: { earned: number }) => sum + c.earned, 0);
+        setUser(prev => ({ ...prev, totalEarnings: totalEarned }));
+      })
+      .catch(() => { /* keep stored value */ });
   }, [pathname, isAuth]);
 
   if (isAuth) return <>{children}</>;

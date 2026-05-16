@@ -1,19 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Briefcase, Eye, EyeOff } from 'lucide-react';
+import { Briefcase, Eye, EyeOff, Mail, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FreelancerRegisterPage() {
-  const router = useRouter();
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', city: '', referredBy: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -36,14 +36,54 @@ export default function FreelancerRegisterPage() {
         return;
       }
 
-      toast.success('Account created! Please login.');
-      router.push('/freelancer/login');
+      setRegisteredEmail(form.email);
+      setRegistered(true);
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 flex items-center justify-center p-4">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
+        <div className="absolute -bottom-20 right-10 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="relative z-10 w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <span className="text-2xl font-bold text-white">PickMySchool</span>
+            </Link>
+          </div>
+          <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
+            <CardContent className="p-8 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg mb-5">
+                <Mail className="w-8 h-8 text-white" />
+              </div>
+              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+              <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
+              <p className="text-gray-300 text-sm leading-relaxed mb-2">
+                We've sent a verification link to
+              </p>
+              <p className="text-emerald-300 font-semibold text-sm mb-4 break-all">{registeredEmail}</p>
+              <p className="text-gray-400 text-xs leading-relaxed mb-6">
+                Click the link in the email to verify your account. The link expires in 24 hours.
+              </p>
+              <Link href="/freelancer/login">
+                <Button className="w-full h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold">
+                  Go to Login
+                </Button>
+              </Link>
+              <p className="text-gray-500 text-xs mt-4">
+                Didn't receive it? Check your spam folder.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900">

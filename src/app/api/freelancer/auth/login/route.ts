@@ -36,6 +36,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Block login if email not verified (strict false check so existing users without the field can still login)
+    if (freelancer.emailVerified === false) {
+      return NextResponse.json(
+        { error: 'Please verify your email address before logging in. Check your inbox for the verification link.', code: 'EMAIL_NOT_VERIFIED' },
+        { status: 403 }
+      );
+    }
+
     const token = jwt.sign(
       { freelancerId: freelancer._id, email: freelancer.email, role: 'freelancer' },
       process.env.JWT_SECRET || 'your-secret-key',

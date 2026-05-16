@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/mongodb';
 import { Freelancer } from '@/lib/models';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import { sendFreelancerVerificationEmail, generateVerificationToken } from '@/lib/email';
 
 function generateReferralCode(name: string): string {
   const prefix = name.replace(/\s+/g, '').toUpperCase().slice(0, 4);
@@ -36,12 +37,14 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     let referralCode = generateReferralCode(name);
-    // Ensure uniqueness
     let attempts = 0;
     while (await Freelancer.findOne({ referralCode }) && attempts < 10) {
       referralCode = generateReferralCode(name);
       attempts++;
     }
+
+    const verificationToken = generateVerificationToken();
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const freelancer = new Freelancer({
       name: name.trim(),
@@ -52,16 +55,24 @@ export async function POST(request: NextRequest) {
       referralCode,
       referredBy: referredBy?.trim(),
       status: 'active',
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpiry: verificationExpiry,
       totalLeads: 0,
       totalEarnings: 0,
     });
 
     await freelancer.save();
 
-    const { password: _, ...freelancerData } = freelancer.toObject();
+    // Send verification email (non-blocking on failure)
+    try {
+      await sendFreelancerVerificationEmail(sanitizedEmail, verificationToken, name.trim());
+    } catch (emailError) {
+      console.error('Failed to send verification email (account still created):', emailError);
+    }
 
     return NextResponse.json(
-      { freelancer: { ...freelancerData, id: freelancer._id }, message: 'Account created successfully' },
+      { message: 'Account created. Please check your email to verify your account before logging in.', code: 'VERIFY_EMAIL' },
       { status: 201 }
     );
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '@/lib/mongodb';
 import { School, User, FreelancerLead, Freelancer } from '@/lib/models';
+import { sendFreelancerLeadStatusEmail } from '@/lib/email';
 
 async function verifySchoolToken(request: NextRequest) {
   try {
@@ -142,6 +143,26 @@ export async function PATCH(request: NextRequest) {
       (lead as any).convertedAt = new Date();
     }
     await lead.save();
+
+    // Send email notification to freelancer for actionable status changes
+    if (['contacted', 'converted', 'rejected'].includes(status)) {
+      try {
+        const freelancer = await Freelancer.findById(lead.freelancerId).select('name email').lean();
+        if (freelancer) {
+          await sendFreelancerLeadStatusEmail(
+            (freelancer as any).email,
+            (freelancer as any).name,
+            lead.studentName,
+            lead.parentName,
+            status,
+            schoolName,
+          );
+        }
+      } catch (emailErr) {
+        console.error('Failed to send lead status email:', emailErr);
+        // Don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json({ success: true, status: lead.status, convertedAt: (lead as any).convertedAt, message: 'Lead status updated' });
   } catch (error) {
