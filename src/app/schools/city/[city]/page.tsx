@@ -25,14 +25,8 @@ export const dynamicParams = true;
 export const revalidate = 86400; // Revalidate every 24 hours
 
 export async function generateStaticParams() {
-  // Pre-build only the top cities; all others are generated on-demand and cached
-  const topCities = [
-    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad',
-    'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow',
-    'Chandigarh', 'Noida', 'Gurgaon', 'Indore', 'Bhopal',
-    'Dehradun', 'Kochi', 'Nagpur', 'Vadodara', 'Surat',
-  ];
-  return topCities.map((city) => ({ city: cityNameToSlug(city) }));
+  // Return empty array — all pages are generated on-demand and cached via ISR
+  return [];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

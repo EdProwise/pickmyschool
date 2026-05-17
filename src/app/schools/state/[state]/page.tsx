@@ -17,14 +17,8 @@ export const dynamicParams = true;
 export const revalidate = 86400; // Revalidate every 24 hours
 
 export async function generateStaticParams() {
-  // Pre-build only major states; all others are generated on-demand and cached
-  const topStateSlugs = [
-    'maharashtra', 'karnataka', 'delhi', 'tamil-nadu', 'telangana',
-    'gujarat', 'rajasthan', 'uttar-pradesh', 'west-bengal', 'kerala',
-  ];
-  return INDIAN_STATES
-    .filter((s) => topStateSlugs.includes(s.slug))
-    .map((s) => ({ state: s.slug }));
+  // Return empty array — all pages are generated on-demand and cached via ISR
+  return [];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
