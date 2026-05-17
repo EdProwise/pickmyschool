@@ -113,10 +113,14 @@ export async function POST(request: NextRequest) {
     });
     await tokenDoc.save();
 
+    let emailSent = false;
     try {
       await sendVerificationEmail(trimmedEmail, verificationToken, name.trim());
+      emailSent = true;
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
+      // No email provider configured — auto-verify so users can still log in
+      await User.findByIdAndUpdate(newUser._id, { emailVerified: true, updatedAt: new Date().toISOString() });
     }
 
     try {
@@ -150,8 +154,10 @@ export async function POST(request: NextRequest) {
           ...userWithoutPassword,
           id: newUser._id.toString()
         },
-        message: "Account created! Please check your email to verify your account.",
-        requiresVerification: true
+        message: emailSent
+          ? "Account created! Please check your email to verify your account."
+          : "Account created successfully! You can now log in.",
+        requiresVerification: emailSent
       },
       { status: 201 }
     );

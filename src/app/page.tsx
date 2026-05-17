@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, GraduationCap, Users, Award, TrendingUp, ChevronRight, MapPin, BookOpen, Shield, Star, Flame } from 'lucide-react';
+import { Search, GraduationCap, Users, Award, TrendingUp, ChevronRight, MapPin, BookOpen, Shield, Star, Flame, Briefcase } from 'lucide-react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SchoolCard from '@/components/SchoolCard';
@@ -1057,6 +1058,70 @@ export default function HomePage() {
             >
               List Your School
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Freelancer Section */}
+      <section className="relative py-12 sm:py-20 px-3 sm:px-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+        <div className="absolute top-10 right-10 w-48 sm:w-72 h-48 sm:h-72 bg-cyan-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-48 sm:w-72 h-48 sm:h-72 bg-purple-500/10 rounded-full blur-3xl" />
+
+        <div className="container mx-auto relative z-10 max-w-5xl text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-5 sm:mb-6">
+            <Briefcase size={16} className="text-cyan-400" />
+            <span className="text-xs sm:text-sm font-semibold text-cyan-400">Freelancer Portal</span>
+          </div>
+
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-5 leading-tight">
+            Are You a Freelancer?
+            <br />
+            <span className="bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+              Earn by Generating School Leads
+            </span>
+          </h2>
+
+          <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
+            Join our freelancer network, refer parents to schools, and earn commissions for every successful lead. Login or sign up to get started.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+            <Link href="/freelancer/login">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-gray-900 h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-semibold rounded-xl transition-all duration-300"
+              >
+                <Briefcase size={18} className="mr-2" />
+                Freelancer Login
+              </Button>
+            </Link>
+            <Link href="/freelancer/register">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-semibold rounded-xl shadow-xl transition-all duration-300 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white"
+              >
+                Sign Up as Freelancer
+                <ChevronRight size={18} className="ml-2" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-1">Free</div>
+              <div className="text-xs sm:text-sm text-gray-400">To Join & Register</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-1">₹ Earn</div>
+              <div className="text-xs sm:text-sm text-gray-400">Commission Per Lead</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-1">Track</div>
+              <div className="text-xs sm:text-sm text-gray-400">All Your Leads & Earnings</div>
+            </div>
           </div>
         </div>
       </section>

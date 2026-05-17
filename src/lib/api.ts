@@ -259,7 +259,7 @@ export const signup = async (data: {
   city?: string;
   class?: string;
   schoolId?: number;
-}): Promise<{ user: User; message: string }> => {
+}): Promise<{ user: User; message: string; requiresVerification: boolean }> => {
   const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

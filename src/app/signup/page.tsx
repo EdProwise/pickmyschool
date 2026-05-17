@@ -68,10 +68,15 @@ export default function SignupPage() {
       if (formData.city) data.city = formData.city;
       if (role === 'student' && formData.class) data.class = formData.class;
 
-      await signup(data);
-      
-      toast.success('Account created! Please check your email to verify your account.');
-      router.push('/verify-email');
+      const result = await signup(data);
+
+      if (result.requiresVerification) {
+        toast.success('Account created! Please check your email to verify your account.');
+        router.push('/verify-email');
+      } else {
+        toast.success('Account created successfully! You can now log in.');
+        router.push('/login');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Signup failed. Please try again.');
     } finally {
