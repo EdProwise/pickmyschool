@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       geminiApiKey: (settings?.geminiApiKey as string) || '',
       gmailUser: (settings?.gmailUser as string) || '',
       gmailAppPassword: (settings?.gmailAppPassword as string) || '',
+      resendApiKey: (settings?.resendApiKey as string) || '',
       googleMapsApiKey: (settings?.googleMapsApiKey as string) || '',
     });
   } catch (error) {
@@ -65,7 +66,7 @@ export async function PUT(request: NextRequest) {
 
     await connectToDatabase();
     const body = await request.json();
-    const { geminiApiKey, gmailUser, gmailAppPassword, googleMapsApiKey } = body;
+    const { geminiApiKey, gmailUser, gmailAppPassword, resendApiKey, googleMapsApiKey } = body;
 
     const update: Record<string, string> = {};
 
@@ -77,6 +78,9 @@ export async function PUT(request: NextRequest) {
     }
     if (typeof gmailAppPassword === 'string' && gmailAppPassword.trim()) {
       update.gmailAppPassword = gmailAppPassword.trim();
+    }
+    if (typeof resendApiKey === 'string' && resendApiKey.trim()) {
+      update.resendApiKey = resendApiKey.trim();
     }
     if (typeof googleMapsApiKey === 'string' && googleMapsApiKey.trim()) {
       update.googleMapsApiKey = googleMapsApiKey.trim();

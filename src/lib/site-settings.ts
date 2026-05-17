@@ -5,6 +5,7 @@ export interface SiteSettings {
   geminiApiKey: string;
   gmailUser: string;
   gmailAppPassword: string;
+  resendApiKey: string;
   googleMapsApiKey: string;
   gtmContainerId: string;
   gtmHeadScript: string;
@@ -37,6 +38,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   if (!doc?.gmailAppPassword && process.env.GMAIL_APP_PASSWORD) {
     seedUpdate.gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
   }
+  if (!doc?.resendApiKey && process.env.RESEND_API_KEY) {
+    seedUpdate.resendApiKey = process.env.RESEND_API_KEY;
+  }
   if (!doc?.googleMapsApiKey && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
     seedUpdate.googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   }
@@ -54,6 +58,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     geminiApiKey: (fresh.geminiApiKey as string) || '',
     gmailUser: (fresh.gmailUser as string) || '',
     gmailAppPassword: (fresh.gmailAppPassword as string) || '',
+    resendApiKey: (fresh.resendApiKey as string) || '',
     googleMapsApiKey: (fresh.googleMapsApiKey as string) || '',
     gtmContainerId: (fresh.gtmContainerId as string) || '',
     gtmHeadScript: (fresh.gtmHeadScript as string) || '',

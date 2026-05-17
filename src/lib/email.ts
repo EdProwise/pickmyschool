@@ -1,24 +1,62 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { getSiteSettings } from '@/lib/site-settings';
 
-async function getTransporter() {
+interface MailPayload {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}
+
+/**
+ * Send an email using Resend (HTTP — works on Vercel) if a Resend API key is
+ * configured, otherwise fall back to Gmail SMTP via Nodemailer.
+ */
+async function sendMail(payload: MailPayload) {
   const settings = await getSiteSettings();
+
+  if (settings.resendApiKey) {
+    // ── Resend (HTTP-based, works on all serverless/cloud platforms) ──
+    const resend = new Resend(settings.resendApiKey);
+    const { error } = await resend.emails.send({
+      from: payload.from,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+    });
+    if (error) {
+      throw new Error(`Resend error: ${error.message}`);
+    }
+    return;
+  }
+
+  // ── Gmail SMTP fallback via Nodemailer ──
   const user = settings.gmailUser;
   const pass = settings.gmailAppPassword;
 
   if (!user || !pass) {
-    throw new Error('Gmail credentials not configured. Please set them in Admin > Settings > Email Settings.');
+    throw new Error('No email provider configured. Add a Resend API key (recommended) or Gmail credentials in Admin > Settings > Email Settings.');
   }
 
-  return nodemailer.createTransport({
-    service: 'gmail',
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: { user, pass },
   });
+
+  await transporter.sendMail(payload);
 }
 
 async function getFromAddress() {
   const settings = await getSiteSettings();
-  return settings.gmailUser || '';
+  // For Resend: must use a verified sender domain (e.g. noreply@pickmyschool.in)
+  // For Gmail: use the configured Gmail address
+  if (settings.resendApiKey) {
+    return process.env.RESEND_FROM_EMAIL || 'noreply@pickmyschool.in';
+  }
+  return settings.gmailUser || 'noreply@pickmyschool.in';
 }
 
 export async function sendVerificationEmail(email: string, token: string, name: string) {
@@ -84,10 +122,8 @@ export async function sendVerificationEmail(email: string, token: string, name: 
   };
 
   try {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Verification email sent:', info.messageId);
-    return info;
+    await sendMail(mailOptions);
+    console.log('Verification email sent to:', email);
   } catch (error) {
     console.error('Failed to send verification email:', error);
     throw new Error('Failed to send verification email');
@@ -157,10 +193,8 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
   };
 
   try {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Password reset email sent:', info.messageId);
-    return info;
+    await sendMail(mailOptions);
+    console.log('Password reset email sent to:', email);
   } catch (error) {
     console.error('Failed to send password reset email:', error);
     throw new Error('Failed to send password reset email');
@@ -222,10 +256,8 @@ export async function sendFreelancerVerificationEmail(email: string, token: stri
   };
 
   try {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Freelancer verification email sent:', info.messageId);
-    return info;
+    await sendMail(mailOptions);
+    console.log('Freelancer verification email sent to:', email);
   } catch (error) {
     console.error('Failed to send freelancer verification email:', error);
     throw new Error('Failed to send verification email');
@@ -325,10 +357,8 @@ export async function sendFreelancerLeadStatusEmail(
   };
 
   try {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Freelancer lead status email sent:', info.messageId);
-    return info;
+    await sendMail(mailOptions);
+    console.log('Freelancer lead status email sent to:', freelancerEmail);
   } catch (error) {
     console.error('Failed to send freelancer lead status email:', error);
     // Don't throw — status update should still succeed even if email fails
@@ -415,10 +445,8 @@ export async function sendSchoolLeadNotificationEmail(
   };
 
   try {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`School lead notification (${leadType}) sent to ${schoolEmail}:`, info.messageId);
-    return info;
+    await sendMail(mailOptions);
+    console.log(`School lead notification (${leadType}) sent to ${schoolEmail}`);
   } catch (error) {
     console.error('Failed to send school lead notification email:', error);
     // Don't throw — lead creation should still succeed
@@ -523,10 +551,8 @@ export async function sendAdminPasswordResetEmail(email: string, token: string, 
   };
 
   try {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Admin password reset email sent:', info.messageId);
-    return info;
+    await sendMail(mailOptions);
+    console.log('Admin password reset email sent to:', email);
   } catch (error) {
     console.error('Failed to send admin password reset email:', error);
     throw new Error('Failed to send admin password reset email');

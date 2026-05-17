@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, Eye, EyeOff, Check, X, Bot, KeyRound, Mail, Map } from 'lucide-react';
+import { Lock, Eye, EyeOff, Check, X, Bot, KeyRound, Mail, Map, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -39,6 +39,11 @@ export default function SettingsPage() {
   const [showGmailPassword, setShowGmailPassword] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
 
+  // Resend Settings
+  const [resendApiKey, setResendApiKey] = useState('');
+  const [showResendKey, setShowResendKey] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+
   // Maps Settings
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
   const [showMapsKey, setShowMapsKey] = useState(false);
@@ -65,6 +70,7 @@ export default function SettingsPage() {
         setGeminiApiKey(data.geminiApiKey || '');
         setGmailUser(data.gmailUser || '');
         setGmailAppPassword(data.gmailAppPassword || '');
+        setResendApiKey(data.resendApiKey || '');
         setGoogleMapsApiKey(data.googleMapsApiKey || '');
       }
     } catch {
@@ -165,6 +171,12 @@ export default function SettingsPage() {
       return;
     }
     saveKeys({ gmailUser, gmailAppPassword }, 'Email settings', setEmailLoading);
+  };
+
+  const handleSaveResendKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resendApiKey.trim()) { toast.error('Please enter a valid Resend API key'); return; }
+    saveKeys({ resendApiKey }, 'Resend API key', setResendLoading);
   };
 
   const handleSaveMapsKey = (e: React.FormEvent) => {
@@ -315,6 +327,66 @@ export default function SettingsPage() {
                   className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white"
                 >
                   {emailLoading ? 'Saving...' : 'Save Email Settings'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Resend Settings */}
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-slate-800 flex items-center gap-2">
+              <Send className="w-5 h-5" />
+              Resend Email (Recommended for Production)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {keysLoading ? (
+              <p className="text-sm text-slate-500">Loading...</p>
+            ) : (
+              <form onSubmit={handleSaveResendKey} className="space-y-5">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                  <strong>Why Resend?</strong> Vercel and most cloud platforms block outbound Gmail SMTP connections.
+                  Resend uses an HTTP API that works everywhere. When a Resend key is set, it takes priority over Gmail.
+                  Free tier: 3,000 emails/month. Get your key at{' '}
+                  <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">resend.com</a>.
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Resend API Key
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    {resendApiKey ? (
+                      <span className="text-emerald-600 font-medium">✓ Resend is active — emails will use Resend (HTTP) instead of Gmail SMTP.</span>
+                    ) : (
+                      'Optional but strongly recommended for Vercel deployments.'
+                    )}
+                  </p>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                      type={showResendKey ? 'text' : 'password'}
+                      value={resendApiKey}
+                      onChange={(e) => setResendApiKey(e.target.value)}
+                      placeholder="re_..."
+                      className="pl-10 pr-10 font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResendKey(!showResendKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showResendKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={resendLoading}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white"
+                >
+                  {resendLoading ? 'Saving...' : 'Save Resend API Key'}
                 </Button>
               </form>
             )}

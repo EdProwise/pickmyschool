@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Briefcase, Eye, EyeOff, Mail, CheckCircle2 } from 'lucide-react';
+import { Briefcase, Eye, EyeOff, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FreelancerRegisterPage() {
@@ -14,9 +14,31 @@ export default function FreelancerRegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleResend = async () => {
+    setIsResending(true);
+    try {
+      const res = await fetch('/api/freelancer/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: registeredEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Verification email resent! Check your inbox.');
+      } else {
+        toast.error(data.error || 'Failed to resend. Please try again.');
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -75,8 +97,24 @@ export default function FreelancerRegisterPage() {
                   Go to Login
                 </Button>
               </Link>
-              <p className="text-gray-500 text-xs mt-4">
-                Didn't receive it? Check your spam folder.
+              <Button
+                variant="outline"
+                onClick={handleResend}
+                disabled={isResending}
+                className="w-full h-10 mt-3 border-white/20 text-white hover:bg-white/10 text-sm"
+              >
+                {isResending ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Resending…
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" /> Resend Verification Email
+                  </span>
+                )}
+              </Button>
+              <p className="text-gray-500 text-xs mt-3">
+                Didn't receive it? Check your spam folder or click resend above.
               </p>
             </CardContent>
           </Card>
