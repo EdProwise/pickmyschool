@@ -3,17 +3,46 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, XCircle, Loader2, Sparkles, ArrowRight, Mail } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Sparkles, ArrowRight, Mail, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
-  
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'no-token'>('loading');
   const [message, setMessage] = useState('');
+  const [resendEmail, setResendEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
+
+  const handleResend = async () => {
+    if (!resendEmail.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    setIsResending(true);
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resendEmail.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Verification email sent! Check your inbox.');
+      } else {
+        toast.error(data.error || 'Failed to resend. Please try again.');
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   useEffect(() => {
     if (!token) {
@@ -117,11 +146,24 @@ function VerifyEmailContent() {
                     <p className="text-muted-foreground">{message}</p>
                   </div>
                   <div className="space-y-3">
+                    <p className="text-sm font-medium text-slate-700">Resend verification email:</p>
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={resendEmail}
+                      onChange={(e) => setResendEmail(e.target.value)}
+                      className="h-11"
+                    />
                     <Button
-                      onClick={() => router.push('/signup')}
-                      className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-500 via-cyan-500 to-blue-500 hover:from-purple-600 hover:via-cyan-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                      onClick={handleResend}
+                      disabled={isResending}
+                      className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-purple-500 via-cyan-500 to-blue-500 hover:from-purple-600 hover:via-cyan-600 hover:to-blue-600 text-white"
                     >
-                      Try Signing Up Again
+                      {isResending ? (
+                        <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Sending…</span>
+                      ) : (
+                        <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Resend Verification Email</span>
+                      )}
                     </Button>
                     <Link href="/login" className="block text-sm text-muted-foreground hover:text-cyan-600 transition-colors">
                       Already verified? Login here
@@ -137,9 +179,29 @@ function VerifyEmailContent() {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-amber-700">Check Your Email</h3>
-                    <p className="text-muted-foreground">
-                      Please click the verification link sent to your email address.
+                    <p className="text-muted-foreground text-sm">
+                      We sent a verification link to your email. Didn't receive it? Enter your email below to resend.
                     </p>
+                  </div>
+                  <div className="space-y-3">
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={resendEmail}
+                      onChange={(e) => setResendEmail(e.target.value)}
+                      className="h-11"
+                    />
+                    <Button
+                      onClick={handleResend}
+                      disabled={isResending}
+                      className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-purple-500 via-cyan-500 to-blue-500 hover:from-purple-600 hover:via-cyan-600 hover:to-blue-600 text-white"
+                    >
+                      {isResending ? (
+                        <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Sending…</span>
+                      ) : (
+                        <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Resend Verification Email</span>
+                      )}
+                    </Button>
                   </div>
                   <Link href="/login" className="block text-sm text-muted-foreground hover:text-cyan-600 transition-colors">
                     Already verified? Login here
