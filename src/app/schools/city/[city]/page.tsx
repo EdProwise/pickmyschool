@@ -21,8 +21,18 @@ function slugToCityName(slug: string): string | undefined {
   return INDIAN_CITIES.find(c => cityNameToSlug(c) === slug);
 }
 
+export const dynamicParams = true;
+export const revalidate = 86400; // Revalidate every 24 hours
+
 export async function generateStaticParams() {
-  return INDIAN_CITIES.map((city) => ({ city: cityNameToSlug(city) }));
+  // Pre-build only the top cities; all others are generated on-demand and cached
+  const topCities = [
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad',
+    'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow',
+    'Chandigarh', 'Noida', 'Gurgaon', 'Indore', 'Bhopal',
+    'Dehradun', 'Kochi', 'Nagpur', 'Vadodara', 'Surat',
+  ];
+  return topCities.map((city) => ({ city: cityNameToSlug(city) }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

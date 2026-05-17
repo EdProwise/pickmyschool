@@ -13,8 +13,18 @@ interface PageProps {
   params: Promise<{ state: string }>;
 }
 
+export const dynamicParams = true;
+export const revalidate = 86400; // Revalidate every 24 hours
+
 export async function generateStaticParams() {
-  return INDIAN_STATES.map((s) => ({ state: s.slug }));
+  // Pre-build only major states; all others are generated on-demand and cached
+  const topStateSlugs = [
+    'maharashtra', 'karnataka', 'delhi', 'tamil-nadu', 'telangana',
+    'gujarat', 'rajasthan', 'uttar-pradesh', 'west-bengal', 'kerala',
+  ];
+  return INDIAN_STATES
+    .filter((s) => topStateSlugs.includes(s.slug))
+    .map((s) => ({ state: s.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
