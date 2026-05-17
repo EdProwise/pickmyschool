@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, UserPlus, GraduationCap, Building2, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, UserPlus, GraduationCap, Building2, Briefcase, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'student' | 'school'>('student');
+  const [role, setRole] = useState<'student' | 'school' | 'freelancer'>('student');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,6 +26,7 @@ export default function SignupPage() {
     phone: '',
     city: '',
     class: '',
+    referredBy: '',
   });
 
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
@@ -57,6 +58,26 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      if (role === 'freelancer') {
+        const response = await fetch('/api/freelancer/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            phone: formData.phone,
+            city: formData.city,
+            referredBy: formData.referredBy,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Registration failed');
+        toast.success('Account created! Please check your email to verify your account.');
+        router.push('/freelancer/login');
+        return;
+      }
+
       const data: any = {
         role,
         name: formData.name,
@@ -128,12 +149,12 @@ export default function SignupPage() {
             </CardHeader>
             
             <CardContent className="px-5 sm:px-8 pb-6 sm:pb-8">
-              <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6" key={role}>
                 {/* Role Selection */}
                 <div className="space-y-2.5 sm:space-y-3">
                   <Label className="text-xs sm:text-sm font-semibold px-1">I am a</Label>
-                  <RadioGroup value={role} onValueChange={(value) => setRole(value as 'student' | 'school')}>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <RadioGroup value={role} onValueChange={(value) => setRole(value as 'student' | 'school' | 'freelancer')}>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
                       <div className="relative">
                         <RadioGroupItem
                           value="student"
@@ -142,13 +163,13 @@ export default function SignupPage() {
                         />
                         <Label
                           htmlFor="student"
-                          className="flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-2 border-gray-200 bg-white/50 p-3 sm:p-6 hover:bg-cyan-50 hover:border-cyan-300 peer-data-[state=checked]:border-cyan-500 peer-data-[state=checked]:bg-gradient-to-br peer-data-[state=checked]:from-cyan-50 peer-data-[state=checked]:to-blue-50 cursor-pointer transition-all duration-300 group"
+                          className="flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-2 border-gray-200 bg-white/50 p-2 sm:p-6 hover:bg-cyan-50 hover:border-cyan-300 peer-data-[state=checked]:border-cyan-500 peer-data-[state=checked]:bg-gradient-to-br peer-data-[state=checked]:from-cyan-50 peer-data-[state=checked]:to-blue-50 cursor-pointer transition-all duration-300 group"
                         >
-                          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-2 sm:mb-3 shadow-lg group-hover:scale-110 transition-transform">
-                            <GraduationCap size={20} className="text-white sm:w-8 sm:h-8" />
+                          <div className="w-9 h-9 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                            <GraduationCap size={18} className="text-white sm:w-8 sm:h-8" />
                           </div>
-                          <span className="font-bold text-xs sm:text-base">Student / Parent</span>
-                          <span className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">Find the perfect school</span>
+                          <span className="font-bold text-[10px] sm:text-base text-center leading-tight">Student / Parent</span>
+                          <span className="text-[8px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">Find the perfect school</span>
                         </Label>
                       </div>
                       <div className="relative">
@@ -159,13 +180,30 @@ export default function SignupPage() {
                         />
                         <Label
                           htmlFor="school"
-                          className="flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-2 border-gray-200 bg-white/50 p-3 sm:p-6 hover:bg-purple-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-500 peer-data-[state=checked]:bg-gradient-to-br peer-data-[state=checked]:from-purple-50 peer-data-[state=checked]:to-pink-50 cursor-pointer transition-all duration-300 group"
+                          className="flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-2 border-gray-200 bg-white/50 p-2 sm:p-6 hover:bg-purple-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-500 peer-data-[state=checked]:bg-gradient-to-br peer-data-[state=checked]:from-purple-50 peer-data-[state=checked]:to-pink-50 cursor-pointer transition-all duration-300 group"
                         >
-                          <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center mb-2 sm:mb-3 shadow-lg group-hover:scale-110 transition-transform">
-                            <Building2 size={20} className="text-white sm:w-8 sm:h-8" />
+                          <div className="w-9 h-9 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                            <Building2 size={18} className="text-white sm:w-8 sm:h-8" />
                           </div>
-                          <span className="font-bold text-xs sm:text-base">School User</span>
-                          <span className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">Manage your institution</span>
+                          <span className="font-bold text-[10px] sm:text-base text-center leading-tight">School User</span>
+                          <span className="text-[8px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">Manage your institution</span>
+                        </Label>
+                      </div>
+                      <div className="relative">
+                        <RadioGroupItem
+                          value="freelancer"
+                          id="freelancer"
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor="freelancer"
+                          className="flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-2 border-gray-200 bg-white/50 p-2 sm:p-6 hover:bg-emerald-50 hover:border-emerald-300 peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-gradient-to-br peer-data-[state=checked]:from-emerald-50 peer-data-[state=checked]:to-teal-50 cursor-pointer transition-all duration-300 group"
+                        >
+                          <div className="w-9 h-9 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                            <Briefcase size={18} className="text-white sm:w-8 sm:h-8" />
+                          </div>
+                          <span className="font-bold text-[10px] sm:text-base text-center leading-tight">Freelancer</span>
+                          <span className="text-[8px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">Earn by referring</span>
                         </Label>
                       </div>
                     </div>
@@ -175,13 +213,13 @@ export default function SignupPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label htmlFor="name" className="text-xs sm:text-sm font-semibold px-1">
-                      {role === 'student' ? 'Full Name' : 'School Name'} *
+                      {role === 'student' ? 'Full Name' : role === 'school' ? 'School Name' : 'Full Name'} *
                     </Label>
                     <div className="relative group">
                       <Input
                         id="name"
                         type="text"
-                        placeholder={role === 'student' ? 'John Doe' : 'Your School Name'}
+                        placeholder={role === 'student' || role === 'freelancer' ? 'John Doe' : 'Your School Name'}
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -289,6 +327,21 @@ export default function SignupPage() {
                           value={formData.class}
                           onChange={(e) => setFormData({ ...formData, class: e.target.value })}
                           className="relative h-11 sm:h-12 bg-white/50 border-gray-200 focus:border-cyan-400 focus:ring-cyan-400 rounded-xl"
+                        />
+                      </div>
+                    </div>
+                  )}
+                    {role === 'freelancer' && (
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="referredBy" className="text-xs sm:text-sm font-semibold px-1">Referral Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <div className="relative group">
+                        <Input
+                          id="referredBy"
+                          type="text"
+                          placeholder="Enter referral code"
+                          value={formData.referredBy}
+                          onChange={(e) => setFormData({ ...formData, referredBy: e.target.value })}
+                          className="relative h-11 sm:h-12 bg-white/50 border-gray-200 focus:border-emerald-400 focus:ring-emerald-400 rounded-xl"
                         />
                       </div>
                     </div>

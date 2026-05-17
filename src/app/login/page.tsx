@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, LogIn, Sparkles, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Sparkles, ArrowRight, Briefcase, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginType, setLoginType] = useState<'regular' | 'freelancer'>('regular');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,14 +26,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      if (loginType === 'freelancer') {
+        const res = await fetch('/api/freelancer/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        localStorage.setItem('freelancer_token', data.token);
+        localStorage.setItem('freelancer_data', JSON.stringify(data.freelancer));
+        toast.success(`Welcome back, ${data.freelancer.name}!`);
+        router.push('/freelancer/dashboard');
+        return;
+      }
+
       const response = await login(formData);
-      
+
       // Store token and user data
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      
+
       toast.success('Login successful!');
-      
+
       // Redirect based on role
       if (response.user.role === 'student') {
         router.push('/dashboard/student');
@@ -90,6 +106,34 @@ export default function LoginPage() {
             </CardHeader>
             
             <CardContent className="px-5 sm:px-8 pb-6 sm:pb-8">
+              {/* Login type toggle */}
+              <div className="flex rounded-xl overflow-hidden border border-gray-200 mb-5 sm:mb-6">
+                <button
+                  type="button"
+                  onClick={() => setLoginType('regular')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                    loginType === 'regular'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md'
+                      : 'bg-white/50 text-muted-foreground hover:bg-gray-50'
+                  }`}
+                >
+                  <GraduationCap size={15} />
+                  Student / School
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginType('freelancer')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                    loginType === 'freelancer'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                      : 'bg-white/50 text-muted-foreground hover:bg-gray-50'
+                  }`}
+                >
+                  <Briefcase size={15} />
+                  Freelancer
+                </button>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                 <div className="space-y-1.5 sm:space-y-2">
                   <Label htmlFor="email" className="text-xs sm:text-sm font-semibold px-1">Email Address</Label>
@@ -142,7 +186,11 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 sm:h-14 text-sm sm:text-base font-bold bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl group"
+                  className={`w-full h-12 sm:h-14 text-sm sm:text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl group ${
+                    loginType === 'freelancer'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600'
+                      : 'bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-500 hover:from-cyan-600 hover:to-blue-600'
+                  }`}
                   disabled={loading}
                 >
                   {loading ? (
@@ -171,12 +219,12 @@ export default function LoginPage() {
               </div>
 
               <div className="text-center px-1">
-                <Link 
-                  href="/signup" 
+                <Link
+                  href="/signup"
                   className="inline-flex items-center gap-1.5 sm:gap-2 font-bold hover:underline text-sm sm:text-base transition-colors group"
-                  style={{ color: '#04d3d3' }}
+                  style={{ color: loginType === 'freelancer' ? '#10b981' : '#04d3d3' }}
                 >
-                  Create an account
+                  {loginType === 'freelancer' ? 'Register as Freelancer' : 'Create an account'}
                   <ArrowRight className="group-hover:translate-x-1 transition-transform w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
               </div>
