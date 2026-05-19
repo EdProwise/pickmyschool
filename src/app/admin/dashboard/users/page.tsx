@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Search, Users, GraduationCap, Building2, CheckCircle2, XCircle, RefreshCw, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Search, Users, GraduationCap, Building2, CheckCircle2, XCircle, RefreshCw, ShieldCheck, ShieldOff, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UserRecord {
@@ -42,6 +42,7 @@ export default function UserDatabasePage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -96,6 +97,41 @@ export default function UserDatabasePage() {
       toast.error('Failed to update user');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const loginAsUser = async (userId: string, name: string) => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+    setImpersonatingId(userId);
+    try {
+      const res = await fetch('/api/admin/users/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Store the user token and open their dashboard in a new tab
+        const newTab = window.open('', '_blank');
+        if (newTab) {
+          newTab.document.write(`
+            <script>
+              localStorage.setItem('token', ${JSON.stringify(data.token)});
+              window.location.href = ${JSON.stringify(data.redirectUrl)};
+            </script>
+          `);
+          newTab.document.close();
+        }
+        toast.success(`Logged in as ${name}`);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to login as user');
+      }
+    } catch {
+      toast.error('Failed to login as user');
+    } finally {
+      setImpersonatingId(null);
     }
   };
 
@@ -310,7 +346,18 @@ export default function UserDatabasePage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Login As */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={impersonatingId === user._id}
+                          onClick={() => loginAsUser(user._id, user.name)}
+                          className="text-xs h-7 px-2 border-violet-300 text-violet-700 hover:bg-violet-50 gap-1"
+                        >
+                          <LogIn className="w-3 h-3" />
+                          {impersonatingId === user._id ? 'Opening...' : 'Login As'}
+                        </Button>
                         {/* Toggle active/inactive */}
                         <Button
                           size="sm"

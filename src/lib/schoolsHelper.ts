@@ -1,6 +1,5 @@
 import connectToDatabase from '@/lib/mongodb';
 import { School, Review, ISchool } from '@/lib/models';
-import mongoose from 'mongoose';
 
 export function generateSlug(name: string): string {
   return name
@@ -281,26 +280,21 @@ export async function updateSchool(id: number, data: any) {
   }
   
   data.updatedAt = new Date().toISOString();
-  
+
   console.log('updateSchool: Updating school with $set:', JSON.stringify(data).substring(0, 500));
-  
-  const db = mongoose.connection.db;
-  if (!db) {
-    throw new Error('Database connection not available');
-  }
-  
-  const result = await db.collection('schools').findOneAndUpdate(
-    { id }, 
+
+  const result = await School.findOneAndUpdate(
+    { id: Number(id) },
     { $set: data },
-    { returnDocument: 'after' }
+    { new: true, lean: true }
   );
-  
+
   console.log('updateSchool: Updated result whatsappWebhookUrl:', result?.whatsappWebhookUrl);
-  
+
   if (!result) {
     return getSchool(id);
   }
-  
+
   return {
     ...result,
     id: Number(result.id),

@@ -574,8 +574,8 @@ export default function AdminFreelancersPage() {
                       })()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-1.5 min-w-[170px]">
-                        <div className="relative">
+                      <div className="flex flex-row items-center gap-1.5">
+                        <div className="relative w-24">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
                           <input
                             type="number"
@@ -590,12 +590,12 @@ export default function AdminFreelancersPage() {
                           type="date"
                           value={manualDates[f._id] || ''}
                           onChange={e => setManualDates(prev => ({ ...prev, [f._id]: e.target.value }))}
-                          className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-32 px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                         />
                         <button
                           onClick={() => handlePayment(f._id, 'manual')}
                           disabled={!manualAmounts[f._id] || !manualDates[f._id] || payingId === f._id}
-                          className="w-full text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap"
+                          className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap"
                         >
                           {payingId === f._id ? 'Saving...' : 'Save'}
                         </button>

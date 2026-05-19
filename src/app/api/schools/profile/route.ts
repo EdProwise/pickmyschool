@@ -145,9 +145,9 @@ export async function PUT(request: NextRequest) {
 
     if (userRecord && userRecord.schoolId) {
       targetSchoolObjectId = userRecord.schoolId;
-      const existing = await School.findById(targetSchoolObjectId);
+      const existing = await School.findById(targetSchoolObjectId).lean();
       if (existing) {
-        targetSchoolNumericId = existing.id;
+        targetSchoolNumericId = Number(existing.id);
       } else {
         isCreating = true;
       }

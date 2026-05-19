@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
 
 function verifyAdmin(request: NextRequest) {
   try {
@@ -34,19 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const filename = `${timestamp}-${random}.${ext}`;
-
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'blogs');
-    if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true });
-
-    await writeFile(path.join(uploadDir, filename), buffer);
-
-    return NextResponse.json({ url: `/uploads/blogs/${filename}` });
+    return NextResponse.json({ url: dataUrl });
   } catch (error) {
     console.error('Blog upload error:', error);
     return NextResponse.json({ error: 'Upload failed: ' + (error as Error).message }, { status: 500 });
