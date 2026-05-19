@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard, PlusCircle, ListChecks, Wallet,
-  Gift, Settings, LogOut, Briefcase, Menu, X, School, FileText,
+  Gift, Settings, LogOut, Briefcase, Menu, X, School, FileText, Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,13 +22,47 @@ const NAV = [
 
 const AUTH_PATHS = ['/freelancer/login', '/freelancer/register', '/freelancer/verify-email'];
 
+interface Notification {
+  _id: string;
+  type: 'lead_status' | 'payment';
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 export default function FreelancerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState({ name: '', email: '', totalEarnings: 0 });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const isAuth = AUTH_PATHS.includes(pathname ?? '');
+
+  // Close notif dropdown on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
 
   useEffect(() => {
     if (isAuth) return;
@@ -39,6 +73,7 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
 
     const token = localStorage.getItem('freelancer_token');
     if (!token) return;
+
     fetch('/api/freelancer/statement', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
@@ -47,6 +82,16 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
         setUser(prev => ({ ...prev, totalEarnings: totalEarned }));
       })
       .catch(() => { /* keep stored value */ });
+
+    // Fetch notifications
+    fetch('/api/freelancer/notifications', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data) return;
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      })
+      .catch(() => { });
   }, [pathname, isAuth]);
 
   if (isAuth) return <>{children}</>;
@@ -56,6 +101,22 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
     localStorage.removeItem('freelancer_data');
     toast.success('Logged out successfully');
     router.push('/freelancer/login');
+  };
+
+  const openNotif = async () => {
+    setNotifOpen(prev => !prev);
+    if (!notifOpen && unreadCount > 0) {
+      const token = localStorage.getItem('freelancer_token');
+      if (!token) return;
+      // Mark all as read
+      await fetch('/api/freelancer/notifications', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).catch(() => { });
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    }
   };
 
   return (
@@ -154,6 +215,65 @@ export default function FreelancerLayout({ children }: { children: React.ReactNo
               <span className="text-xs text-slate-500">Earning:</span>
               <span className="text-sm font-bold text-emerald-700">₹{user.totalEarnings.toLocaleString()}</span>
             </div>
+
+            {/* Notification Bell */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={openNotif}
+                className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <Bell className="w-5 h-5 text-slate-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown */}
+              {notifOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <p className="font-semibold text-slate-800 text-sm">Notifications</p>
+                    {notifications.length > 0 && (
+                      <span className="text-xs text-slate-400">{notifications.length} total</span>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center">
+                        <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                        <p className="text-sm text-slate-400">No notifications yet</p>
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n._id}
+                          className={`px-4 py-3 flex gap-3 ${n.isRead ? 'bg-white' : 'bg-emerald-50/60'}`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.type === 'payment' ? 'bg-amber-100' : 'bg-blue-100'}`}>
+                            {n.type === 'payment' ? (
+                              <span className="text-sm">💰</span>
+                            ) : (
+                              <span className="text-sm">📋</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-slate-800 leading-snug">{n.title}</p>
+                            <p className="text-xs text-slate-500 mt-0.5 leading-snug">{n.message}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">{timeAgo(n.createdAt)}</p>
+                          </div>
+                          {!n.isRead && (
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full shrink-0 mt-1.5" />
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={logout}
               className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-red-600 transition-colors"

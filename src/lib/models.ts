@@ -852,6 +852,30 @@ export const Freelancer: Model<IFreelancer> = mongoose.models.Freelancer || mong
 export const FreelancerLead: Model<IFreelancerLead> = mongoose.models.FreelancerLead || mongoose.model<IFreelancerLead>('FreelancerLead', FreelancerLeadSchema);
 export const FreelancerEarning: Model<IFreelancerEarning> = mongoose.models.FreelancerEarning || mongoose.model<IFreelancerEarning>('FreelancerEarning', FreelancerEarningSchema);
 
+export interface IFreelancerNotification extends Document {
+  _id: mongoose.Types.ObjectId;
+  freelancerId: mongoose.Types.ObjectId;
+  type: 'lead_status' | 'payment';
+  title: string;
+  message: string;
+  isRead: boolean;
+  metadata?: Record<string, any>;
+  createdAt?: Date;
+}
+
+const FreelancerNotificationSchema = new Schema<IFreelancerNotification>({
+  freelancerId: { type: Schema.Types.ObjectId, ref: 'Freelancer', required: true },
+  type: { type: String, enum: ['lead_status', 'payment'], required: true },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  isRead: { type: Boolean, default: false },
+  metadata: { type: Schema.Types.Mixed },
+}, { timestamps: true });
+
+FreelancerNotificationSchema.index({ freelancerId: 1, createdAt: -1 });
+
+export const FreelancerNotification: Model<IFreelancerNotification> = mongoose.models.FreelancerNotification || mongoose.model<IFreelancerNotification>('FreelancerNotification', FreelancerNotificationSchema);
+
 export interface ISchoolPayment extends Document {
   _id: mongoose.Types.ObjectId;
   schoolId: mongoose.Types.ObjectId;

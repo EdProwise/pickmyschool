@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Freelancer, FreelancerEarning } from '@/lib/models';
+import { Freelancer, FreelancerEarning, FreelancerNotification } from '@/lib/models';
 import jwt from 'jsonwebtoken';
 
 function verifyAdminToken(request: NextRequest) {
@@ -75,6 +75,19 @@ export async function POST(
 
     const newTotalPaid = currentPaid + payAmount;
     const newBalance = Math.max(0, totalEarnings - newTotalPaid);
+
+    // In-app notification for the freelancer
+    try {
+      await FreelancerNotification.create({
+        freelancerId: freelancer._id,
+        type: 'payment',
+        title: 'Payment Received 💰',
+        message: `₹${payAmount.toLocaleString('en-IN')} has been paid to you by admin.`,
+        metadata: { amount: payAmount, paidAt: paidAt.toISOString() },
+      });
+    } catch (notifErr) {
+      console.error('Failed to create payment notification:', notifErr);
+    }
 
     return NextResponse.json({ success: true, totalPaid: newTotalPaid, balance: newBalance });
   } catch (error) {

@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/mongodb';
 import { Blog } from '@/lib/models';
 import { Clock, Calendar, Tag, ArrowLeft, BookOpen, Eye, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import BlogViewTracker from './BlogViewTracker';
 
 interface BlogDoc {
   _id: string;
@@ -135,6 +136,7 @@ export default async function BlogPostPage({
 
   return (
     <>
+      <BlogViewTracker slug={blog.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

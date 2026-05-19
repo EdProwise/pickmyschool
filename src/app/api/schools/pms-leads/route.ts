@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '@/lib/mongodb';
-import { School, User, FreelancerLead, Freelancer } from '@/lib/models';
+import { School, User, FreelancerLead, Freelancer, FreelancerNotification } from '@/lib/models';
 import { sendFreelancerLeadStatusEmail } from '@/lib/email';
 
 async function verifySchoolToken(request: NextRequest) {
@@ -144,7 +144,7 @@ export async function PATCH(request: NextRequest) {
     }
     await lead.save();
 
-    // Send email notification to freelancer for actionable status changes
+    // Send email + in-app notification for actionable status changes
     if (['contacted', 'converted', 'rejected'].includes(status)) {
       try {
         const freelancer = await Freelancer.findById(lead.freelancerId).select('name email').lean();
@@ -160,7 +160,20 @@ export async function PATCH(request: NextRequest) {
         }
       } catch (emailErr) {
         console.error('Failed to send lead status email:', emailErr);
-        // Don't fail the request if email fails
+      }
+
+      // In-app notification
+      try {
+        const statusLabel = status === 'converted' ? 'Converted ✅' : status === 'contacted' ? 'Contacted 📞' : 'Rejected ❌';
+        await FreelancerNotification.create({
+          freelancerId: lead.freelancerId,
+          type: 'lead_status',
+          title: `Lead ${statusLabel}`,
+          message: `${schoolName} updated ${lead.studentName}'s lead status to "${status}".`,
+          metadata: { leadId: lead._id.toString(), status, schoolName, studentName: lead.studentName },
+        });
+      } catch (notifErr) {
+        console.error('Failed to create lead notification:', notifErr);
       }
     }
 
