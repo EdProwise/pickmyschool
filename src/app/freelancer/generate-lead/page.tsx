@@ -166,6 +166,11 @@ function SchoolMultiSelect({
       else if (data.schools && Array.isArray(data.schools)) schools = data.schools;
 
       const list: SchoolOption[] = schools
+        .filter((s: any) => {
+          const hasDayCommission = s.daySchoolCommission?.amount != null && s.daySchoolCommission.amount > 0;
+          const hasHostelCommission = s.hostelSchoolCommission?.amount != null && s.hostelSchoolCommission.amount > 0;
+          return hasDayCommission || hasHostelCommission;
+        })
         .map((s: any) => ({ id: s.id, name: s.name, city: s.city, board: s.board, schoolType: s.schoolType }))
         .filter((s: SchoolOption) => s.id && s.name && s.city);
 
@@ -317,11 +322,18 @@ export default function GenerateLeadPage() {
         else if (data.data && Array.isArray(data.data)) schools = data.data;
         else if (data.schools && Array.isArray(data.schools)) schools = data.schools;
 
-        const uniqueCities = Array.from(new Set(schools.map((s: any) => s.city).filter(Boolean))).sort() as string[];
+        // Only derive filters from schools that have at least one commission set
+        const commissionSchools = schools.filter((s: any) => {
+          const hasDayCommission = s.daySchoolCommission?.amount != null && s.daySchoolCommission.amount > 0;
+          const hasHostelCommission = s.hostelSchoolCommission?.amount != null && s.hostelSchoolCommission.amount > 0;
+          return hasDayCommission || hasHostelCommission;
+        });
+
+        const uniqueCities = Array.from(new Set(commissionSchools.map((s: any) => s.city).filter(Boolean))).sort() as string[];
         setSchoolLocations(uniqueCities);
-        const uniqueBoards = Array.from(new Set(schools.map((s: any) => s.board).filter(Boolean))).sort() as string[];
+        const uniqueBoards = Array.from(new Set(commissionSchools.map((s: any) => s.board).filter(Boolean))).sort() as string[];
         setAvailableBoards(uniqueBoards);
-        const uniqueSchoolTypes = Array.from(new Set(schools.map((s: any) => s.schoolType).filter(Boolean))).sort() as string[];
+        const uniqueSchoolTypes = Array.from(new Set(commissionSchools.map((s: any) => s.schoolType).filter(Boolean))).sort() as string[];
         setAvailableSchoolTypes(uniqueSchoolTypes);
       } catch (e) {
         console.error('Failed to load cities:', e);

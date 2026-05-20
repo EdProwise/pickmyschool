@@ -453,6 +453,81 @@ export async function sendSchoolLeadNotificationEmail(
   }
 }
 
+export async function sendSchoolReviewNotificationEmail(
+  schoolEmail: string,
+  schoolName: string,
+  studentName: string,
+  rating: number,
+  reviewText: string,
+) {
+  const from = await getFromAddress();
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/school`;
+  const stars = '⭐'.repeat(rating);
+  const emptyStars = '☆'.repeat(5 - rating);
+  const ratingColor = rating >= 4 ? '#065f46' : rating === 3 ? '#92400e' : '#991b1b';
+  const ratingBg = rating >= 4 ? '#d1fae5' : rating === 3 ? '#fef3c7' : '#fee2e2';
+
+  const mailOptions = {
+    from: `"PickMySchool" <${from}>`,
+    to: schoolEmail,
+    subject: `New ${rating}-Star Review for ${schoolName} | PickMySchool`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:0;background-color:#f8fafc;">
+          <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+            <div style="background:linear-gradient(135deg,#0d9488 0%,#0284c7 100%);padding:3px;border-radius:16px;">
+              <div style="background-color:white;border-radius:14px;padding:40px;">
+                <div style="text-align:center;margin-bottom:28px;">
+                  <h1 style="color:#18181b;margin:0;font-size:24px;font-weight:700;">
+                    <span style="color:#18181b;">Pick</span><span style="color:#04d3d3;">MySchool</span>
+                  </h1>
+                </div>
+                <div style="background:${ratingBg};border-left:4px solid ${ratingColor};border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+                  <p style="margin:0;font-size:18px;font-weight:700;color:${ratingColor};">⭐ New Review Received</p>
+                  <p style="margin:6px 0 0;font-size:14px;color:${ratingColor};">A student has submitted a new review for your school.</p>
+                </div>
+                <p style="color:#374151;font-size:15px;margin:0 0 20px;">Dear <strong>${schoolName}</strong> team,</p>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;width:35%;border-bottom:1px solid #e5e7eb;">Reviewed By</td>
+                    <td style="padding:10px 16px;color:#18181b;font-weight:600;border-bottom:1px solid #e5e7eb;">${studentName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Rating</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+                      <span style="font-size:18px;">${stars}${emptyStars}</span>
+                      <span style="color:${ratingColor};font-weight:700;margin-left:8px;">${rating}/5</span>
+                    </td>
+                  </tr>
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;vertical-align:top;">Review</td>
+                    <td style="padding:10px 16px;color:#374151;font-style:italic;">"${reviewText}"</td>
+                  </tr>
+                </table>
+                <div style="text-align:center;margin-top:8px;">
+                  <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#0d9488 0%,#0284c7 100%);color:white;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:600;">View in Dashboard</a>
+                </div>
+                <hr style="border:none;border-top:1px solid #e4e4e7;margin:28px 0;">
+                <p style="color:#a1a1aa;font-size:12px;margin:0;text-align:center;">© ${new Date().getFullYear()} PickMySchool. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+
+  try {
+    await sendMail(mailOptions);
+    console.log(`School review notification sent to ${schoolEmail}`);
+  } catch (error) {
+    console.error('Failed to send school review notification email:', error);
+    // Don't throw — review creation should still succeed
+  }
+}
+
 export function generateVerificationToken(): string {
 
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

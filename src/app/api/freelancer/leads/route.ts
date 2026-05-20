@@ -112,32 +112,36 @@ export async function POST(request: NextRequest) {
     // Increment total leads count
     await Freelancer.findByIdAndUpdate(decoded.freelancerId, { $inc: { totalLeads: 1 } });
 
-    // Notify the school if schoolInterested is provided
+    // Notify each school if schoolInterested is provided (may be comma-separated list)
     if (schoolInterested?.trim()) {
       try {
-        const escapedName = schoolInterested.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const targetSchool = await School.findOne({
-          name: { $regex: `^${escapedName}$`, $options: 'i' },
-        }).select('name email contactEmail').lean();
+        const freelancerDoc = await Freelancer.findById(decoded.freelancerId).select('name').lean();
+        const schoolNames = schoolInterested.split(',').map((n: string) => n.trim()).filter(Boolean);
 
-        if (targetSchool) {
-          const schoolEmail = (targetSchool as any).contactEmail || (targetSchool as any).email;
-          if (schoolEmail) {
-            const freelancerDoc = await Freelancer.findById(decoded.freelancerId).select('name').lean();
-            await sendSchoolLeadNotificationEmail(
-              schoolEmail,
-              (targetSchool as any).name,
-              parentName.trim(),
-              studentName.trim(),
-              phone.trim(),
-              grade.trim(),
-              'PMS Lead',
-              {
-                city: city?.trim(),
-                schoolType: schoolType?.trim(),
-                freelancerName: (freelancerDoc as any)?.name,
-              },
-            );
+        for (const sName of schoolNames) {
+          const escapedName = sName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const targetSchool = await School.findOne({
+            name: { $regex: `^${escapedName}$`, $options: 'i' },
+          }).select('name email contactEmail').lean();
+
+          if (targetSchool) {
+            const schoolEmail = (targetSchool as any).contactEmail || (targetSchool as any).email;
+            if (schoolEmail) {
+              await sendSchoolLeadNotificationEmail(
+                schoolEmail,
+                (targetSchool as any).name,
+                parentName.trim(),
+                studentName.trim(),
+                phone.trim(),
+                grade.trim(),
+                'PMS Lead',
+                {
+                  city: city?.trim(),
+                  schoolType: schoolType?.trim(),
+                  freelancerName: (freelancerDoc as any)?.name,
+                },
+              );
+            }
           }
         }
       } catch (emailErr) {

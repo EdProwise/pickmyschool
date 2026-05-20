@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { Enquiry, Notification, School } from '@/lib/models';
 import { getSchool } from '@/lib/schoolsHelper';
+import { sendSchoolLeadNotificationEmail } from '@/lib/email';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -124,6 +125,25 @@ export async function POST(request: NextRequest) {
         });
       } catch (notifError) {
         console.error('Failed to create notification:', notifError);
+      }
+    }
+
+    // Send email notification to the school's contact email
+    const schoolEmail = (school as any).contactEmail || (school as any).email;
+    if (schoolEmail) {
+      try {
+        await sendSchoolLeadNotificationEmail(
+          schoolEmail,
+          school.name,
+          parentName ? parentName.trim() : studentName.trim(),
+          studentName.trim(),
+          studentPhone.trim(),
+          studentClass.trim(),
+          'Enquiry',
+          { city: city ? city.trim() : undefined },
+        );
+      } catch (emailErr) {
+        console.error('Failed to send school enquiry notification email:', emailErr);
       }
     }
 

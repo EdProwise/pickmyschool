@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { Review, User, Notification, School } from '@/lib/models';
 import { getSchool, updateSchoolStats } from '@/lib/schoolsHelper';
+import { sendSchoolReviewNotificationEmail } from '@/lib/email';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -116,12 +117,13 @@ export async function POST(request: NextRequest) {
 
     await updateSchoolStats(schoolId);
 
+    // In-app notification + email for school
+    const studentInfo = await User.findById(decoded.userId).select('name');
+    const studentName = studentInfo?.name || 'A student';
+    const stars = '⭐'.repeat(rating);
+
     if (school.userId) {
       try {
-        const studentInfo = await User.findById(decoded.userId).select('name');
-        const studentName = studentInfo?.name || 'A student';
-        const stars = '⭐'.repeat(rating);
-
         await Notification.create({
           recipientId: school.userId,
           recipientType: 'school',
@@ -134,6 +136,18 @@ export async function POST(request: NextRequest) {
       } catch (notifError) {
         console.error('Failed to create notification for school:', notifError);
       }
+    }
+
+    // Email notification to school's contact email
+    const schoolEmail = (school as any).contactEmail || (school as any).email;
+    if (schoolEmail) {
+      await sendSchoolReviewNotificationEmail(
+        schoolEmail,
+        school.name,
+        studentName,
+        rating,
+        reviewText.trim(),
+      );
     }
 
     return NextResponse.json({ ...newReview.toObject(), id: newReview._id }, { status: 201 });
