@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -6,6 +7,8 @@ import { Blog } from '@/lib/models';
 import { Clock, Calendar, Tag, ArrowLeft, BookOpen, Eye, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import BlogViewTracker from './BlogViewTracker';
+
+export const dynamic = 'force-dynamic';
 
 interface BlogDoc {
   _id: string;
@@ -29,7 +32,7 @@ interface BlogDoc {
   updatedAt: string;
 }
 
-async function getBlog(slug: string): Promise<{ blog: BlogDoc; related: BlogDoc[]; recent: BlogDoc[] } | null> {
+const getBlog = cache(async (slug: string): Promise<{ blog: BlogDoc; related: BlogDoc[]; recent: BlogDoc[] } | null> => {
   try {
     await connectToDatabase();
     const blog = await Blog.findOne({ slug, status: 'published' }).lean() as BlogDoc | null;

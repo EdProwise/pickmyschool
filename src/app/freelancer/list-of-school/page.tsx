@@ -62,7 +62,13 @@ export default function ListOfSchoolPage() {
       else if (schoolsData.schools && Array.isArray(schoolsData.schools)) raw = schoolsData.schools;
 
       const list: SchoolRow[] = raw
-        .filter((s) => s.name && s.city)
+        .filter((s) => {
+          if (!s.name || !s.city) return false;
+          // Only show schools where admin has set at least one commission rate
+          const hasDayCommission = s.daySchoolCommission?.amount != null && s.daySchoolCommission.amount > 0;
+          const hasHostelCommission = s.hostelSchoolCommission?.amount != null && s.hostelSchoolCommission.amount > 0;
+          return hasDayCommission || hasHostelCommission;
+        })
         .map((s) => {
           // Day school earning = daySchoolCommission.amount × (freelancerCommPct / 100)
           const dayAmt = s.daySchoolCommission?.amount ?? null;

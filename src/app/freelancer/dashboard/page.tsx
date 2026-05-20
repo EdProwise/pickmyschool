@@ -69,7 +69,9 @@ export default function DashboardPage() {
 
   const totalConverted = leads.filter(l => l.status === 'converted').length;
   const totalPending   = leads.filter(l => l.status === 'new' || l.status === 'contacted').length;
-  const totalEarnings  = freelancer.totalEarnings || 0;
+  const totalEarnings  = leads
+    .filter(l => l.status === 'converted')
+    .reduce((sum, l) => sum + (l.computedEarnings ?? 0), 0);
   const balance        = Math.max(0, totalEarnings - totalPaid);
 
   // School-wise stats
