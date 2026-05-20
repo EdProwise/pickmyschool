@@ -61,7 +61,7 @@ const getBlog = cache(async (slug: string): Promise<{ blog: BlogDoc; related: Bl
   } catch {
     return null;
   }
-}
+});
 
 export async function generateMetadata({
   params,
