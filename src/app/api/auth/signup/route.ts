@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { User, Notification, SuperAdmin, EmailVerificationToken } from '@/lib/models';
 import bcrypt from 'bcrypt';
-import { validatePassword, generateVerificationToken, sendVerificationEmail } from '@/lib/email';
+import { validatePassword, generateVerificationToken, sendVerificationEmail, sendAdminSignupNotificationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -144,6 +144,14 @@ export async function POST(request: NextRequest) {
     } catch (notifError) {
       console.error('Failed to create notification for super admin:', notifError);
     }
+
+    // Send admin email notification
+    await sendAdminSignupNotificationEmail(
+      name.trim(),
+      trimmedEmail,
+      role as 'student' | 'school',
+      { phone: phone?.trim(), city: city?.trim() },
+    );
 
     const userObj = newUser.toObject();
     const { password: _, ...userWithoutPassword } = userObj;

@@ -528,6 +528,182 @@ export async function sendSchoolReviewNotificationEmail(
   }
 }
 
+const ADMIN_EMAIL = 'kunalshah@edprowise.com';
+
+export async function sendAdminSignupNotificationEmail(
+  name: string,
+  email: string,
+  role: 'student' | 'school' | 'freelancer',
+  extra?: { phone?: string; city?: string; referralCode?: string },
+) {
+  const from = await getFromAddress();
+  const roleLabel = role === 'student' ? 'Student' : role === 'school' ? 'School' : 'Freelancer';
+  const accentColor = role === 'freelancer' ? '#059669' : role === 'school' ? '#2563eb' : '#8b5cf6';
+  const icon = role === 'freelancer' ? '💼' : role === 'school' ? '🏫' : '🎓';
+  const adminDashboard = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin`;
+
+  const extraRows = [
+    extra?.phone ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-weight:600;color:#6b7280;width:40%;border-bottom:1px solid #e5e7eb;">Phone</td><td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${extra.phone}</td></tr>` : '',
+    extra?.city ? `<tr><td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">City</td><td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${extra.city}</td></tr>` : '',
+    extra?.referralCode ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-weight:600;color:#6b7280;">Referral Code</td><td style="padding:10px 16px;color:#18181b;">${extra.referralCode}</td></tr>` : '',
+  ].join('');
+
+  const mailOptions = {
+    from: `"PickMySchool" <${from}>`,
+    to: ADMIN_EMAIL,
+    subject: `New ${roleLabel} Signup: ${name}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:0;background-color:#f8fafc;">
+          <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+            <div style="background:linear-gradient(135deg,${accentColor} 0%,#0284c7 100%);padding:3px;border-radius:16px;">
+              <div style="background-color:white;border-radius:14px;padding:40px;">
+                <div style="text-align:center;margin-bottom:28px;">
+                  <h1 style="color:#18181b;margin:0;font-size:24px;font-weight:700;">
+                    <span style="color:#18181b;">Pick</span><span style="color:#04d3d3;">MySchool</span>
+                  </h1>
+                  <p style="color:#6b7280;font-size:12px;font-weight:600;margin:4px 0 0;">ADMIN NOTIFICATION</p>
+                </div>
+                <div style="background:#f0fdf4;border-left:4px solid ${accentColor};border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+                  <p style="margin:0;font-size:18px;font-weight:700;color:${accentColor};">${icon} New ${roleLabel} Signup</p>
+                  <p style="margin:6px 0 0;font-size:14px;color:${accentColor};">A new ${roleLabel.toLowerCase()} has registered on PickMySchool.</p>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;width:40%;border-bottom:1px solid #e5e7eb;">Name</td>
+                    <td style="padding:10px 16px;color:#18181b;font-weight:600;border-bottom:1px solid #e5e7eb;">${name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Email</td>
+                    <td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${email}</td>
+                  </tr>
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Role</td>
+                    <td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${roleLabel}</td>
+                  </tr>
+                  ${extraRows}
+                </table>
+                <div style="text-align:center;margin-top:8px;">
+                  <a href="${adminDashboard}" style="display:inline-block;background:linear-gradient(135deg,${accentColor} 0%,#0284c7 100%);color:white;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:600;">View in Admin Dashboard</a>
+                </div>
+                <hr style="border:none;border-top:1px solid #e4e4e7;margin:28px 0;">
+                <p style="color:#a1a1aa;font-size:12px;margin:0;text-align:center;">© ${new Date().getFullYear()} PickMySchool. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+
+  try {
+    await sendMail(mailOptions);
+    console.log(`Admin signup notification sent for ${roleLabel}: ${email}`);
+  } catch (error) {
+    console.error('Failed to send admin signup notification:', error);
+    // Don't throw — signup should still succeed
+  }
+}
+
+export async function sendAdminLeadNotificationEmail(
+  freelancerName: string,
+  freelancerEmail: string,
+  parentName: string,
+  studentName: string,
+  phone: string,
+  grade: string,
+  extra?: { city?: string; schoolInterested?: string; schoolType?: string; email?: string; studentCity?: string; studentState?: string },
+) {
+  const from = await getFromAddress();
+  const adminDashboard = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin`;
+
+  const extraRows = [
+    extra?.email ? `<tr><td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Parent Email</td><td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${extra.email}</td></tr>` : '',
+    extra?.city ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">City</td><td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${extra.city}</td></tr>` : '',
+    extra?.studentCity ? `<tr><td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Student City</td><td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${extra.studentCity}${extra.studentState ? ', ' + extra.studentState : ''}</td></tr>` : '',
+    extra?.schoolInterested ? `<tr style="background:#f9fafb;"><td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">School Interested</td><td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${extra.schoolInterested}</td></tr>` : '',
+    extra?.schoolType ? `<tr><td style="padding:10px 16px;font-weight:600;color:#6b7280;">School Type</td><td style="padding:10px 16px;color:#18181b;">${extra.schoolType}</td></tr>` : '',
+  ].join('');
+
+  const mailOptions = {
+    from: `"PickMySchool" <${from}>`,
+    to: ADMIN_EMAIL,
+    subject: `New Freelancer Lead: ${studentName} by ${freelancerName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:0;background-color:#f8fafc;">
+          <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+            <div style="background:linear-gradient(135deg,#059669 0%,#0d9488 100%);padding:3px;border-radius:16px;">
+              <div style="background-color:white;border-radius:14px;padding:40px;">
+                <div style="text-align:center;margin-bottom:28px;">
+                  <h1 style="color:#18181b;margin:0;font-size:24px;font-weight:700;">
+                    <span style="color:#18181b;">Pick</span><span style="color:#04d3d3;">MySchool</span>
+                  </h1>
+                  <p style="color:#6b7280;font-size:12px;font-weight:600;margin:4px 0 0;">ADMIN NOTIFICATION</p>
+                </div>
+                <div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+                  <p style="margin:0;font-size:18px;font-weight:700;color:#059669;">📋 New Freelancer Lead Generated</p>
+                  <p style="margin:6px 0 0;font-size:14px;color:#059669;">A freelancer has submitted a new lead on PickMySchool.</p>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                  <tr style="background:#f0fdf4;">
+                    <td colspan="2" style="padding:10px 16px;font-weight:700;color:#059669;border-bottom:1px solid #e5e7eb;">Freelancer Details</td>
+                  </tr>
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;width:40%;border-bottom:1px solid #e5e7eb;">Freelancer Name</td>
+                    <td style="padding:10px 16px;color:#18181b;font-weight:600;border-bottom:1px solid #e5e7eb;">${freelancerName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Freelancer Email</td>
+                    <td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${freelancerEmail}</td>
+                  </tr>
+                  <tr style="background:#f0f9ff;">
+                    <td colspan="2" style="padding:10px 16px;font-weight:700;color:#2563eb;border-bottom:1px solid #e5e7eb;">Lead Details</td>
+                  </tr>
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Student Name</td>
+                    <td style="padding:10px 16px;color:#18181b;font-weight:600;border-bottom:1px solid #e5e7eb;">${studentName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Parent / Guardian</td>
+                    <td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${parentName}</td>
+                  </tr>
+                  <tr style="background:#f9fafb;">
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Phone</td>
+                    <td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${phone}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Grade / Class</td>
+                    <td style="padding:10px 16px;color:#18181b;border-bottom:1px solid #e5e7eb;">${grade}</td>
+                  </tr>
+                  ${extraRows}
+                </table>
+                <div style="text-align:center;margin-top:8px;">
+                  <a href="${adminDashboard}" style="display:inline-block;background:linear-gradient(135deg,#059669 0%,#0d9488 100%);color:white;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:600;">View in Admin Dashboard</a>
+                </div>
+                <hr style="border:none;border-top:1px solid #e4e4e7;margin:28px 0;">
+                <p style="color:#a1a1aa;font-size:12px;margin:0;text-align:center;">© ${new Date().getFullYear()} PickMySchool. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+
+  try {
+    await sendMail(mailOptions);
+    console.log(`Admin lead notification sent for lead: ${studentName} by ${freelancerName}`);
+  } catch (error) {
+    console.error('Failed to send admin lead notification:', error);
+    // Don't throw — lead creation should still succeed
+  }
+}
+
 export function generateVerificationToken(): string {
 
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

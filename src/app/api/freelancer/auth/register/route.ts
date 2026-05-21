@@ -3,7 +3,7 @@ import connectToDatabase from '@/lib/mongodb';
 import { Freelancer } from '@/lib/models';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { sendFreelancerVerificationEmail, generateVerificationToken } from '@/lib/email';
+import { sendFreelancerVerificationEmail, generateVerificationToken, sendAdminSignupNotificationEmail } from '@/lib/email';
 
 function generateReferralCode(name: string): string {
   const prefix = name.replace(/\s+/g, '').toUpperCase().slice(0, 4);
@@ -70,6 +70,14 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Failed to send verification email (account still created):', emailError);
     }
+
+    // Notify admin about new freelancer signup
+    await sendAdminSignupNotificationEmail(
+      name.trim(),
+      sanitizedEmail,
+      'freelancer',
+      { phone: phone?.trim(), city: city?.trim(), referralCode: referralCode },
+    );
 
     return NextResponse.json(
       { message: 'Account created. Please check your email to verify your account before logging in.', code: 'VERIFY_EMAIL' },

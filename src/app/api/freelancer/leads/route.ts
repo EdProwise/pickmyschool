@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { FreelancerLead, Freelancer, School, SiteSettings } from '@/lib/models';
+import { FreelancerLead, Freelancer, School, SiteSettings, Notification } from '@/lib/models';
 import jwt from 'jsonwebtoken';
-import { sendSchoolLeadNotificationEmail } from '@/lib/email';
+import { sendSchoolLeadNotificationEmail, sendAdminLeadNotificationEmail } from '@/lib/email';
 
 function getFreelancerFromToken(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
@@ -112,6 +112,25 @@ export async function POST(request: NextRequest) {
     // Increment total leads count
     await Freelancer.findByIdAndUpdate(decoded.freelancerId, { $inc: { totalLeads: 1 } });
 
+    // Notify admin about new freelancer lead
+    const freelancerForAdmin = await Freelancer.findById(decoded.freelancerId).select('name email').lean();
+    await sendAdminLeadNotificationEmail(
+      (freelancerForAdmin as any)?.name || 'Unknown Freelancer',
+      (freelancerForAdmin as any)?.email || '',
+      parentName.trim(),
+      studentName.trim(),
+      phone.trim(),
+      grade.trim(),
+      {
+        email: email?.trim(),
+        city: city?.trim(),
+        schoolInterested: schoolInterested?.trim(),
+        schoolType: schoolType?.trim(),
+        studentCity: studentCity?.trim(),
+        studentState: studentState?.trim(),
+      },
+    );
+
     // Notify each school if schoolInterested is provided (may be comma-separated list)
     if (schoolInterested?.trim()) {
       try {
@@ -122,9 +141,28 @@ export async function POST(request: NextRequest) {
           const escapedName = sName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const targetSchool = await School.findOne({
             name: { $regex: `^${escapedName}$`, $options: 'i' },
-          }).select('name email contactEmail').lean();
+          }).select('name email contactEmail userId').lean();
 
           if (targetSchool) {
+            // In-app notification for the school
+            if ((targetSchool as any).userId) {
+              try {
+                const freelancerName = (freelancerDoc as any)?.name || 'A freelancer';
+                await Notification.create({
+                  recipientId: (targetSchool as any).userId,
+                  recipientType: 'school',
+                  title: 'New PMS Lead Received',
+                  message: `${freelancerName} has referred a new lead — ${studentName.trim()} (${grade.trim()}) is interested in your school.`,
+                  type: 'enquiry',
+                  relatedId: lead._id,
+                  isRead: false,
+                });
+              } catch (notifErr) {
+                console.error('Failed to create school notification for PMS lead:', notifErr);
+              }
+            }
+
+            // Email notification
             const schoolEmail = (targetSchool as any).contactEmail || (targetSchool as any).email;
             if (schoolEmail) {
               await sendSchoolLeadNotificationEmail(
